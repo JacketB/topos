@@ -1,0 +1,4826 @@
+[
+  {
+    "id": "aviaudar",
+    "name": "авиаудар",
+    "file": "aviaudar.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "aviaudar_pr",
+    "name": "авиаудар пр",
+    "file": "aviaudar_pr.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "avto_pr1",
+    "name": "авто пр1",
+    "file": "avto_pr1.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto_pr2",
+    "name": "авто пр2",
+    "file": "avto_pr2.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto_pr3",
+    "name": "авто пр3",
+    "file": "avto_pr3.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto_pr4",
+    "name": "авто пр4",
+    "file": "avto_pr4.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto_pr5",
+    "name": "авто пр5",
+    "file": "avto_pr5.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto_pr6",
+    "name": "авто пр6",
+    "file": "avto_pr6.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto_pr7",
+    "name": "авто пр7",
+    "file": "avto_pr7.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto_pr8",
+    "name": "авто пр8",
+    "file": "avto_pr8.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto1",
+    "name": "авто1",
+    "file": "avto1.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto2",
+    "name": "авто2",
+    "file": "avto2.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto3",
+    "name": "авто3",
+    "file": "avto3.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto4",
+    "name": "авто4",
+    "file": "avto4.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto5",
+    "name": "авто5",
+    "file": "avto5.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto6",
+    "name": "авто6",
+    "file": "avto6.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto7",
+    "name": "авто7",
+    "file": "avto7.svg",
+    "category": "техника"
+  },
+  {
+    "id": "avto8",
+    "name": "авто8",
+    "file": "avto8.svg",
+    "category": "техника"
+  },
+  {
+    "id": "ags_svoy1",
+    "name": "агс свой1",
+    "file": "ags_svoy1.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags_svoy2",
+    "name": "агс свой2",
+    "file": "ags_svoy2.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags_svoy3",
+    "name": "агс свой3",
+    "file": "ags_svoy3.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags_svoy4",
+    "name": "агс свой4",
+    "file": "ags_svoy4.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags_svoy5",
+    "name": "агс свой5",
+    "file": "ags_svoy5.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags_svoy6",
+    "name": "агс свой6",
+    "file": "ags_svoy6.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags_svoy7",
+    "name": "агс свой7",
+    "file": "ags_svoy7.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags_svoy8",
+    "name": "агс свой8",
+    "file": "ags_svoy8.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags1",
+    "name": "агс1",
+    "file": "ags1.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags2",
+    "name": "агс2",
+    "file": "ags2.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags3",
+    "name": "агс3",
+    "file": "ags3.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags4",
+    "name": "агс4",
+    "file": "ags4.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags5",
+    "name": "агс5",
+    "file": "ags5.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags6",
+    "name": "агс6",
+    "file": "ags6.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags7",
+    "name": "агс7",
+    "file": "ags7.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ags8",
+    "name": "агс8",
+    "file": "ags8.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "anp",
+    "name": "анп",
+    "file": "anp.svg",
+    "category": "НП"
+  },
+  {
+    "id": "art_op_svoya_1",
+    "name": "Арт оп своя 1",
+    "file": "art_op_svoya_1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art_op_svoya_2",
+    "name": "Арт оп своя 2",
+    "file": "art_op_svoya_2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art_op_svoya_3",
+    "name": "Арт оп своя 3",
+    "file": "art_op_svoya_3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art_op_svoya_4",
+    "name": "Арт оп своя 4",
+    "file": "art_op_svoya_4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art_op1",
+    "name": "Арт оп1",
+    "file": "art_op1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art_op2",
+    "name": "Арт оп2",
+    "file": "art_op2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art_op3",
+    "name": "Арт оп3",
+    "file": "art_op3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art_op4",
+    "name": "Арт оп4",
+    "file": "art_op4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art_polukaponir_1",
+    "name": "арт полукапонир 1",
+    "file": "art_polukaponir_1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_2",
+    "name": "арт полукапонир 2",
+    "file": "art_polukaponir_2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_3",
+    "name": "арт полукапонир 3",
+    "file": "art_polukaponir_3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_4",
+    "name": "арт полукапонир 4",
+    "file": "art_polukaponir_4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_5",
+    "name": "арт полукапонир 5",
+    "file": "art_polukaponir_5.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_6",
+    "name": "арт полукапонир 6",
+    "file": "art_polukaponir_6.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_7",
+    "name": "арт полукапонир 7",
+    "file": "art_polukaponir_7.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_8",
+    "name": "арт полукапонир 8",
+    "file": "art_polukaponir_8.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_pr_1",
+    "name": "арт полукапонир пр 1",
+    "file": "art_polukaponir_pr_1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_pr_2",
+    "name": "арт полукапонир пр 2",
+    "file": "art_polukaponir_pr_2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_pr_3",
+    "name": "арт полукапонир пр 3",
+    "file": "art_polukaponir_pr_3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_pr_4",
+    "name": "арт полукапонир пр 4",
+    "file": "art_polukaponir_pr_4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_pr_5",
+    "name": "арт полукапонир пр 5",
+    "file": "art_polukaponir_pr_5.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_pr_6",
+    "name": "арт полукапонир пр 6",
+    "file": "art_polukaponir_pr_6.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_pr_7",
+    "name": "арт полукапонир пр 7",
+    "file": "art_polukaponir_pr_7.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_polukaponir_pr_8",
+    "name": "арт полукапонир пр 8",
+    "file": "art_polukaponir_pr_8.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "art_rls",
+    "name": "арт рлс",
+    "file": "art_rls.svg",
+    "category": "НП"
+  },
+  {
+    "id": "art_rls_pr",
+    "name": "арт рлс пр",
+    "file": "art_rls_pr.svg",
+    "category": "НП"
+  },
+  {
+    "id": "art_svoya1",
+    "name": "арт своя1",
+    "file": "art_svoya1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art_svoya2",
+    "name": "арт своя2",
+    "file": "art_svoya2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art_svoya3",
+    "name": "арт своя3",
+    "file": "art_svoya3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art_svoya4",
+    "name": "арт своя4",
+    "file": "art_svoya4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art1",
+    "name": "арт1",
+    "file": "art1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art2",
+    "name": "арт2",
+    "file": "art2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art3",
+    "name": "арт3",
+    "file": "art3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "art4",
+    "name": "арт4",
+    "file": "art4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ahmat",
+    "name": "Ахмат",
+    "file": "ahmat.svg",
+    "category": "флаги"
+  },
+  {
+    "id": "bannoprachechnyy_kompl",
+    "name": "баннопрачечный компл",
+    "file": "bannoprachechnyy_kompl.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "bannoprachechnyy_kompl_pr",
+    "name": "баннопрачечный компл пр",
+    "file": "bannoprachechnyy_kompl_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "bat_mp",
+    "name": "бат мп",
+    "file": "bat_mp.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "bat_mp_pr",
+    "name": "бат мп пр",
+    "file": "bat_mp_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "bashnya",
+    "name": "башня",
+    "file": "bashnya.svg",
+    "category": "местность"
+  },
+  {
+    "id": "bezymyannyy-1",
+    "name": "Безымянный-1",
+    "file": "bezymyannyy-1.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "blindazh",
+    "name": "блиндаж",
+    "file": "blindazh.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "blindazh_zhb",
+    "name": "блиндаж жб",
+    "file": "blindazh_zhb.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "blindazh_zhb_pr",
+    "name": "блиндаж жб пр",
+    "file": "blindazh_zhb_pr.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "blindazh_legk",
+    "name": "блиндаж легк",
+    "file": "blindazh_legk.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "blindazh_legk_pr",
+    "name": "блиндаж легк пр",
+    "file": "blindazh_legk_pr.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "blindazh_pr",
+    "name": "блиндаж пр",
+    "file": "blindazh_pr.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "bmp_svoy1",
+    "name": "БМП свой1",
+    "file": "bmp_svoy1.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp_svoy2",
+    "name": "БМП свой2",
+    "file": "bmp_svoy2.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp_svoy2_zap",
+    "name": "БМП свой2 зап",
+    "file": "bmp_svoy2_zap.svg",
+    "category": "другое"
+  },
+  {
+    "id": "bmp_svoy3",
+    "name": "БМП свой3",
+    "file": "bmp_svoy3.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp_svoy4",
+    "name": "БМП свой4",
+    "file": "bmp_svoy4.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp_svoy5",
+    "name": "БМП свой5",
+    "file": "bmp_svoy5.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp_svoy6",
+    "name": "БМП свой6",
+    "file": "bmp_svoy6.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp_svoy7",
+    "name": "БМП свой7",
+    "file": "bmp_svoy7.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp_svoy8",
+    "name": "БМП свой8",
+    "file": "bmp_svoy8.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp1",
+    "name": "бмп1",
+    "file": "bmp1.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp2",
+    "name": "бмп2",
+    "file": "bmp2.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp3",
+    "name": "бмп3",
+    "file": "bmp3.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp4",
+    "name": "бмп4",
+    "file": "bmp4.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp5",
+    "name": "бмп5",
+    "file": "bmp5.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp6",
+    "name": "бмп6",
+    "file": "bmp6.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp7",
+    "name": "бмп7",
+    "file": "bmp7.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bmp8",
+    "name": "бмп8",
+    "file": "bmp8.svg",
+    "category": "техника"
+  },
+  {
+    "id": "bolshoy_bla_pr1",
+    "name": "большой бла пр1",
+    "file": "bolshoy_bla_pr1.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla_pr2",
+    "name": "большой бла пр2",
+    "file": "bolshoy_bla_pr2.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla_pr3",
+    "name": "большой бла пр3",
+    "file": "bolshoy_bla_pr3.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla_pr4",
+    "name": "большой бла пр4",
+    "file": "bolshoy_bla_pr4.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla_pr5",
+    "name": "большой бла пр5",
+    "file": "bolshoy_bla_pr5.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla_pr6",
+    "name": "большой бла пр6",
+    "file": "bolshoy_bla_pr6.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla_pr7",
+    "name": "большой бла пр7",
+    "file": "bolshoy_bla_pr7.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla_pr8",
+    "name": "большой бла пр8",
+    "file": "bolshoy_bla_pr8.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla1",
+    "name": "большой бла1",
+    "file": "bolshoy_bla1.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla2",
+    "name": "большой бла2",
+    "file": "bolshoy_bla2.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla3",
+    "name": "большой бла3",
+    "file": "bolshoy_bla3.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla4",
+    "name": "большой бла4",
+    "file": "bolshoy_bla4.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla5",
+    "name": "большой бла5",
+    "file": "bolshoy_bla5.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla6",
+    "name": "большой бла6",
+    "file": "bolshoy_bla6.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla7",
+    "name": "большой бла7",
+    "file": "bolshoy_bla7.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "bolshoy_bla8",
+    "name": "большой бла8",
+    "file": "bolshoy_bla8.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "brdm_pr1",
+    "name": "брдм пр1",
+    "file": "brdm_pr1.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm_pr2",
+    "name": "брдм пр2",
+    "file": "brdm_pr2.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm_pr3",
+    "name": "брдм пр3",
+    "file": "brdm_pr3.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm_pr5",
+    "name": "брдм пр5",
+    "file": "brdm_pr5.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm_pr6",
+    "name": "брдм пр6",
+    "file": "brdm_pr6.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm_pr7",
+    "name": "брдм пр7",
+    "file": "brdm_pr7.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm_pr8",
+    "name": "брдм пр8",
+    "file": "brdm_pr8.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm1",
+    "name": "брдм1",
+    "file": "brdm1.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm2",
+    "name": "брдм2",
+    "file": "brdm2.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm3",
+    "name": "брдм3",
+    "file": "brdm3.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm4",
+    "name": "брдм4",
+    "file": "brdm4.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm5",
+    "name": "брдм5",
+    "file": "brdm5.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm6",
+    "name": "брдм6",
+    "file": "brdm6.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm7",
+    "name": "брдм7",
+    "file": "brdm7.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brdm8",
+    "name": "брдм8",
+    "file": "brdm8.svg",
+    "category": "техника"
+  },
+  {
+    "id": "brod1",
+    "name": "брод1",
+    "file": "brod1.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "brod2",
+    "name": "брод2",
+    "file": "brod2.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "brod3",
+    "name": "брод3",
+    "file": "brod3.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "brod4",
+    "name": "брод4",
+    "file": "brod4.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "btr_svoy1",
+    "name": "БТР свой1",
+    "file": "btr_svoy1.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr_svoy2",
+    "name": "БТР свой2",
+    "file": "btr_svoy2.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr_svoy4",
+    "name": "БТР свой4",
+    "file": "btr_svoy4.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr_svoy5",
+    "name": "БТР свой5",
+    "file": "btr_svoy5.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr_svoy6",
+    "name": "БТР свой6",
+    "file": "btr_svoy6.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr_svoy7",
+    "name": "БТР свой7",
+    "file": "btr_svoy7.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr_svoy8",
+    "name": "БТР свой8",
+    "file": "btr_svoy8.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr1",
+    "name": "бтр1",
+    "file": "btr1.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr2",
+    "name": "бтр2",
+    "file": "btr2.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr3",
+    "name": "бтр3",
+    "file": "btr3.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr4",
+    "name": "бтр4",
+    "file": "btr4.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr5",
+    "name": "бтр5",
+    "file": "btr5.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr6",
+    "name": "бтр6",
+    "file": "btr6.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr7",
+    "name": "бтр7",
+    "file": "btr7.svg",
+    "category": "техника"
+  },
+  {
+    "id": "btr8",
+    "name": "бтр8",
+    "file": "btr8.svg",
+    "category": "техника"
+  },
+  {
+    "id": "vdv",
+    "name": "ВДВ",
+    "file": "vdv.svg",
+    "category": "флаги"
+  },
+  {
+    "id": "vyshka",
+    "name": "вышка",
+    "file": "vyshka.svg",
+    "category": "местность"
+  },
+  {
+    "id": "gosp_polevoy",
+    "name": "госп полевой",
+    "file": "gosp_polevoy.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "gosp_polevoy_pr",
+    "name": "госп полевой пр",
+    "file": "gosp_polevoy_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "gosp_stats",
+    "name": "госп стац",
+    "file": "gosp_stats.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "gosp_stats_pr",
+    "name": "госп стац пр",
+    "file": "gosp_stats_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "grazhd_bolnitsa",
+    "name": "гражд больница",
+    "file": "grazhd_bolnitsa.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "gus",
+    "name": "гус",
+    "file": "gus.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "gus_zasch",
+    "name": "гус защ",
+    "file": "gus_zasch.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "gus_zasch_pr",
+    "name": "гус защ пр",
+    "file": "gus_zasch_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "gus_pr",
+    "name": "гус пр",
+    "file": "gus_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "derevo",
+    "name": "дерево",
+    "file": "derevo.svg",
+    "category": "местность"
+  },
+  {
+    "id": "dist_mp_pp",
+    "name": "дист мп пп",
+    "file": "dist_mp_pp.svg",
+    "category": "мины"
+  },
+  {
+    "id": "dist_mp_pp_pr",
+    "name": "дист мп пп пр",
+    "file": "dist_mp_pp_pr.svg",
+    "category": "мины"
+  },
+  {
+    "id": "dist_mp_pt",
+    "name": "дист мп пт",
+    "file": "dist_mp_pt.svg",
+    "category": "мины"
+  },
+  {
+    "id": "dist_mp_pt_pr",
+    "name": "дист мп пт пр",
+    "file": "dist_mp_pt_pr.svg",
+    "category": "мины"
+  },
+  {
+    "id": "dist_mp_smesh",
+    "name": "дист мп смеш",
+    "file": "dist_mp_smesh.svg",
+    "category": "мины"
+  },
+  {
+    "id": "dist_mp_smesh_pr",
+    "name": "дист мп смеш пр",
+    "file": "dist_mp_smesh_pr.svg",
+    "category": "мины"
+  },
+  {
+    "id": "dnr",
+    "name": "ДНР",
+    "file": "dnr.svg",
+    "category": "флаги"
+  },
+  {
+    "id": "dot_tipovoy_pr1",
+    "name": "дот типовой пр1",
+    "file": "dot_tipovoy_pr1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy_pr2",
+    "name": "дот типовой пр2",
+    "file": "dot_tipovoy_pr2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy_pr3",
+    "name": "дот типовой пр3",
+    "file": "dot_tipovoy_pr3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy_pr4",
+    "name": "дот типовой пр4",
+    "file": "dot_tipovoy_pr4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy_pr5",
+    "name": "дот типовой пр5",
+    "file": "dot_tipovoy_pr5.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy_pr6",
+    "name": "дот типовой пр6",
+    "file": "dot_tipovoy_pr6.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy_pr7",
+    "name": "дот типовой пр7",
+    "file": "dot_tipovoy_pr7.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy_pr8",
+    "name": "дот типовой пр8",
+    "file": "dot_tipovoy_pr8.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy1",
+    "name": "дот типовой1",
+    "file": "dot_tipovoy1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy2",
+    "name": "дот типовой2",
+    "file": "dot_tipovoy2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy3",
+    "name": "дот типовой3",
+    "file": "dot_tipovoy3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy4",
+    "name": "дот типовой4",
+    "file": "dot_tipovoy4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy5",
+    "name": "дот типовой5",
+    "file": "dot_tipovoy5.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy6",
+    "name": "дот типовой6",
+    "file": "dot_tipovoy6.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy7",
+    "name": "дот типовой7",
+    "file": "dot_tipovoy7.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "dot_tipovoy8",
+    "name": "дот типовой8",
+    "file": "dot_tipovoy8.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "emkost",
+    "name": "емкость",
+    "file": "emkost.svg",
+    "category": "местность"
+  },
+  {
+    "id": "zavod",
+    "name": "завод",
+    "file": "zavod.svg",
+    "category": "местность"
+  },
+  {
+    "id": "zavod_bez_truby",
+    "name": "завод без трубы",
+    "file": "zavod_bez_truby.svg",
+    "category": "местность"
+  },
+  {
+    "id": "zapravka",
+    "name": "заправка",
+    "file": "zapravka.svg",
+    "category": "местность"
+  },
+  {
+    "id": "zvuk",
+    "name": "звук",
+    "file": "zvuk.svg",
+    "category": "НП"
+  },
+  {
+    "id": "zvuk_np",
+    "name": "звук нп",
+    "file": "zvuk_np.svg",
+    "category": "НП"
+  },
+  {
+    "id": "zvuk_np_pr",
+    "name": "звук нп пр",
+    "file": "zvuk_np_pr.svg",
+    "category": "НП"
+  },
+  {
+    "id": "zvuk_pr",
+    "name": "звук пр",
+    "file": "zvuk_pr.svg",
+    "category": "НП"
+  },
+  {
+    "id": "zen_pulemet",
+    "name": "зен пулемет",
+    "file": "zen_pulemet.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zen_pulemet_pr",
+    "name": "зен пулемет пр",
+    "file": "zen_pulemet_pr.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk",
+    "name": "зрк",
+    "file": "zrk.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_bl",
+    "name": "зрк бл",
+    "file": "zrk_bl.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_bl_pr",
+    "name": "зрк бл пр",
+    "file": "zrk_bl_pr.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh_pr1",
+    "name": "зрк ближ пр1",
+    "file": "zrk_blizh_pr1.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh_pr2",
+    "name": "зрк ближ пр2",
+    "file": "zrk_blizh_pr2.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh_pr3",
+    "name": "зрк ближ пр3",
+    "file": "zrk_blizh_pr3.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh_pr4",
+    "name": "зрк ближ пр4",
+    "file": "zrk_blizh_pr4.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh_pr5",
+    "name": "зрк ближ пр5",
+    "file": "zrk_blizh_pr5.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh_pr6",
+    "name": "зрк ближ пр6",
+    "file": "zrk_blizh_pr6.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh_pr7",
+    "name": "зрк ближ пр7",
+    "file": "zrk_blizh_pr7.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh_pr8",
+    "name": "зрк ближ пр8",
+    "file": "zrk_blizh_pr8.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh1",
+    "name": "зрк ближ1",
+    "file": "zrk_blizh1.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh2",
+    "name": "зрк ближ2",
+    "file": "zrk_blizh2.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh3",
+    "name": "зрк ближ3",
+    "file": "zrk_blizh3.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh4",
+    "name": "зрк ближ4",
+    "file": "zrk_blizh4.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh5",
+    "name": "зрк ближ5",
+    "file": "zrk_blizh5.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh6",
+    "name": "зрк ближ6",
+    "file": "zrk_blizh6.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh7",
+    "name": "зрк ближ7",
+    "file": "zrk_blizh7.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_blizh8",
+    "name": "зрк ближ8",
+    "file": "zrk_blizh8.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_daln",
+    "name": "зрк дальн",
+    "file": "zrk_daln.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_daln_pr",
+    "name": "зрк дальн пр",
+    "file": "zrk_daln_pr.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_pr",
+    "name": "зрк пр",
+    "file": "zrk_pr.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_sredn",
+    "name": "зрк средн",
+    "file": "zrk_sredn.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zrk_sredn_pr",
+    "name": "зрк средн пр",
+    "file": "zrk_sredn_pr.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_pr1",
+    "name": "зсу пр1",
+    "file": "zsu_pr1.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_pr2",
+    "name": "зсу пр2",
+    "file": "zsu_pr2.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_pr3",
+    "name": "зсу пр3",
+    "file": "zsu_pr3.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_pr4",
+    "name": "зсу пр4",
+    "file": "zsu_pr4.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_pr5",
+    "name": "зсу пр5",
+    "file": "zsu_pr5.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_pr6",
+    "name": "зсу пр6",
+    "file": "zsu_pr6.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_pr7",
+    "name": "зсу пр7",
+    "file": "zsu_pr7.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_pr8",
+    "name": "зсу пр8",
+    "file": "zsu_pr8.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls_pr1",
+    "name": "зсу рлс пр1",
+    "file": "zsu_rls_pr1.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls_pr2",
+    "name": "зсу рлс пр2",
+    "file": "zsu_rls_pr2.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls_pr3",
+    "name": "зсу рлс пр3",
+    "file": "zsu_rls_pr3.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls_pr4",
+    "name": "зсу рлс пр4",
+    "file": "zsu_rls_pr4.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls_pr5",
+    "name": "зсу рлс пр5",
+    "file": "zsu_rls_pr5.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls_pr6",
+    "name": "зсу рлс пр6",
+    "file": "zsu_rls_pr6.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls_pr7",
+    "name": "зсу рлс пр7",
+    "file": "zsu_rls_pr7.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls_pr8",
+    "name": "зсу рлс пр8",
+    "file": "zsu_rls_pr8.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls1",
+    "name": "зсу рлс1",
+    "file": "zsu_rls1.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls2",
+    "name": "зсу рлс2",
+    "file": "zsu_rls2.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls3",
+    "name": "зсу рлс3",
+    "file": "zsu_rls3.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls4",
+    "name": "зсу рлс4",
+    "file": "zsu_rls4.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls5",
+    "name": "зсу рлс5",
+    "file": "zsu_rls5.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls6",
+    "name": "зсу рлс6",
+    "file": "zsu_rls6.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls7",
+    "name": "зсу рлс7",
+    "file": "zsu_rls7.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu_rls8",
+    "name": "зсу рлс8",
+    "file": "zsu_rls8.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu1",
+    "name": "зсу1",
+    "file": "zsu1.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu2",
+    "name": "зсу2",
+    "file": "zsu2.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu3",
+    "name": "зсу3",
+    "file": "zsu3.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu4",
+    "name": "зсу4",
+    "file": "zsu4.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu5",
+    "name": "зсу5",
+    "file": "zsu5.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu6",
+    "name": "зсу6",
+    "file": "zsu6.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu7",
+    "name": "зсу7",
+    "file": "zsu7.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zsu8",
+    "name": "зсу8",
+    "file": "zsu8.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zu",
+    "name": "зу",
+    "file": "zu.svg",
+    "category": "пво"
+  },
+  {
+    "id": "zu_pr",
+    "name": "зу пр",
+    "file": "zu_pr.svg",
+    "category": "пво"
+  },
+  {
+    "id": "imr_pr1",
+    "name": "ИМР пр1",
+    "file": "imr_pr1.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr_pr2",
+    "name": "ИМР пр2",
+    "file": "imr_pr2.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr_pr3",
+    "name": "ИМР пр3",
+    "file": "imr_pr3.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr_pr4",
+    "name": "ИМР пр4",
+    "file": "imr_pr4.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr_pr5",
+    "name": "ИМР пр5",
+    "file": "imr_pr5.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr_pr6",
+    "name": "ИМР пр6",
+    "file": "imr_pr6.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr_pr7",
+    "name": "ИМР пр7",
+    "file": "imr_pr7.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr_pr8",
+    "name": "ИМР пр8",
+    "file": "imr_pr8.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr1",
+    "name": "ИМР1",
+    "file": "imr1.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr2",
+    "name": "ИМР2",
+    "file": "imr2.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr3",
+    "name": "ИМР3",
+    "file": "imr3.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr4",
+    "name": "ИМР4",
+    "file": "imr4.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr5",
+    "name": "ИМР5",
+    "file": "imr5.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr6",
+    "name": "ИМР6",
+    "file": "imr6.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr7",
+    "name": "ИМР7",
+    "file": "imr7.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "imr8",
+    "name": "ИМР8",
+    "file": "imr8.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "kazaki",
+    "name": "казаки",
+    "file": "kazaki.svg",
+    "category": "флаги"
+  },
+  {
+    "id": "kazarma",
+    "name": "казарма",
+    "file": "kazarma.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "kazarma_pr",
+    "name": "казарма пр",
+    "file": "kazarma_pr.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "kamera",
+    "name": "камера",
+    "file": "kamera.svg",
+    "category": "НП"
+  },
+  {
+    "id": "kamera_pr",
+    "name": "камера пр",
+    "file": "kamera_pr.svg",
+    "category": "НП"
+  },
+  {
+    "id": "kvadrik",
+    "name": "квадрик",
+    "file": "kvadrik.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "kvadrik_pr",
+    "name": "квадрик пр",
+    "file": "kvadrik_pr.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "knp",
+    "name": "кнп",
+    "file": "knp.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_bat",
+    "name": "кнп бат",
+    "file": "knp_bat.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_batr_pr",
+    "name": "кнп батр пр",
+    "file": "knp_batr_pr.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv_pr1",
+    "name": "кнп передв пр1",
+    "file": "knp_peredv_pr1.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv_pr2",
+    "name": "кнп передв пр2",
+    "file": "knp_peredv_pr2.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv_pr3",
+    "name": "кнп передв пр3",
+    "file": "knp_peredv_pr3.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv_pr4",
+    "name": "кнп передв пр4",
+    "file": "knp_peredv_pr4.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv_pr5",
+    "name": "кнп передв пр5",
+    "file": "knp_peredv_pr5.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv_pr6",
+    "name": "кнп передв пр6",
+    "file": "knp_peredv_pr6.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv_pr7",
+    "name": "кнп передв пр7",
+    "file": "knp_peredv_pr7.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv_pr8",
+    "name": "кнп передв пр8",
+    "file": "knp_peredv_pr8.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv1",
+    "name": "кнп передв1",
+    "file": "knp_peredv1.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv2",
+    "name": "кнп передв2",
+    "file": "knp_peredv2.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv3",
+    "name": "кнп передв3",
+    "file": "knp_peredv3.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv4",
+    "name": "кнп передв4",
+    "file": "knp_peredv4.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv5",
+    "name": "кнп передв5",
+    "file": "knp_peredv5.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv6",
+    "name": "кнп передв6",
+    "file": "knp_peredv6.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv7",
+    "name": "кнп передв7",
+    "file": "knp_peredv7.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_peredv8",
+    "name": "кнп передв8",
+    "file": "knp_peredv8.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knp_prot",
+    "name": "кнп прот",
+    "file": "knp_prot.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpb",
+    "name": "КНПБ",
+    "file": "knpb.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpb_pr",
+    "name": "КНПБ ПР",
+    "file": "knpb_pr.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpbatr",
+    "name": "кнпбатр",
+    "file": "knpbatr.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpbatr_peredv1",
+    "name": "кнпбатр передв1",
+    "file": "knpbatr_peredv1.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpbatr_peredv2",
+    "name": "кнпбатр передв2",
+    "file": "knpbatr_peredv2.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpbatr_peredv3",
+    "name": "кнпбатр передв3",
+    "file": "knpbatr_peredv3.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpbatr_peredv4",
+    "name": "кнпбатр передв4",
+    "file": "knpbatr_peredv4.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpbatr_peredv5",
+    "name": "кнпбатр передв5",
+    "file": "knpbatr_peredv5.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpbatr_peredv6",
+    "name": "кнпбатр передв6",
+    "file": "knpbatr_peredv6.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpbatr_peredv7",
+    "name": "кнпбатр передв7",
+    "file": "knpbatr_peredv7.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpbatr_peredv8",
+    "name": "кнпбатр передв8",
+    "file": "knpbatr_peredv8.svg",
+    "category": "НП"
+  },
+  {
+    "id": "knpd",
+    "name": "кнпд",
+    "file": "knpd.svg",
+    "category": "НП"
+  },
+  {
+    "id": "kosm_sv",
+    "name": "косм св",
+    "file": "kosm_sv.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "kosm_sv_pr",
+    "name": "косм св пр",
+    "file": "kosm_sv_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "kshm4",
+    "name": "кшм4",
+    "file": "kshm4.svg",
+    "category": "техника"
+  },
+  {
+    "id": "lnr",
+    "name": "ЛНР",
+    "file": "lnr.svg",
+    "category": "флаги"
+  },
+  {
+    "id": "malyy_bla_pr1",
+    "name": "малый бла пр1",
+    "file": "malyy_bla_pr1.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla_pr2",
+    "name": "малый бла пр2",
+    "file": "malyy_bla_pr2.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla_pr3",
+    "name": "малый бла пр3",
+    "file": "malyy_bla_pr3.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla_pr4",
+    "name": "малый бла пр4",
+    "file": "malyy_bla_pr4.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla_pr5",
+    "name": "малый бла пр5",
+    "file": "malyy_bla_pr5.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla_pr6",
+    "name": "малый бла пр6",
+    "file": "malyy_bla_pr6.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla_pr7",
+    "name": "малый бла пр7",
+    "file": "malyy_bla_pr7.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla_pr8",
+    "name": "малый бла пр8",
+    "file": "malyy_bla_pr8.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla1",
+    "name": "малый бла1",
+    "file": "malyy_bla1.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla2",
+    "name": "малый бла2",
+    "file": "malyy_bla2.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla3",
+    "name": "малый бла3",
+    "file": "malyy_bla3.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla4",
+    "name": "малый бла4",
+    "file": "malyy_bla4.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla5",
+    "name": "малый бла5",
+    "file": "malyy_bla5.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla6",
+    "name": "малый бла6",
+    "file": "malyy_bla6.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla7",
+    "name": "малый бла7",
+    "file": "malyy_bla7.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "malyy_bla8",
+    "name": "малый бла8",
+    "file": "malyy_bla8.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "med_avto_pr1",
+    "name": "мед авто пр1",
+    "file": "med_avto_pr1.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto_pr2",
+    "name": "мед авто пр2",
+    "file": "med_avto_pr2.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto_pr3",
+    "name": "мед авто пр3",
+    "file": "med_avto_pr3.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto_pr4",
+    "name": "мед авто пр4",
+    "file": "med_avto_pr4.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto_pr5",
+    "name": "мед авто пр5",
+    "file": "med_avto_pr5.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto_pr6",
+    "name": "мед авто пр6",
+    "file": "med_avto_pr6.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto_pr7",
+    "name": "мед авто пр7",
+    "file": "med_avto_pr7.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto_pr8",
+    "name": "мед авто пр8",
+    "file": "med_avto_pr8.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto1",
+    "name": "мед авто1",
+    "file": "med_avto1.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto2",
+    "name": "мед авто2",
+    "file": "med_avto2.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto3",
+    "name": "мед авто3",
+    "file": "med_avto3.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto4",
+    "name": "мед авто4",
+    "file": "med_avto4.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto5",
+    "name": "мед авто5",
+    "file": "med_avto5.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto6",
+    "name": "мед авто6",
+    "file": "med_avto6.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto7",
+    "name": "мед авто7",
+    "file": "med_avto7.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_avto8",
+    "name": "мед авто8",
+    "file": "med_avto8.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_bat",
+    "name": "мед бат",
+    "file": "med_bat.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_bat_pr",
+    "name": "мед бат пр",
+    "file": "med_bat_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_otryad",
+    "name": "мед отряд",
+    "file": "med_otryad.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_otryad_pr",
+    "name": "мед отряд пр",
+    "file": "med_otryad_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_rota",
+    "name": "мед рота",
+    "file": "med_rota.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "med_rota_pr",
+    "name": "мед рота пр",
+    "file": "med_rota_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "meteopost",
+    "name": "метеопост",
+    "file": "meteopost.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "mikrofon",
+    "name": "микрофон",
+    "file": "mikrofon.svg",
+    "category": "НП"
+  },
+  {
+    "id": "mikrofon_pr",
+    "name": "микрофон пр",
+    "file": "mikrofon_pr.svg",
+    "category": "НП"
+  },
+  {
+    "id": "min_op1",
+    "name": "Мин оп1",
+    "file": "min_op1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_op2",
+    "name": "Мин оп2",
+    "file": "min_op2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_op3",
+    "name": "Мин оп3",
+    "file": "min_op3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_op4",
+    "name": "Мин оп4",
+    "file": "min_op4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_op5",
+    "name": "Мин оп5",
+    "file": "min_op5.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_op6",
+    "name": "Мин оп6",
+    "file": "min_op6.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_op7",
+    "name": "Мин оп7",
+    "file": "min_op7.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_op8",
+    "name": "Мин оп8",
+    "file": "min_op8.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_pp",
+    "name": "мин пп",
+    "file": "min_pp.svg",
+    "category": "мины"
+  },
+  {
+    "id": "min_pp_pr",
+    "name": "мин пп пр",
+    "file": "min_pp_pr.svg",
+    "category": "мины"
+  },
+  {
+    "id": "min_pr_1",
+    "name": "Мин пр 1",
+    "file": "min_pr_1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_pr_2",
+    "name": "Мин пр 2",
+    "file": "min_pr_2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_pr_3",
+    "name": "Мин пр 3",
+    "file": "min_pr_3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_pr_4",
+    "name": "Мин пр 4",
+    "file": "min_pr_4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_pr_5",
+    "name": "Мин пр 5",
+    "file": "min_pr_5.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_pr_6",
+    "name": "Мин пр 6",
+    "file": "min_pr_6.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_pr_7",
+    "name": "Мин пр 7",
+    "file": "min_pr_7.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_pr_8",
+    "name": "Мин пр 8",
+    "file": "min_pr_8.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min_pt",
+    "name": "мин пт",
+    "file": "min_pt.svg",
+    "category": "мины"
+  },
+  {
+    "id": "min_pt_pr",
+    "name": "мин пт пр",
+    "file": "min_pt_pr.svg",
+    "category": "мины"
+  },
+  {
+    "id": "min1",
+    "name": "Мин1",
+    "file": "min1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min2",
+    "name": "Мин2",
+    "file": "min2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min3",
+    "name": "Мин3",
+    "file": "min3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min4",
+    "name": "Мин4",
+    "file": "min4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min5",
+    "name": "Мин5",
+    "file": "min5.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min6",
+    "name": "Мин6",
+    "file": "min6.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min7",
+    "name": "Мин7",
+    "file": "min7.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "min8",
+    "name": "Мин8",
+    "file": "min8.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "minnoe_pole_pp_pr1",
+    "name": "минное поле пп пр1",
+    "file": "minnoe_pole_pp_pr1.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pp_pr2",
+    "name": "минное поле пп пр2",
+    "file": "minnoe_pole_pp_pr2.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pp_pr3",
+    "name": "минное поле пп пр3",
+    "file": "minnoe_pole_pp_pr3.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pp_pr4",
+    "name": "минное поле пп пр4",
+    "file": "minnoe_pole_pp_pr4.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pp1",
+    "name": "минное поле пп1",
+    "file": "minnoe_pole_pp1.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pp2",
+    "name": "минное поле пп2",
+    "file": "minnoe_pole_pp2.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pp3",
+    "name": "минное поле пп3",
+    "file": "minnoe_pole_pp3.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pp4",
+    "name": "минное поле пп4",
+    "file": "minnoe_pole_pp4.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pt_pr2",
+    "name": "минное поле пт пр2",
+    "file": "minnoe_pole_pt_pr2.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pt_pr3",
+    "name": "минное поле пт пр3",
+    "file": "minnoe_pole_pt_pr3.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pt_pr4",
+    "name": "минное поле пт пр4",
+    "file": "minnoe_pole_pt_pr4.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pt1",
+    "name": "минное поле пт1",
+    "file": "minnoe_pole_pt1.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pt2",
+    "name": "минное поле пт2",
+    "file": "minnoe_pole_pt2.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pt3",
+    "name": "минное поле пт3",
+    "file": "minnoe_pole_pt3.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minnoe_pole_pt4",
+    "name": "минное поле пт4",
+    "file": "minnoe_pole_pt4.svg",
+    "category": "мины"
+  },
+  {
+    "id": "minomet_op_1",
+    "name": "Миномет оп 1",
+    "file": "minomet_op_1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "minomet_op_2",
+    "name": "Миномет оп 2",
+    "file": "minomet_op_2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "minomet_op_3",
+    "name": "Миномет оп 3",
+    "file": "minomet_op_3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "minomet_op_4",
+    "name": "Миномет оп 4",
+    "file": "minomet_op_4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "minomet_op_5",
+    "name": "Миномет оп 5",
+    "file": "minomet_op_5.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "minomet_op_6",
+    "name": "Миномет оп 6",
+    "file": "minomet_op_6.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "minomet_op_7",
+    "name": "Миномет оп 7",
+    "file": "minomet_op_7.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "minomet_op_8",
+    "name": "Миномет оп 8",
+    "file": "minomet_op_8.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "monolit_ps_pr1",
+    "name": "монолит пс пр1",
+    "file": "monolit_ps_pr1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps_pr2",
+    "name": "монолит пс пр2",
+    "file": "monolit_ps_pr2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps_pr3",
+    "name": "монолит пс пр3",
+    "file": "monolit_ps_pr3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps_pr4",
+    "name": "монолит пс пр4",
+    "file": "monolit_ps_pr4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps_pr5",
+    "name": "монолит пс пр5",
+    "file": "monolit_ps_pr5.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps_pr6",
+    "name": "монолит пс пр6",
+    "file": "monolit_ps_pr6.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps_pr7",
+    "name": "монолит пс пр7",
+    "file": "monolit_ps_pr7.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps_pr8",
+    "name": "монолит пс пр8",
+    "file": "monolit_ps_pr8.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps1",
+    "name": "монолит пс1",
+    "file": "monolit_ps1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps2",
+    "name": "монолит пс2",
+    "file": "monolit_ps2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps3",
+    "name": "монолит пс3",
+    "file": "monolit_ps3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps4",
+    "name": "монолит пс4",
+    "file": "monolit_ps4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps5",
+    "name": "монолит пс5",
+    "file": "monolit_ps5.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps6",
+    "name": "монолит пс6",
+    "file": "monolit_ps6.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps7",
+    "name": "монолит пс7",
+    "file": "monolit_ps7.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "monolit_ps8",
+    "name": "монолит пс8",
+    "file": "monolit_ps8.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "most_pon1",
+    "name": "мост пон1",
+    "file": "most_pon1.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "most_pon2",
+    "name": "мост пон2",
+    "file": "most_pon2.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "most_pon3",
+    "name": "мост пон3",
+    "file": "most_pon3.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "most_pon4",
+    "name": "мост пон4",
+    "file": "most_pon4.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "most1",
+    "name": "мост1",
+    "file": "most1.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "most2",
+    "name": "мост2",
+    "file": "most2.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "most3",
+    "name": "мост3",
+    "file": "most3.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "most4",
+    "name": "мост4",
+    "file": "most4.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "mp",
+    "name": "МП",
+    "file": "mp.svg",
+    "category": "флаги"
+  },
+  {
+    "id": "mpp",
+    "name": "мпп",
+    "file": "mpp.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "mpp_pr",
+    "name": "мпп пр",
+    "file": "mpp_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "np",
+    "name": "нп",
+    "file": "np.svg",
+    "category": "НП"
+  },
+  {
+    "id": "np_prot",
+    "name": "нп прот.",
+    "file": "np_prot.svg",
+    "category": "НП"
+  },
+  {
+    "id": "ognemet",
+    "name": "огнемет",
+    "file": "ognemet.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ognemet_pr",
+    "name": "огнемет пр",
+    "file": "ognemet_pr.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "odinochnaya_tsel",
+    "name": "одиночная цель",
+    "file": "odinochnaya_tsel.svg",
+    "category": "цели"
+  },
+  {
+    "id": "op",
+    "name": "оп",
+    "file": "op.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op_prot_1",
+    "name": "оп прот 1",
+    "file": "op_prot_1.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op_prot_2",
+    "name": "оп прот 2",
+    "file": "op_prot_2.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op_prot_3",
+    "name": "оп прот 3",
+    "file": "op_prot_3.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op_prot_5",
+    "name": "оп прот 5",
+    "file": "op_prot_5.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op_prot_6",
+    "name": "оп прот 6",
+    "file": "op_prot_6.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op_prot_7",
+    "name": "оп прот 7",
+    "file": "op_prot_7.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op_prot_8",
+    "name": "оп прот 8",
+    "file": "op_prot_8.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op_prot",
+    "name": "оп прот.",
+    "file": "op_prot.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op_pt_pr1",
+    "name": "оп пт пр1",
+    "file": "op_pt_pr1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt_pr2",
+    "name": "оп пт пр2",
+    "file": "op_pt_pr2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt_pr3",
+    "name": "оп пт пр3",
+    "file": "op_pt_pr3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt_pr4",
+    "name": "оп пт пр4",
+    "file": "op_pt_pr4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt_pr5",
+    "name": "оп пт пр5",
+    "file": "op_pt_pr5.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt_pr6",
+    "name": "оп пт пр6",
+    "file": "op_pt_pr6.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt_pr7",
+    "name": "оп пт пр7",
+    "file": "op_pt_pr7.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt_pr8",
+    "name": "оп пт пр8",
+    "file": "op_pt_pr8.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt1",
+    "name": "оп пт1",
+    "file": "op_pt1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt2",
+    "name": "оп пт2",
+    "file": "op_pt2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt3",
+    "name": "оп пт3",
+    "file": "op_pt3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt4",
+    "name": "оп пт4",
+    "file": "op_pt4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt5",
+    "name": "оп пт5",
+    "file": "op_pt5.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt6",
+    "name": "оп пт6",
+    "file": "op_pt6.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt7",
+    "name": "оп пт7",
+    "file": "op_pt7.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_pt8",
+    "name": "оп пт8",
+    "file": "op_pt8.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "op_rszo_prot1",
+    "name": "оп рсзо прот1",
+    "file": "op_rszo_prot1.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo_prot2",
+    "name": "оп рсзо прот2",
+    "file": "op_rszo_prot2.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo_prot3",
+    "name": "оп рсзо прот3",
+    "file": "op_rszo_prot3.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo_prot4",
+    "name": "оп рсзо прот4",
+    "file": "op_rszo_prot4.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo_prot5",
+    "name": "оп рсзо прот5",
+    "file": "op_rszo_prot5.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo_prot6",
+    "name": "оп рсзо прот6",
+    "file": "op_rszo_prot6.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo_prot7",
+    "name": "оп рсзо прот7",
+    "file": "op_rszo_prot7.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo_prot8",
+    "name": "оп рсзо прот8",
+    "file": "op_rszo_prot8.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo1",
+    "name": "оп рсзо1",
+    "file": "op_rszo1.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo2",
+    "name": "оп рсзо2",
+    "file": "op_rszo2.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo3",
+    "name": "оп рсзо3",
+    "file": "op_rszo3.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo4",
+    "name": "оп рсзо4",
+    "file": "op_rszo4.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo5",
+    "name": "оп рсзо5",
+    "file": "op_rszo5.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo6",
+    "name": "оп рсзо6",
+    "file": "op_rszo6.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo7",
+    "name": "оп рсзо7",
+    "file": "op_rszo7.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_rszo8",
+    "name": "оп рсзо8",
+    "file": "op_rszo8.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "op_samoh_min_pr1",
+    "name": "оп самох мин пр1",
+    "file": "op_samoh_min_pr1.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min_pr2",
+    "name": "оп самох мин пр2",
+    "file": "op_samoh_min_pr2.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min_pr3",
+    "name": "оп самох мин пр3",
+    "file": "op_samoh_min_pr3.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min_pr4",
+    "name": "оп самох мин пр4",
+    "file": "op_samoh_min_pr4.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min_pr5",
+    "name": "оп самох мин пр5",
+    "file": "op_samoh_min_pr5.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min_pr6",
+    "name": "оп самох мин пр6",
+    "file": "op_samoh_min_pr6.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min_pr7",
+    "name": "оп самох мин пр7",
+    "file": "op_samoh_min_pr7.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min_pr8",
+    "name": "оп самох мин пр8",
+    "file": "op_samoh_min_pr8.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min1",
+    "name": "оп самох мин1",
+    "file": "op_samoh_min1.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min2",
+    "name": "оп самох мин2",
+    "file": "op_samoh_min2.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min3",
+    "name": "оп самох мин3",
+    "file": "op_samoh_min3.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min4",
+    "name": "оп самох мин4",
+    "file": "op_samoh_min4.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min5",
+    "name": "оп самох мин5",
+    "file": "op_samoh_min5.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min6",
+    "name": "оп самох мин6",
+    "file": "op_samoh_min6.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min7",
+    "name": "оп самох мин7",
+    "file": "op_samoh_min7.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op_samoh_min8",
+    "name": "оп самох мин8",
+    "file": "op_samoh_min8.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "op1",
+    "name": "оп1",
+    "file": "op1.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op2",
+    "name": "оп2",
+    "file": "op2.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op3",
+    "name": "оп3",
+    "file": "op3.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op4",
+    "name": "оп4",
+    "file": "op4.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op5",
+    "name": "оп5",
+    "file": "op5.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op6",
+    "name": "оп6",
+    "file": "op6.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "op7",
+    "name": "оп7",
+    "file": "op7.svg",
+    "category": "реснички"
+  },
+  {
+    "id": "pamyatnik",
+    "name": "памятник",
+    "file": "pamyatnik.svg",
+    "category": "местность"
+  },
+  {
+    "id": "pelengator_podv",
+    "name": "пеленгатор подв",
+    "file": "pelengator_podv.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "pelengator_podv_pr",
+    "name": "пеленгатор подв пр",
+    "file": "pelengator_podv_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "peredv_banya",
+    "name": "передв баня",
+    "file": "peredv_banya.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "peredv_banya_pr",
+    "name": "передв баня пр",
+    "file": "peredv_banya_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "perenosn_rs",
+    "name": "переносн рс",
+    "file": "perenosn_rs.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "pk_svoy1",
+    "name": "пк свой1",
+    "file": "pk_svoy1.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk_svoy2",
+    "name": "пк свой2",
+    "file": "pk_svoy2.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk_svoy3",
+    "name": "пк свой3",
+    "file": "pk_svoy3.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk_svoy4",
+    "name": "пк свой4",
+    "file": "pk_svoy4.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk_svoy5",
+    "name": "пк свой5",
+    "file": "pk_svoy5.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk_svoy6",
+    "name": "пк свой6",
+    "file": "pk_svoy6.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk_svoy7",
+    "name": "пк свой7",
+    "file": "pk_svoy7.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk_svoy8",
+    "name": "пк свой8",
+    "file": "pk_svoy8.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk1",
+    "name": "ПК1",
+    "file": "pk1.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk2",
+    "name": "ПК2",
+    "file": "pk2.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk3",
+    "name": "ПК3",
+    "file": "pk3.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk4",
+    "name": "ПК4",
+    "file": "pk4.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk5",
+    "name": "ПК5",
+    "file": "pk5.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk6",
+    "name": "ПК6",
+    "file": "pk6.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk7",
+    "name": "ПК7",
+    "file": "pk7.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "pk8",
+    "name": "ПК8",
+    "file": "pk8.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "podv_rs",
+    "name": "подв рс",
+    "file": "podv_rs.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "podv_rs_pr",
+    "name": "подв рс пр",
+    "file": "podv_rs_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "podv_rs_prot",
+    "name": "подв рс прот",
+    "file": "podv_rs_prot.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "podstantsiya",
+    "name": "подстанция",
+    "file": "podstantsiya.svg",
+    "category": "местность"
+  },
+  {
+    "id": "pol_us",
+    "name": "пол ус",
+    "file": "pol_us.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "pol_us_pr",
+    "name": "пол ус пр",
+    "file": "pol_us_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "polevaya_banya",
+    "name": "полевая баня",
+    "file": "polevaya_banya.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "polevaya_banya_pr",
+    "name": "полевая баня пр",
+    "file": "polevaya_banya_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "pt_pr1",
+    "name": "пт пр1",
+    "file": "pt_pr1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt_pr2",
+    "name": "пт пр2",
+    "file": "pt_pr2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt_pr3",
+    "name": "пт пр3",
+    "file": "pt_pr3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt_pr4",
+    "name": "пт пр4",
+    "file": "pt_pr4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt_pr5",
+    "name": "пт пр5",
+    "file": "pt_pr5.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt_pr6",
+    "name": "пт пр6",
+    "file": "pt_pr6.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt_pr7",
+    "name": "пт пр7",
+    "file": "pt_pr7.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt_pr8",
+    "name": "пт пр8",
+    "file": "pt_pr8.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt1",
+    "name": "пт1",
+    "file": "pt1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt2",
+    "name": "пт2",
+    "file": "pt2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt3",
+    "name": "пт3",
+    "file": "pt3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt4",
+    "name": "пт4",
+    "file": "pt4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt5",
+    "name": "пт5",
+    "file": "pt5.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt6",
+    "name": "пт6",
+    "file": "pt6.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt7",
+    "name": "пт7",
+    "file": "pt7.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pt8",
+    "name": "пт8",
+    "file": "pt8.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "pts_pr1",
+    "name": "ПТС пр1",
+    "file": "pts_pr1.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts_pr2",
+    "name": "ПТС пр2",
+    "file": "pts_pr2.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts_pr3",
+    "name": "ПТС пр3",
+    "file": "pts_pr3.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts_pr4",
+    "name": "ПТС пр4",
+    "file": "pts_pr4.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts_pr5",
+    "name": "ПТС пр5",
+    "file": "pts_pr5.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts_pr6",
+    "name": "ПТС пр6",
+    "file": "pts_pr6.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts_pr7",
+    "name": "ПТС пр7",
+    "file": "pts_pr7.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts_pr8",
+    "name": "ПТС пр8",
+    "file": "pts_pr8.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts1",
+    "name": "ПТС1",
+    "file": "pts1.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts2",
+    "name": "ПТС2",
+    "file": "pts2.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts3",
+    "name": "ПТС3",
+    "file": "pts3.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts4",
+    "name": "ПТС4",
+    "file": "pts4.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts5",
+    "name": "ПТС5",
+    "file": "pts5.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts6",
+    "name": "ПТС6",
+    "file": "pts6.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts7",
+    "name": "ПТС7",
+    "file": "pts7.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "pts8",
+    "name": "ПТС8",
+    "file": "pts8.svg",
+    "category": "переправы"
+  },
+  {
+    "id": "ptur_svoy1",
+    "name": "птур свой1",
+    "file": "ptur_svoy1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur_svoy2",
+    "name": "птур свой2",
+    "file": "ptur_svoy2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur_svoy3",
+    "name": "птур свой3",
+    "file": "ptur_svoy3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur_svoy4",
+    "name": "птур свой4",
+    "file": "ptur_svoy4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur_svoy5",
+    "name": "птур свой5",
+    "file": "ptur_svoy5.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur_svoy6",
+    "name": "птур свой6",
+    "file": "ptur_svoy6.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur_svoy7",
+    "name": "птур свой7",
+    "file": "ptur_svoy7.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur_svoy8",
+    "name": "птур свой8",
+    "file": "ptur_svoy8.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur1",
+    "name": "птур1",
+    "file": "ptur1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur2",
+    "name": "птур2",
+    "file": "ptur2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur3",
+    "name": "птур3",
+    "file": "ptur3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur4",
+    "name": "птур4",
+    "file": "ptur4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur5",
+    "name": "птур5",
+    "file": "ptur5.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur6",
+    "name": "птур6",
+    "file": "ptur6.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur7",
+    "name": "птур7",
+    "file": "ptur7.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "ptur8",
+    "name": "птур8",
+    "file": "ptur8.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "puod",
+    "name": "ПУОД",
+    "file": "puod.svg",
+    "category": "НП"
+  },
+  {
+    "id": "r_mp",
+    "name": "р мп",
+    "file": "r_mp.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "r_mp_pr",
+    "name": "р мп пр",
+    "file": "r_mp_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "radiostantsiya",
+    "name": "радиостанция",
+    "file": "radiostantsiya.svg",
+    "category": "местность"
+  },
+  {
+    "id": "rak_push_pr",
+    "name": "рак пуш пр",
+    "file": "rak_push_pr.svg",
+    "category": "пво"
+  },
+  {
+    "id": "releyn",
+    "name": "релейн",
+    "file": "releyn.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "releyn_pr",
+    "name": "релейн пр",
+    "file": "releyn_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "rknp",
+    "name": "ркнп",
+    "file": "rknp.svg",
+    "category": "НП"
+  },
+  {
+    "id": "rknp_prot",
+    "name": "ркнп прот",
+    "file": "rknp_prot.svg",
+    "category": "НП"
+  },
+  {
+    "id": "rls",
+    "name": "рлс",
+    "file": "rls.svg",
+    "category": "НП"
+  },
+  {
+    "id": "rls_prot",
+    "name": "рлс прот.",
+    "file": "rls_prot.svg",
+    "category": "НП"
+  },
+  {
+    "id": "rpg_nash1",
+    "name": "рпг наш1",
+    "file": "rpg_nash1.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg_nash2",
+    "name": "рпг наш2",
+    "file": "rpg_nash2.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg_nash3",
+    "name": "рпг наш3",
+    "file": "rpg_nash3.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg_nash4",
+    "name": "рпг наш4",
+    "file": "rpg_nash4.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg_nash5",
+    "name": "рпг наш5",
+    "file": "rpg_nash5.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg_nash6",
+    "name": "рпг наш6",
+    "file": "rpg_nash6.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg_nash7",
+    "name": "рпг наш7",
+    "file": "rpg_nash7.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg_nash8",
+    "name": "рпг наш8",
+    "file": "rpg_nash8.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg1",
+    "name": "рпг1",
+    "file": "rpg1.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg2",
+    "name": "рпг2",
+    "file": "rpg2.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg3",
+    "name": "рпг3",
+    "file": "rpg3.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg4",
+    "name": "рпг4",
+    "file": "rpg4.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg5",
+    "name": "рпг5",
+    "file": "rpg5.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg6",
+    "name": "рпг6",
+    "file": "rpg6.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg7",
+    "name": "рпг7",
+    "file": "rpg7.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rpg8",
+    "name": "рпг8",
+    "file": "rpg8.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "rs_tank",
+    "name": "рс танк",
+    "file": "rs_tank.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "rs_tank_pr",
+    "name": "рс танк пр",
+    "file": "rs_tank_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "rszo_prot_1",
+    "name": "рсзо прот 1",
+    "file": "rszo_prot_1.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo_prot_2",
+    "name": "рсзо прот 2",
+    "file": "rszo_prot_2.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo_prot_3",
+    "name": "рсзо прот 3",
+    "file": "rszo_prot_3.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo_prot_4",
+    "name": "рсзо прот 4",
+    "file": "rszo_prot_4.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo_prot_5",
+    "name": "рсзо прот 5",
+    "file": "rszo_prot_5.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo_prot_6",
+    "name": "рсзо прот 6",
+    "file": "rszo_prot_6.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo_prot_7",
+    "name": "рсзо прот 7",
+    "file": "rszo_prot_7.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo_prot_8",
+    "name": "рсзо прот 8",
+    "file": "rszo_prot_8.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo1",
+    "name": "рсзо1",
+    "file": "rszo1.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo2",
+    "name": "рсзо2",
+    "file": "rszo2.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo3",
+    "name": "рсзо3",
+    "file": "rszo3.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo4",
+    "name": "рсзо4",
+    "file": "rszo4.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo6",
+    "name": "рсзо6",
+    "file": "rszo6.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo7",
+    "name": "рсзо7",
+    "file": "rszo7.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo8",
+    "name": "рсзо8",
+    "file": "rszo8.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rszo9",
+    "name": "рсзо9",
+    "file": "rszo9.svg",
+    "category": "реакт арт"
+  },
+  {
+    "id": "rf",
+    "name": "РФ",
+    "file": "rf.svg",
+    "category": "флаги"
+  },
+  {
+    "id": "reb",
+    "name": "РЭБ",
+    "file": "reb.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "reb_podv",
+    "name": "РЭБ подв",
+    "file": "reb_podv.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "reb_podv_pr",
+    "name": "РЭБ подв пр",
+    "file": "reb_podv_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "reb_pr",
+    "name": "РЭБ пр",
+    "file": "reb_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "samoh_min_pr1",
+    "name": "самох мин пр1",
+    "file": "samoh_min_pr1.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min_pr2",
+    "name": "самох мин пр2",
+    "file": "samoh_min_pr2.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min_pr3",
+    "name": "самох мин пр3",
+    "file": "samoh_min_pr3.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min_pr4",
+    "name": "самох мин пр4",
+    "file": "samoh_min_pr4.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min_pr5",
+    "name": "самох мин пр5",
+    "file": "samoh_min_pr5.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min_pr6",
+    "name": "самох мин пр6",
+    "file": "samoh_min_pr6.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min_pr7",
+    "name": "самох мин пр7",
+    "file": "samoh_min_pr7.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min_pr8",
+    "name": "самох мин пр8",
+    "file": "samoh_min_pr8.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min1",
+    "name": "самох мин1",
+    "file": "samoh_min1.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min2",
+    "name": "самох мин2",
+    "file": "samoh_min2.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min3",
+    "name": "самох мин3",
+    "file": "samoh_min3.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min4",
+    "name": "самох мин4",
+    "file": "samoh_min4.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min5",
+    "name": "самох мин5",
+    "file": "samoh_min5.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min6",
+    "name": "самох мин6",
+    "file": "samoh_min6.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min7",
+    "name": "самох мин7",
+    "file": "samoh_min7.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "samoh_min8",
+    "name": "самох мин8",
+    "file": "samoh_min8.svg",
+    "category": "самох миномет"
+  },
+  {
+    "id": "sau_op_pr1",
+    "name": "Сау оп пр1",
+    "file": "sau_op_pr1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau_op_pr2",
+    "name": "Сау оп пр2",
+    "file": "sau_op_pr2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau_op_pr3",
+    "name": "Сау оп пр3",
+    "file": "sau_op_pr3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau_op_pr4",
+    "name": "Сау оп пр4",
+    "file": "sau_op_pr4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau_op_svoya_1",
+    "name": "Сау оп своя 1",
+    "file": "sau_op_svoya_1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau_op_svoya_2",
+    "name": "Сау оп своя 2",
+    "file": "sau_op_svoya_2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau_op_svoya_3",
+    "name": "Сау оп своя 3",
+    "file": "sau_op_svoya_3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau_op_svoya_4",
+    "name": "Сау оп своя 4",
+    "file": "sau_op_svoya_4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau_pr1",
+    "name": "сау пр1",
+    "file": "sau_pr1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau_pr2",
+    "name": "сау пр2",
+    "file": "sau_pr2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau_pr3",
+    "name": "сау пр3",
+    "file": "sau_pr3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau_pr4",
+    "name": "сау пр4",
+    "file": "sau_pr4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau1",
+    "name": "сау1",
+    "file": "sau1.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau2",
+    "name": "сау2",
+    "file": "sau2.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau3",
+    "name": "сау3",
+    "file": "sau3.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "sau4",
+    "name": "сау4",
+    "file": "sau4.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "svet",
+    "name": "свет",
+    "file": "svet.svg",
+    "category": "цели"
+  },
+  {
+    "id": "soor_min_pr1",
+    "name": "соор мин пр1",
+    "file": "soor_min_pr1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min_pr2",
+    "name": "соор мин пр2",
+    "file": "soor_min_pr2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min_pr3",
+    "name": "соор мин пр3",
+    "file": "soor_min_pr3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min_pr4",
+    "name": "соор мин пр4",
+    "file": "soor_min_pr4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min_pr5",
+    "name": "соор мин пр5",
+    "file": "soor_min_pr5.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min_pr6",
+    "name": "соор мин пр6",
+    "file": "soor_min_pr6.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min_pr7",
+    "name": "соор мин пр7",
+    "file": "soor_min_pr7.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min_pr8",
+    "name": "соор мин пр8",
+    "file": "soor_min_pr8.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min1",
+    "name": "соор мин1",
+    "file": "soor_min1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min2",
+    "name": "соор мин2",
+    "file": "soor_min2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min3",
+    "name": "соор мин3",
+    "file": "soor_min3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min4",
+    "name": "соор мин4",
+    "file": "soor_min4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min5",
+    "name": "соор мин5",
+    "file": "soor_min5.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min6",
+    "name": "соор мин6",
+    "file": "soor_min6.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min7",
+    "name": "соор мин7",
+    "file": "soor_min7.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "soor_min8",
+    "name": "соор мин8",
+    "file": "soor_min8.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sopr_np",
+    "name": "сопр нп",
+    "file": "sopr_np.svg",
+    "category": "НП"
+  },
+  {
+    "id": "spg_svoy1",
+    "name": "спг свой1",
+    "file": "spg_svoy1.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg_svoy2",
+    "name": "спг свой2",
+    "file": "spg_svoy2.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg_svoy3",
+    "name": "спг свой3",
+    "file": "spg_svoy3.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg_svoy4",
+    "name": "спг свой4",
+    "file": "spg_svoy4.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg_svoy5",
+    "name": "спг свой5",
+    "file": "spg_svoy5.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg_svoy6",
+    "name": "спг свой6",
+    "file": "spg_svoy6.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg_svoy7",
+    "name": "спг свой7",
+    "file": "spg_svoy7.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg_svoy8",
+    "name": "спг свой8",
+    "file": "spg_svoy8.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg1",
+    "name": "спг1",
+    "file": "spg1.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg2",
+    "name": "спг2",
+    "file": "spg2.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg3",
+    "name": "спг3",
+    "file": "spg3.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg4",
+    "name": "спг4",
+    "file": "spg4.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg5",
+    "name": "спг5",
+    "file": "spg5.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg6",
+    "name": "спг6",
+    "file": "spg6.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg7",
+    "name": "спг7",
+    "file": "spg7.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "spg8",
+    "name": "спг8",
+    "file": "spg8.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "sps_pr1",
+    "name": "спс пр1",
+    "file": "sps_pr1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps_pr2",
+    "name": "спс пр2",
+    "file": "sps_pr2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps_pr3",
+    "name": "спс пр3",
+    "file": "sps_pr3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps_pr4",
+    "name": "спс пр4",
+    "file": "sps_pr4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps_pr5",
+    "name": "спс пр5",
+    "file": "sps_pr5.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps_pr6",
+    "name": "спс пр6",
+    "file": "sps_pr6.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps_pr7",
+    "name": "спс пр7",
+    "file": "sps_pr7.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps_pr8",
+    "name": "спс пр8",
+    "file": "sps_pr8.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps1",
+    "name": "спс1",
+    "file": "sps1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps2",
+    "name": "спс2",
+    "file": "sps2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps3",
+    "name": "спс3",
+    "file": "sps3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps4",
+    "name": "спс4",
+    "file": "sps4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps5",
+    "name": "спс5",
+    "file": "sps5.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps6",
+    "name": "спс6",
+    "file": "sps6.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps7",
+    "name": "спс7",
+    "file": "sps7.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "sps8",
+    "name": "спс8",
+    "file": "sps8.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "st_us",
+    "name": "ст ус",
+    "file": "st_us.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "st_us_zasch",
+    "name": "ст ус защ",
+    "file": "st_us_zasch.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "st_us_zasch_pr",
+    "name": "ст ус защ пр",
+    "file": "st_us_zasch_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "st_us_pr",
+    "name": "ст ус пр",
+    "file": "st_us_pr.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "start_bla",
+    "name": "старт бла",
+    "file": "start_bla.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "start_bla_pr",
+    "name": "старт бла пр",
+    "file": "start_bla_pr.svg",
+    "category": "бпла"
+  },
+  {
+    "id": "takt_raket_pr",
+    "name": "такт ракет пр",
+    "file": "takt_raket_pr.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "takt_raketa",
+    "name": "такт ракета",
+    "file": "takt_raketa.svg",
+    "category": "артиллерия"
+  },
+  {
+    "id": "tank_svoy_1",
+    "name": "танк свой 1",
+    "file": "tank_svoy_1.svg",
+    "category": "техника"
+  },
+  {
+    "id": "tank_svoy_2",
+    "name": "танк свой 2",
+    "file": "tank_svoy_2.svg",
+    "category": "техника"
+  },
+  {
+    "id": "tank_svoy_3",
+    "name": "танк свой 3",
+    "file": "tank_svoy_3.svg",
+    "category": "техника"
+  },
+  {
+    "id": "tank_svoy_4",
+    "name": "танк свой 4",
+    "file": "tank_svoy_4.svg",
+    "category": "техника"
+  },
+  {
+    "id": "tank1",
+    "name": "танк1",
+    "file": "tank1.svg",
+    "category": "техника"
+  },
+  {
+    "id": "tank2",
+    "name": "танк2",
+    "file": "tank2.svg",
+    "category": "техника"
+  },
+  {
+    "id": "tank3",
+    "name": "танк3",
+    "file": "tank3.svg",
+    "category": "техника"
+  },
+  {
+    "id": "tank4",
+    "name": "танк4",
+    "file": "tank4.svg",
+    "category": "техника"
+  },
+  {
+    "id": "tap",
+    "name": "тап",
+    "file": "tap.svg",
+    "category": "связь и РЭБ"
+  },
+  {
+    "id": "telebashnya",
+    "name": "телебашня",
+    "file": "telebashnya.svg",
+    "category": "местность"
+  },
+  {
+    "id": "teplitsa",
+    "name": "теплица",
+    "file": "teplitsa.svg",
+    "category": "местность"
+  },
+  {
+    "id": "teplovizor",
+    "name": "тепловизор",
+    "file": "teplovizor.svg",
+    "category": "НП"
+  },
+  {
+    "id": "teplovizor_pr",
+    "name": "тепловизор пр",
+    "file": "teplovizor_pr.svg",
+    "category": "НП"
+  },
+  {
+    "id": "terrikon",
+    "name": "террикон",
+    "file": "terrikon.svg",
+    "category": "местность"
+  },
+  {
+    "id": "tochka",
+    "name": "точка",
+    "file": "tochka.svg",
+    "category": "местность"
+  },
+  {
+    "id": "treugolnik",
+    "name": "треугольник",
+    "file": "treugolnik.svg",
+    "category": "другое"
+  },
+  {
+    "id": "truba",
+    "name": "труба",
+    "file": "truba.svg",
+    "category": "местность"
+  },
+  {
+    "id": "tyazh_ognemet",
+    "name": "тяж огнемет",
+    "file": "tyazh_ognemet.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "tyazh_ognemet_pr",
+    "name": "тяж огнемет пр",
+    "file": "tyazh_ognemet_pr.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "ukropy",
+    "name": "укропы",
+    "file": "ukropy.svg",
+    "category": "флаги"
+  },
+  {
+    "id": "ukrytie",
+    "name": "укрытие",
+    "file": "ukrytie.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "ukrytie_zhb",
+    "name": "укрытие жб",
+    "file": "ukrytie_zhb.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "ukrytie_zhb_pr",
+    "name": "укрытие жб пр",
+    "file": "ukrytie_zhb_pr.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "ukrytie_pr",
+    "name": "укрытие пр",
+    "file": "ukrytie_pr.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "ur_pr1",
+    "name": "УР пр1",
+    "file": "ur_pr1.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur_pr2",
+    "name": "УР пр2",
+    "file": "ur_pr2.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur_pr3",
+    "name": "УР пр3",
+    "file": "ur_pr3.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur_pr4",
+    "name": "УР пр4",
+    "file": "ur_pr4.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur_pr5",
+    "name": "УР пр5",
+    "file": "ur_pr5.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur_pr6",
+    "name": "УР пр6",
+    "file": "ur_pr6.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur_pr7",
+    "name": "УР пр7",
+    "file": "ur_pr7.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur_pr8",
+    "name": "УР пр8",
+    "file": "ur_pr8.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur1",
+    "name": "УР1",
+    "file": "ur1.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur2",
+    "name": "УР2",
+    "file": "ur2.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur3",
+    "name": "УР3",
+    "file": "ur3.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur4",
+    "name": "УР4",
+    "file": "ur4.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur5",
+    "name": "УР5",
+    "file": "ur5.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur6",
+    "name": "УР6",
+    "file": "ur6.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur7",
+    "name": "УР7",
+    "file": "ur7.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "ur8",
+    "name": "УР8",
+    "file": "ur8.svg",
+    "category": "инж техника"
+  },
+  {
+    "id": "utes_1",
+    "name": "утес 1",
+    "file": "utes_1.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_2",
+    "name": "утес 2",
+    "file": "utes_2.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_3",
+    "name": "утес 3",
+    "file": "utes_3.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_4",
+    "name": "утес 4",
+    "file": "utes_4.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_5",
+    "name": "утес 5",
+    "file": "utes_5.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_6",
+    "name": "утес 6",
+    "file": "utes_6.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_7",
+    "name": "утес 7",
+    "file": "utes_7.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_8",
+    "name": "утес 8",
+    "file": "utes_8.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_svoy1",
+    "name": "утес свой1",
+    "file": "utes_svoy1.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_svoy2",
+    "name": "утес свой2",
+    "file": "utes_svoy2.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_svoy3",
+    "name": "утес свой3",
+    "file": "utes_svoy3.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_svoy4",
+    "name": "утес свой4",
+    "file": "utes_svoy4.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_svoy5",
+    "name": "утес свой5",
+    "file": "utes_svoy5.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_svoy6",
+    "name": "утес свой6",
+    "file": "utes_svoy6.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_svoy7",
+    "name": "утес свой7",
+    "file": "utes_svoy7.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "utes_svoy8",
+    "name": "утес свой8",
+    "file": "utes_svoy8.svg",
+    "category": "оружие"
+  },
+  {
+    "id": "fugas",
+    "name": "фугас",
+    "file": "fugas.svg",
+    "category": "мины"
+  },
+  {
+    "id": "fugas_pr",
+    "name": "фугас пр",
+    "file": "fugas_pr.svg",
+    "category": "мины"
+  },
+  {
+    "id": "fugas_upr",
+    "name": "фугас упр",
+    "file": "fugas_upr.svg",
+    "category": "мины"
+  },
+  {
+    "id": "fugas_upr_pr",
+    "name": "фугас упр пр",
+    "file": "fugas_upr_pr.svg",
+    "category": "мины"
+  },
+  {
+    "id": "hlebozavod",
+    "name": "хлебозавод",
+    "file": "hlebozavod.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "hlebozavod_pr",
+    "name": "хлебозавод пр",
+    "file": "hlebozavod_pr.svg",
+    "category": "мед и тыл"
+  },
+  {
+    "id": "tsel",
+    "name": "цель",
+    "file": "tsel.svg",
+    "category": "цели"
+  },
+  {
+    "id": "tsel_reakt",
+    "name": "цель реакт",
+    "file": "tsel_reakt.svg",
+    "category": "цели"
+  },
+  {
+    "id": "tserkov",
+    "name": "церковь",
+    "file": "tserkov.svg",
+    "category": "местность"
+  },
+  {
+    "id": "chvk",
+    "name": "ЧВК",
+    "file": "chvk.svg",
+    "category": "флаги"
+  },
+  {
+    "id": "chvk1",
+    "name": "ЧВК1",
+    "file": "chvk1.svg",
+    "category": "флаги"
+  },
+  {
+    "id": "shahta",
+    "name": "шахта",
+    "file": "shahta.svg",
+    "category": "местность"
+  },
+  {
+    "id": "shahta_zakrytaya",
+    "name": "шахта закрытая",
+    "file": "shahta_zakrytaya.svg",
+    "category": "местность"
+  },
+  {
+    "id": "schel_per_pr1",
+    "name": "щель пер пр1",
+    "file": "schel_per_pr1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel_per_pr2",
+    "name": "щель пер пр2",
+    "file": "schel_per_pr2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel_per_pr3",
+    "name": "щель пер пр3",
+    "file": "schel_per_pr3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel_per_pr4",
+    "name": "щель пер пр4",
+    "file": "schel_per_pr4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel_per1",
+    "name": "щель пер1",
+    "file": "schel_per1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel_per2",
+    "name": "щель пер2",
+    "file": "schel_per2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel_per3",
+    "name": "щель пер3",
+    "file": "schel_per3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel_per4",
+    "name": "щель пер4",
+    "file": "schel_per4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel_pr",
+    "name": "щель пр",
+    "file": "schel_pr.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel_pr_2",
+    "name": "щель пр 2",
+    "file": "schel_pr_2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel_pr_3",
+    "name": "щель пр 3",
+    "file": "schel_pr_3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel_pr_4",
+    "name": "щель пр 4",
+    "file": "schel_pr_4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel1",
+    "name": "щель1",
+    "file": "schel1.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel2",
+    "name": "щель2",
+    "file": "schel2.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel3",
+    "name": "щель3",
+    "file": "schel3.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "schel4",
+    "name": "щель4",
+    "file": "schel4.svg",
+    "category": "инженерные"
+  },
+  {
+    "id": "elektrostantsiya",
+    "name": "электростанция",
+    "file": "elektrostantsiya.svg",
+    "category": "местность"
+  },
+  {
+    "id": "placeholder",
+    "name": "placeholder",
+    "file": "placeholder.svg",
+    "category": "другое"
+  }
+]

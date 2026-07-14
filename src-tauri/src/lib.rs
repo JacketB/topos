@@ -1,0 +1,266 @@
+use std::fs::File;
+use std::io::{Read, Seek, SeekFrom};
+use tauri::http::Response;
+use tauri::Manager;
+
+fn resolve_asset_path(app: &tauri::AppHandle, uri_path: &str) -> Result<std::path::PathBuf, String> {
+    let decoded_path = uri_path.replace("%20", " ");
+    let clean_path = decoded_path.trim_start_matches('/');
+
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let path_res = resource_dir.join("assets").join(clean_path);
+        if path_res.exists() { return Ok(path_res); }
+
+        let path_flat = resource_dir.join(clean_path);
+        if path_flat.exists() { return Ok(path_flat); }
+
+        let path_under_res = resource_dir.join("resources").join(clean_path);
+        if path_under_res.exists() { return Ok(path_under_res); }
+    }
+
+    let current_dir = std::env::current_dir().expect("Failed to get current dir");
+    let base_dir = if current_dir.ends_with("src-tauri") {
+        current_dir.parent().unwrap().to_path_buf()
+    } else {
+        current_dir.clone()
+    };
+
+    let path1 = base_dir.join("assets").join(clean_path);
+    if path1.exists() { return Ok(path1); }
+
+    let path2 = base_dir.join("dist").join("assets").join(clean_path);
+    if path2.exists() { return Ok(path2); }
+
+    let path3 = base_dir.join("src-tauri").join("assets").join(clean_path);
+    if path3.exists() { return Ok(path3); }
+
+    Err(format!(
+        "File '{}' not found in assets or resource paths: {:?}, {:?}, {:?}",
+        clean_path, path1, path2, path3
+    ))
+}
+
+fn parse_range(range_val: &str, file_len: u64) -> Option<(u64, u64)> {
+    if !range_val.starts_with("bytes=") {
+        return None;
+    }
+    let ranges_str = &range_val[6..];
+    let mut parts = ranges_str.split('-');
+    let start_str = parts.next()?.trim();
+    let end_str = parts.next()?.trim();
+    
+    let start = if start_str.is_empty() {
+        0
+    } else {
+        start_str.parse::<u64>().ok()?
+    };
+    
+    let end = if end_str.is_empty() {
+        file_len - 1
+    } else {
+        end_str.parse::<u64>().ok()?
+    };
+    
+    if start <= end && start < file_len {
+        let actual_end = std::cmp::min(end, file_len - 1);
+        Some((start, actual_end))
+    } else {
+        None
+    }
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .setup(|app| {
+            if cfg!(debug_assertions) {
+                app.handle().plugin(
+                    tauri_plugin_log::Builder::default()
+                        .level(log::LevelFilter::Info)
+                        .build(),
+                )?;
+            }
+            Ok(())
+        })
+        .register_uri_scheme_protocol("topos", |ctx, request| {
+            if request.method().as_str() == "OPTIONS" {
+                return Response::builder()
+                    .status(200)
+                    .header("Access-Control-Allow-Origin", "*")
+                    .header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+                    .header("Access-Control-Allow-Headers", "*")
+                    .body(Vec::new())
+                    .unwrap();
+            }
+
+            let uri_str = request.uri().to_string();
+            
+            let mut relative_path = uri_str.as_str();
+            if relative_path.starts_with("topos://") {
+                relative_path = &relative_path["topos://".len()..];
+            } else if relative_path.starts_with("http://topos.localhost/") {
+                relative_path = &relative_path["http://topos.localhost/".len()..];
+            } else if relative_path.starts_with("https://topos.localhost/") {
+                relative_path = &relative_path["https://topos.localhost/".len()..];
+            }
+            let relative_path = relative_path.trim_start_matches('/');
+            let relative_path = if relative_path.starts_with("localhost/") {
+                &relative_path["localhost/".len()..]
+            } else {
+                relative_path
+            };
+
+            let file_path = match resolve_asset_path(ctx.app_handle(), relative_path) {
+                Ok(path) => path,
+                Err(err) => {
+                    log::warn!("{}", err);
+                    return Response::builder()
+                        .status(404)
+                        .header("Access-Control-Allow-Origin", "*")
+                        .header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+                        .header("Access-Control-Allow-Headers", "*")
+                        .body(Vec::new())
+                        .unwrap();
+                }
+            };
+
+            let file_len = match std::fs::metadata(&file_path) {
+                Ok(meta) => meta.len(),
+                Err(_) => 0,
+            };
+
+            if request.method().as_str() == "HEAD" {
+                return Response::builder()
+                    .status(200)
+                    .header("Access-Control-Allow-Origin", "*")
+                    .header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+                    .header("Access-Control-Allow-Headers", "*")
+                    .header("Accept-Ranges", "bytes")
+                    .header("Content-Length", file_len.to_string())
+                    .body(Vec::new())
+                    .unwrap();
+            }
+
+            let mut file = match File::open(&file_path) {
+                Ok(f) => f,
+                Err(err) => {
+                    log::error!("Failed to open file {:?}: {}", file_path, err);
+                    return Response::builder()
+                        .status(500)
+                        .header("Access-Control-Allow-Origin", "*")
+                        .header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+                        .header("Access-Control-Allow-Headers", "*")
+                        .body(Vec::new())
+                        .unwrap();
+                }
+            };
+
+            let range_header = request.headers()
+                .get("range")
+                .and_then(|h| h.to_str().ok());
+
+            if let Some(range_str) = range_header {
+                if let Some((start, end)) = parse_range(range_str, file_len) {
+                    let part_len = end - start + 1;
+                    
+                    if file.seek(SeekFrom::Start(start)).is_ok() {
+                        let mut buffer = vec![0; part_len as usize];
+                        if file.read_exact(&mut buffer).is_ok() {
+                            return Response::builder()
+                                .status(206)
+                                .header("Access-Control-Allow-Origin", "*")
+                                .header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+                                .header("Access-Control-Allow-Headers", "*")
+                                .header("Access-Control-Expose-Headers", "Content-Range")
+                                .header("Content-Range", format!("bytes {}-{}/{}", start, end, file_len))
+                                .header("Content-Length", part_len.to_string())
+                                .header("Content-Type", "application/octet-stream")
+                                .body(buffer)
+                                .unwrap();
+                        }
+                    }
+                }
+            }
+
+            let mut buffer = Vec::new();
+            if file.read_to_end(&mut buffer).is_ok() {
+                Response::builder()
+                    .status(200)
+                    .header("Access-Control-Allow-Origin", "*")
+                    .header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+                    .header("Access-Control-Allow-Headers", "*")
+                    .header("Content-Length", file_len.to_string())
+                    .body(buffer)
+                    .unwrap()
+            } else {
+                Response::builder()
+                    .status(500)
+                    .header("Access-Control-Allow-Origin", "*")
+                    .header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+                    .header("Access-Control-Allow-Headers", "*")
+                    .body(Vec::new())
+                    .unwrap()
+            }
+        })
+        .invoke_handler(tauri::generate_handler![read_pmtiles_chunk])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+
+#[tauri::command]
+fn read_pmtiles_chunk(app: tauri::AppHandle, filename: String, offset: u64, length: usize) -> Result<Vec<u8>, String> {
+    use std::fs::File;
+    use std::io::{Read, Seek, SeekFrom};
+    use tauri::Manager;
+
+    let mut file_path = std::path::PathBuf::new();
+
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let path1 = resource_dir.join("assets").join(&filename);
+        if path1.exists() { file_path = path1; }
+        else {
+            let path2 = resource_dir.join(&filename);
+            if path2.exists() { file_path = path2; }
+        }
+    }
+
+    if file_path.as_os_str().is_empty() {
+        let current_dir = std::env::current_dir().expect("Failed to get current dir");
+        let base_dir = if current_dir.ends_with("src-tauri") {
+            current_dir.parent().unwrap().to_path_buf()
+        } else {
+            current_dir.clone()
+        };
+
+        let path1 = base_dir.join("assets").join(&filename);
+        if path1.exists() { file_path = path1; }
+        
+        let path2 = base_dir.join("src-tauri").join("assets").join(&filename);
+        if path2.exists() { file_path = path2; }
+    }
+
+    if file_path.as_os_str().is_empty() || !file_path.exists() {
+        return Err(format!("PMTiles file '{}' not found", filename));
+    }
+
+    let mut file = File::open(&file_path)
+        .map_err(|e| format!("Failed to open file: {}", e))?;
+
+    let file_len = file.metadata()
+        .map(|m| m.len())
+        .unwrap_or(0);
+
+    if offset >= file_len {
+        return Ok(Vec::new());
+    }
+
+    let read_len = std::cmp::min(length as u64, file_len - offset) as usize;
+    file.seek(SeekFrom::Start(offset))
+        .map_err(|e| format!("Seek error: {}", e))?;
+
+    let mut buffer = vec![0; read_len];
+    file.read_exact(&mut buffer)
+        .map_err(|e| format!("Read error: {}", e))?;
+
+    Ok(buffer)
+}

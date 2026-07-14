@@ -1,0 +1,8 @@
+[[permission]]
+identifier = "allow-read-pmtiles-chunk"
+description = "Allows the frontend to read chunks of the belarus.pmtiles file"
+
+[permission.commands]
+allow = [
+  "read_pmtiles_chunk"
+]

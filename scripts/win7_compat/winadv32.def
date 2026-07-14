@@ -1,0 +1,10 @@
+LIBRARY winadv32
+EXPORTS
+    EventRegister = advapi32.EventRegister
+    EventSetInformation = Stub_EventSetInformation
+    EventUnregister = advapi32.EventUnregister
+    EventWriteTransfer = advapi32.EventWriteTransfer
+    RegCloseKey = advapi32.RegCloseKey
+    RegGetValueW = advapi32.RegGetValueW
+    RegOpenKeyExW = advapi32.RegOpenKeyExW
+    RegQueryValueExW = advapi32.RegQueryValueExW

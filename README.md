@@ -1,59 +1,36 @@
 # Topos
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.1.
+Геоинформационная система тактического уровня с поддержкой автономной работы без подключения к интернету.
 
-## Development server
+## Особенности
+- Автономный рендеринг векторных карт формата PMTiles без интернет-соединения
+- Полноэкранный режим и масштабирование
+- Инструменты рисования тактических объектов, линий и зон на карте
+- Кроссплатформенная архитектура на базе Angular и Tauri
 
-To start a local development server, run:
+## Требования для разработки
+- Node.js (версия 18 или выше)
+- Rust (версия 1.77 или выше)
+- Установленные зависимости разработки Tauri для Windows (Microsoft Visual Studio C++ Build Tools, WebView2)
 
+## Установка зависимостей
 ```bash
-ng serve
+npm install
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
+## Запуск в режиме разработки
+Для запуска веб-интерфейса и десктопного оболочки Tauri:
 ```bash
-ng generate component component-name
+npm run tauri dev
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
+## Сборка релизной версии
+Для сборки автономного установщика и исполняемого файла:
 ```bash
-ng generate --help
+npm run tauri build
 ```
 
-## Building
+Готовые файлы сборки будут размещены в директории `src-tauri/target/release/bundle/`.
 
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Поддержка устаревших операционных систем (Windows 7)
+Для обеспечения совместимости с 32-разрядными и устаревшими операционными системами Windows в директории `scripts/win7_compat/` размещены скрипты и исходный код библиотек проксирования системных вызовов (`winadv32`, `winker32`, `bcryptprimitives`).
