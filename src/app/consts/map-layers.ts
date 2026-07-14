@@ -31,7 +31,7 @@ export const mapLayers = [
     type: 'line',
     source: 'belarus-data',
     'source-layer': 'transportation',
-    filter: ['in', ['get', 'class'], 'minor', 'service', 'track'],
+    filter: ['match', ['get', 'class'], ['minor', 'service', 'track'], true, false],
     layout: {
       'line-cap': 'round',
       'line-join': 'round'
@@ -46,7 +46,7 @@ export const mapLayers = [
     type: 'line',
     source: 'belarus-data',
     'source-layer': 'transportation',
-    filter: ['in', ['get', 'class'], 'primary', 'secondary', 'tertiary', 'trunk', 'motorway'],
+    filter: ['match', ['get', 'class'], ['primary', 'secondary', 'tertiary', 'trunk', 'motorway'], true, false],
     layout: {
       'line-cap': 'round',
       'line-join': 'round'

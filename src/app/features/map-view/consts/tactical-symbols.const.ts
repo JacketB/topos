@@ -19,9 +19,8 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       { id: 'tank1', name: 'Танк (общ.)', symbol: 'tank1', size: 0.08 },
       { id: 'tank_svoy_1', name: 'Танк (свой)', symbol: 'tank_svoy_1', size: 0.08 },
       { id: 'bmp1', name: 'БМП', symbol: 'bmp1', size: 0.08 },
-      { id: 'bmp_svoy_1', name: 'БМП (свой)', symbol: 'bmp_svoy_1', size: 0.08 },
       { id: 'btr1', name: 'БТР', symbol: 'btr1', size: 0.08 },
-      { id: 'btr_svoy_1', name: 'БТР (свой)', symbol: 'btr_svoy_1', size: 0.08 }
+      { id: 'samoh_min1', name: 'Сам. миномет', symbol: 'samoh_min1', size: 0.08 }
     ]
   },
   {
@@ -33,7 +32,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       { id: 'rszo1', name: 'РСЗО', symbol: 'rszo1', size: 0.08 },
       { id: 'rszo_prot_1', name: 'РСЗО (пр.)', symbol: 'rszo_prot_1', size: 0.08 },
       { id: 'min1', name: 'Миномет', symbol: 'min1', size: 0.08 },
-      { id: 'min_pr1', name: 'Миномет (пр.)', symbol: 'min_pr1', size: 0.08 }
+      { id: 'min_pr_1', name: 'Миномет (пр.)', symbol: 'min_pr_1', size: 0.08 }
     ]
   },
   {
@@ -51,21 +50,25 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
     id: 'infantry',
     name: 'Пехота и огневые средства',
     symbols: [
-      { id: 'pehota', name: 'Пехота', symbol: 'pehota', size: 0.08 },
-      { id: 'pehota_pr', name: 'Пехота (пр.)', symbol: 'pehota_pr', size: 0.08 },
-      { id: 'pulemet', name: 'Пулемет', symbol: 'pulemet', size: 0.08 },
-      { id: 'pulemet_pr', name: 'Пулемет (пр.)', symbol: 'pulemet_pr', size: 0.08 },
-      { id: 'spg1', name: 'СПГ', symbol: 'spg1', size: 0.08 },
-      { id: 'spg_svoy1', name: 'СПГ (свой)', symbol: 'spg_svoy1', size: 0.08 }
+      { id: 'utes_1', name: 'Пулемет «Утёс»', symbol: 'utes_1', size: 0.08 },
+      { id: 'utes_svoy1', name: 'Утёс (свой)', symbol: 'utes_svoy1', size: 0.08 },
+      { id: 'zen_pulemet', name: 'Зен. пулемет', symbol: 'zen_pulemet', size: 0.08 },
+      { id: 'zen_pulemet_pr', name: 'Зен. пулемет (пр.)', symbol: 'zen_pulemet_pr', size: 0.08 },
+      { id: 'spg1', name: 'СПГ-9', symbol: 'spg1', size: 0.08 },
+      { id: 'spg_svoy1', name: 'СПГ-9 (свой)', symbol: 'spg_svoy1', size: 0.08 },
+      { id: 'rpg1', name: 'РПГ-7', symbol: 'rpg1', size: 0.08 },
+      { id: 'rpg_nash1', name: 'РПГ-7 (свой)', symbol: 'rpg_nash1', size: 0.08 }
     ]
   },
   {
     id: 'command',
     name: 'Управление и связь',
     symbols: [
-      { id: 'kp', name: 'Командный пункт', symbol: 'kp', size: 0.08 },
-      { id: 'np', name: 'Наблюдательный пункт', symbol: 'np', size: 0.08 },
-      { id: 'kshp', name: 'КШМ', symbol: 'kshp', size: 0.08 }
+      { id: 'rknp', name: 'КНП', symbol: 'rknp', size: 0.08 },
+      { id: 'np', name: 'Наблюд. пункт', symbol: 'np', size: 0.08 },
+      { id: 'kshm4', name: 'КШМ', symbol: 'kshm4', size: 0.08 },
+      { id: 'radiostantsiya', name: 'Радиостанция', symbol: 'radiostantsiya', size: 0.08 },
+      { id: 'releyn', name: 'Релейная ст.', symbol: 'releyn', size: 0.08 }
     ]
   }
 ];
