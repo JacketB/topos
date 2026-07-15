@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, effect } from '@angular/core';
 import maplibregl from 'maplibre-gl';
 import { TacticalSymbol } from '../consts/tactical-symbols.const';
 
@@ -8,7 +8,28 @@ type SymbolLoadCallback = () => void;
   providedIn: 'root'
 })
 export class TacticalMapService {
-  readonly placedSymbols = signal<any[]>([]);
+  readonly placedSymbols = signal<any[]>(this.loadFromStorage());
+
+  constructor() {
+    effect(() => {
+      const symbols = this.placedSymbols();
+      try {
+        localStorage.setItem('topos_placed_symbols', JSON.stringify(symbols));
+      } catch (e) {
+        console.error('Ошибка сохранения символов в localStorage:', e);
+      }
+    });
+  }
+
+  private loadFromStorage(): any[] {
+    try {
+      const data = localStorage.getItem('topos_placed_symbols');
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
   readonly selectedSymbol = signal<TacticalSymbol | null>(null);
   readonly templateCustomName = signal<string>('');
   readonly templateCustomSize = signal<number>(0.08);
@@ -37,12 +58,11 @@ export class TacticalMapService {
   private pendingDragLngLat: [number, number] | null = null;
   readonly templateCustomColor = signal<string>('');
 
-
   initLayers(map: maplibregl.Map) {
     if (!map.getSource('tactical-symbols')) {
       map.addSource('tactical-symbols', {
         type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
+        data: { type: 'FeatureCollection', features: this.placedSymbols() }
       });
     }
     if (!map.getLayer('tactical_symbols_layer')) {
@@ -74,6 +94,17 @@ export class TacticalMapService {
         }
       });
     }
+
+    this.placedSymbols().forEach(s => {
+      const symbolId = s.properties['symbol'];
+      const iconId = s.properties['iconId'] || symbolId;
+      const color = s.properties['color'] || '';
+      if (color) {
+        this.ensureSymbolColorImageLoadedForId(symbolId, color, iconId, () => this.updateTacticalSymbolsSource());
+      } else {
+        this.ensureSymbolImageLoadedForId(symbolId, iconId, () => this.updateTacticalSymbolsSource());
+      }
+    });
   }
 
   init(map: maplibregl.Map) {
@@ -139,20 +170,58 @@ export class TacticalMapService {
     });
   }
 
+  handleMissingImage(missingId: string) {
+    if (!this.mapInstance || !missingId) return;
+    if (this.mapInstance.hasImage(missingId)) return;
+
+    let symbolId = missingId;
+    let color = '';
+
+    if (missingId.includes('_c_')) {
+      const parts = missingId.split('_c_');
+      symbolId = parts[0];
+      color = '#' + parts[1];
+    } else {
+      const found = this.placedSymbols().find(s => s.properties['iconId'] === missingId || s.properties['symbol'] === missingId);
+      if (found) {
+        symbolId = found.properties['symbol'];
+        color = found.properties['color'] || '';
+      } else if (missingId.includes('_')) {
+        const clean = missingId.replace(/_\d+$/, '');
+        symbolId = clean;
+      }
+    }
+
+    if (color) {
+      this.ensureSymbolColorImageLoadedForId(symbolId, color, missingId, () => {
+        this.updateTacticalSymbolsSource();
+      });
+    } else {
+      this.ensureSymbolImageLoadedForId(symbolId, missingId, () => {
+        this.updateTacticalSymbolsSource();
+      });
+    }
+  }
+
   ensureSymbolImageLoaded(symbolId: string, callback: SymbolLoadCallback | null = null) {
-    if (!this.mapInstance || !symbolId) {
+    this.ensureSymbolImageLoadedForId(symbolId, symbolId, callback);
+  }
+
+  ensureSymbolImageLoadedForId(symbolId: string, targetIconId: string, callback: SymbolLoadCallback | null = null) {
+    if (!this.mapInstance || !symbolId || !targetIconId) {
       if (callback) callback();
       return;
     }
-    if (this.mapInstance.hasImage(symbolId)) {
+    if (this.mapInstance.hasImage(targetIconId)) {
       if (callback) callback();
       return;
     }
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.src = `symbols/${symbolId}.svg`;
     img.onload = () => {
-      if (this.mapInstance && !this.mapInstance.hasImage(symbolId)) {
-        this.mapInstance.addImage(symbolId, img);
+      if (this.mapInstance && !this.mapInstance.hasImage(targetIconId)) {
+        this.mapInstance.addImage(targetIconId, img);
       }
       if (callback) callback();
     };
@@ -162,17 +231,20 @@ export class TacticalMapService {
   }
 
   ensureSymbolColorImageLoaded(symbolId: string, color: string, callback: SymbolLoadCallback | null = null) {
-    if (!this.mapInstance || !symbolId) {
+    const coloredIconId = `${symbolId}_c_${color.replace('#', '')}`;
+    this.ensureSymbolColorImageLoadedForId(symbolId, color, coloredIconId, callback);
+  }
+
+  ensureSymbolColorImageLoadedForId(symbolId: string, color: string, targetIconId: string, callback: SymbolLoadCallback | null = null) {
+    if (!this.mapInstance || !symbolId || !targetIconId) {
       if (callback) callback();
       return;
     }
     if (!color) {
-      this.ensureSymbolImageLoaded(symbolId, callback);
+      this.ensureSymbolImageLoadedForId(symbolId, targetIconId, callback);
       return;
     }
-
-    const coloredIconId = `${symbolId}_c_${color.replace('#', '')}`;
-    if (this.mapInstance.hasImage(coloredIconId)) {
+    if (this.mapInstance.hasImage(targetIconId)) {
       if (callback) callback();
       return;
     }
@@ -199,10 +271,11 @@ export class TacticalMapService {
           });
           const serialized = new XMLSerializer().serializeToString(doc);
           const img = new Image();
+          img.crossOrigin = 'anonymous';
           img.src = `data:image/svg+xml;charset=utf-8,` + encodeURIComponent(serialized);
           img.onload = () => {
-            if (this.mapInstance && !this.mapInstance.hasImage(coloredIconId)) {
-              this.mapInstance.addImage(coloredIconId, img);
+            if (this.mapInstance && !this.mapInstance.hasImage(targetIconId)) {
+              this.mapInstance.addImage(targetIconId, img);
             }
             if (callback) callback();
           };
@@ -314,6 +387,54 @@ export class TacticalMapService {
       this.placedSymbols.update(prev => prev.filter(s => s.properties['id'] !== selected.properties['id']));
       this.selectedPlacedSymbol.set(null);
       this.updateTacticalSymbolsSource();
+    }
+  }
+
+  clearSymbolSelection() {
+    this.selectedPlacedSymbol.set(null);
+    this.selectedSymbol.set(null);
+    if (this.mapInstance) {
+      this.mapInstance.getCanvas().style.cursor = '';
+    }
+  }
+
+  placeSelectedSymbol() {
+    const template = this.selectedSymbol();
+    if (!template || !this.mapInstance) return;
+
+    const center = this.mapInstance.getCenter();
+    const coords: [number, number] = [center.lng, center.lat];
+    const color = this.templateCustomColor();
+    const iconId = color ? `${template.symbol}_c_${color.replace('#', '')}` : template.symbol;
+    const newSymbol = {
+      type: 'Feature',
+      properties: {
+        id: Date.now(),
+        symbol: template.symbol,
+        iconId: iconId,
+        color: color || '',
+        name: this.templateCustomName() || template.name,
+        size: this.templateCustomSize(),
+        angle: this.templateCustomAngle()
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: coords
+      }
+    };
+
+    const onReady = () => {
+      this.placedSymbols.update(prev => [...prev, newSymbol]);
+      this.updateTacticalSymbolsSource();
+      this.selectedPlacedSymbol.set(newSymbol);
+      this.selectedSymbol.set(null);
+      if (this.mapInstance) this.mapInstance.getCanvas().style.cursor = '';
+    };
+
+    if (color) {
+      this.ensureSymbolColorImageLoaded(template.symbol, color, onReady);
+    } else {
+      this.ensureSymbolImageLoaded(template.symbol, onReady);
     }
   }
 
