@@ -1,0 +1,13 @@
+<div class="map-wrapper">
+  
+  <div #mapContainer class="map-container"></div>
+
+  @if (!vm.isAppReady()) {
+    <div class="map-overlay">
+      <div class="loading-panel">
+        <div class="spinner"></div>
+        <div class="loading-text">Загрузка тактической ГИС и векторного рельефа Topos...</div>
+      </div>
+    </div>
+  }
+</div>

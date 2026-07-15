@@ -1,0 +1,104 @@
+<div class="quick-layers-container">
+  @if (vm.isQuickLayersMenuOpen()) {
+    <div class="quick-layers-popup">
+      <div class="quick-popup-header">Быстрое переключение слоев</div>
+      <div class="quick-icons-grid">
+        
+        <button class="quick-icon-btn" 
+          [class.active]="vm.mapLayersService.groups()[0]?.layers?.[0]?.visible || vm.mapLayersService.groups()[0]?.layers?.[1]?.visible"
+          (click)="vm.onQuickLayerToggle('elevation')" title="Рельеф и горизонтали">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 20h18L14 6l-4 6-2-3-5 11z"/>
+            <path d="M5 16c3-2 7-2 7 2"/>
+          </svg>
+          <span>Рельеф</span>
+        </button>
+
+        <button class="quick-icon-btn" 
+          [class.active]="vm.mapLayersService.groups()[1]?.visible"
+          (click)="vm.onQuickLayerToggle('military')" title="Военные объекты">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
+            <path d="M12 8v8"/>
+            <path d="M8 12h8"/>
+          </svg>
+          <span>Военные</span>
+        </button>
+
+        <button class="quick-icon-btn" 
+          [class.active]="vm.mapLayersService.groups()[2]?.visible"
+          (click)="vm.onQuickLayerToggle('tactical')" title="Тактическая обстановка">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>Знаки</span>
+        </button>
+
+        <button class="quick-icon-btn" 
+          [class.active]="vm.mapLayersService.groups()[3]?.visible"
+          (click)="vm.onQuickLayerToggle('hydro')" title="Гидрография">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+          </svg>
+          <span>Водоемы</span>
+        </button>
+
+        <button class="quick-icon-btn" 
+          [class.active]="vm.mapLayersService.groups()[4]?.visible"
+          (click)="vm.onQuickLayerToggle('landcover')" title="Растительность и грунты">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L7 12h10L12 2z"/>
+            <path d="M12 10l-5 8h10l-5-8z"/>
+            <path d="M12 18v4"/>
+          </svg>
+          <span>Леса</span>
+        </button>
+
+        <button class="quick-icon-btn" 
+          [class.active]="vm.mapLayersService.groups()[5]?.visible"
+          (click)="vm.onQuickLayerToggle('transport')" title="Дороги и транспорт">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 22L8 2h8l4 20"/>
+            <path d="M12 6v4"/>
+            <path d="M12 14v4"/>
+          </svg>
+          <span>Дороги</span>
+        </button>
+
+        <button class="quick-icon-btn" 
+          [class.active]="vm.mapLayersService.groups()[6]?.visible"
+          (click)="vm.onQuickLayerToggle('buildings')" title="Застройка и сооружения">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 21h18"/>
+            <path d="M5 21V7l8-4v18"/>
+            <path d="M19 21V11l-6-3"/>
+            <path d="M9 9v1"/>
+            <path d="M9 13v1"/>
+            <path d="M9 17v1"/>
+          </svg>
+          <span>Застройка</span>
+        </button>
+
+        <button class="quick-icon-btn" 
+          [class.active]="vm.mapLayersService.groups()[7]?.visible"
+          (click)="vm.toggleQuickLayer('labels_boundary')" title="Подписи и границы">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          <span>Подписи</span>
+        </button>
+      </div>
+    </div>
+  }
+
+  <button class="control-btn quick-layers-btn" [class.active]="vm.isQuickLayersMenuOpen()" (click)="vm.toggleQuickLayersMenu()" title="Быстрое меню слоев">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+      <polyline points="2 17 12 22 22 17"/>
+      <polyline points="2 12 12 17 22 12"/>
+    </svg>
+  </button>
+</div>

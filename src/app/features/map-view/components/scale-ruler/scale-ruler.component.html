@@ -1,0 +1,19 @@
+@if (vm.measurementResult()) {
+  <div class="measurement-badge">
+    {{ vm.measurementResult() }}
+  </div>
+}
+
+<button class="control-btn ruler-btn" [class.active]="vm.isMeasuring()" (click)="vm.toggleMeasurement()" title="Измерить расстояние">
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21.3 8.7L8.7 21.3c-1 1-2.5 1-3.4 0l-2.6-2.6c-1-1-1-2.5 0-3.4L15.3 2.7c1-1 2.5-1 3.4 0l2.6 2.6c1 1 1 2.5 0 3.4z"/>
+    <path d="M7 17l-1-1"/>
+    <path d="M10 14L8 12"/>
+    <path d="M13 11l-3-3"/>
+    <path d="M16 8l-1-1"/>
+  </svg>
+</button>
+
+<button class="control-btn compass-btn" (click)="vm.resetBearing()" [style.transform]="'rotate(' + (-vm.bearing()) + 'deg)'" title="Сбросить поворот карты">
+  <div class="compass-arrow"></div>
+</button>

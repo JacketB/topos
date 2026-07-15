@@ -1,0 +1,54 @@
+<div class="qgis-dock-panel bottom-dock">
+  <div class="qgis-dock-header">
+    <span class="dock-title">
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/>
+      </svg>
+      Тактические знаки
+    </span>
+    <span class="dock-actions">
+      <span class="dock-badge">{{ vm.symbolsService.symbolsCount() }} знаков</span>
+    </span>
+  </div>
+
+  <div class="qgis-search-wrapper">
+    <input 
+      type="text" 
+      class="search-input" 
+      placeholder="Поиск знаков..." 
+      [value]="vm.symbolSearchQuery()" 
+      (input)="onSearchInput($event)"
+    />
+  </div>
+
+  <div class="qgis-dock-content symbols-list">
+    <ul class="xhtml-tree">
+      @for (category of vm.symbolsService.groupedSymbols(); track category.id) {
+        <li>
+          <details [open]="vm.isCategoryOpen(category.id)" (toggle)="onSymbolCategoryToggle(category.id, $event)">
+            <summary class="tree-summary">
+              <span class="summary-title">{{ category.name }} <span class="summary-count">({{ category.symbols.length }})</span></span>
+            </summary>
+
+            <div class="symbols-tree-grid">
+              @for (item of category.symbols; track item.id) {
+                <button 
+                  class="symbol-item-card" 
+                  [class.selected]="vm.selectedSymbol()?.id === item.id"
+                  (click)="onSymbolClick(item)"
+                  [title]="item.name">
+                  <div class="symbol-icon-wrapper">
+                    <img [src]="'symbols/' + item.symbol + '.svg'" [alt]="item.name" class="symbol-icon" />
+                  </div>
+                  <span class="symbol-name-full">{{ item.name }}</span>
+                </button>
+              }
+            </div>
+          </details>
+        </li>
+      } @empty {
+        <li><div class="empty-list">Знаки не найдены</div></li>
+      }
+    </ul>
+  </div>
+</div>

@@ -1,0 +1,14 @@
+<aside class="tactical-sidebar qgis-sidebar" [style.width.px]="vm.sidebarWidth()">
+  <div class="sidebar-top-branding">
+    <span class="qgis-app-title">Topos GIS</span>
+  </div>
+
+  <div class="sidebar-container" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;">
+    
+    <app-symbol-catalog style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;" />
+
+    <app-symbol-properties style="display: flex; flex-direction: column; flex: 0 0 auto; width: 100%; min-height: 330px; max-height: 55%; overflow: hidden; z-index: 2;" />
+  </div>
+
+  <div class="qgis-horizontal-resizer" (mousedown)="onStartResize($event)" title="Потяните для изменения ширины панели"></div>
+</aside>

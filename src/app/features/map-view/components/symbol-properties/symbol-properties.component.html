@@ -1,0 +1,194 @@
+<div class="qgis-dock-panel properties-dock-panel">
+  <div class="qgis-dock-header properties-header">
+    <span class="dock-title">
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M2 3h12M2 8h12M2 13h12"/>
+      </svg>
+      Свойства элемента
+    </span>
+    @if (vm.tacticalMapService.selectedPlacedSymbol()) {
+      <button class="dock-close-btn" (click)="vm.tacticalMapService.selectedPlacedSymbol.set(null)" title="Сбросить выбор">✕</button>
+    } @else if (vm.tacticalMapService.selectedSymbol()) {
+      <button class="dock-close-btn" (click)="vm.tacticalMapService.selectedSymbol.set(null)" title="Сбросить шаблон">✕</button>
+    }
+  </div>
+
+  <div class="properties-content vs-property-grid">
+    @if (vm.tacticalMapService.selectedPlacedSymbol(); as placed) {
+      
+      <div class="vs-header-banner active-banner">
+        <img [src]="'symbols/' + placed.properties['symbol'] + '.svg'" alt="" class="property-icon" />
+        <div class="vs-banner-text">
+          <span class="vs-banner-title">Объект на карте</span>
+          <span class="vs-banner-sub">{{ placed.properties['symbol'] }}</span>
+        </div>
+      </div>
+
+      <div class="vs-grid-table">
+        <div class="vs-grid-row">
+          <span class="vs-grid-label">Название</span>
+          <div class="vs-grid-value">
+            <input 
+              type="text" 
+              class="vs-input" 
+              [value]="placed.properties['name']" 
+              (input)="onPlacedNameChange($event)" 
+              placeholder="Название на карте..."
+            />
+          </div>
+        </div>
+
+        <div class="vs-grid-row">
+          <span class="vs-grid-label">Масштаб ({{ placed.properties['size'] }})</span>
+          <div class="vs-grid-value">
+            <input 
+              type="range" 
+              min="0.03" 
+              max="0.25" 
+              step="0.01" 
+              class="vs-range"
+              [value]="placed.properties['size']" 
+              (input)="onPlacedSizeChange($event)" 
+            />
+          </div>
+        </div>
+
+        <div class="vs-grid-row">
+          <span class="vs-grid-label">Поворот ({{ placed.properties['angle'] }}°)</span>
+          <div class="vs-grid-value">
+            <input 
+              type="range" 
+              min="0" 
+              max="360" 
+              step="5" 
+              class="vs-range"
+              [value]="placed.properties['angle']" 
+              (input)="onPlacedAngleChange($event)" 
+            />
+          </div>
+        </div>
+
+        <div class="vs-grid-row">
+          <span class="vs-grid-label">Цвет знака</span>
+          <div class="vs-grid-value vs-color-picker-wrap">
+            <div class="vs-color-swatches">
+              <button class="vs-swatch" style="background: #ef4444;" (click)="onPlacedColorChange('#ef4444')" title="Красный (Противник)"></button>
+              <button class="vs-swatch" style="background: #3b82f6;" (click)="onPlacedColorChange('#3b82f6')" title="Синий (Свои)"></button>
+              <button class="vs-swatch" style="background: #22c55e;" (click)="onPlacedColorChange('#22c55e')" title="Зеленый"></button>
+              <button class="vs-swatch" style="background: #eab308;" (click)="onPlacedColorChange('#eab308')" title="Желтый"></button>
+              <button class="vs-swatch" style="background: #000000;" (click)="onPlacedColorChange('#000000')" title="Черный"></button>
+              <button class="vs-swatch vs-swatch-reset" (click)="onPlacedColorChange('')" title="Сбросить на оригинал">✕</button>
+            </div>
+            <input 
+              type="color" 
+              class="vs-color-input" 
+              [value]="placed.properties['color'] || '#000000'" 
+              (input)="onPlacedColorChange($event)" 
+              title="Произвольный цвет"
+            />
+          </div>
+        </div>
+
+        <div class="vs-grid-row">
+          <span class="vs-grid-label">Координаты</span>
+          <div class="vs-grid-value vs-readonly">
+            {{ placed.geometry.coordinates[1] }}°, {{ placed.geometry.coordinates[0] }}°
+          </div>
+        </div>
+      </div>
+
+      <div class="vs-actions-footer">
+        <button class="vs-delete-btn" (click)="vm.deletePlacedSymbol()">
+          Удалить объект с карты
+        </button>
+      </div>
+    } @else if (vm.tacticalMapService.selectedSymbol(); as template) {
+      
+      <div class="vs-header-banner active-banner template-banner">
+        <img [src]="'symbols/' + template.symbol + '.svg'" alt="" class="property-icon" />
+        <div class="vs-banner-text">
+          <span class="vs-banner-title">Шаблон для нанесения</span>
+          <span class="vs-banner-sub">{{ template.name }}</span>
+        </div>
+      </div>
+
+      <div class="vs-grid-table">
+        <div class="vs-grid-row">
+          <span class="vs-grid-label">Название</span>
+          <div class="vs-grid-value">
+            <input 
+              type="text" 
+              class="vs-input" 
+              [value]="vm.tacticalMapService.templateCustomName()" 
+              (input)="onTemplateNameChange($event)" 
+              placeholder="Название по умолчанию..."
+            />
+          </div>
+        </div>
+
+        <div class="vs-grid-row">
+          <span class="vs-grid-label">Масштаб ({{ vm.tacticalMapService.templateCustomSize() }})</span>
+          <div class="vs-grid-value">
+            <input 
+              type="range" 
+              min="0.03" 
+              max="0.25" 
+              step="0.01" 
+              class="vs-range"
+              [value]="vm.tacticalMapService.templateCustomSize()" 
+              (input)="onTemplateSizeChange($event)" 
+            />
+          </div>
+        </div>
+
+        <div class="vs-grid-row">
+          <span class="vs-grid-label">Поворот ({{ vm.tacticalMapService.templateCustomAngle() }}°)</span>
+          <div class="vs-grid-value">
+            <input 
+              type="range" 
+              min="0" 
+              max="360" 
+              step="5" 
+              class="vs-range"
+              [value]="vm.tacticalMapService.templateCustomAngle()" 
+              (input)="onTemplateAngleChange($event)" 
+            />
+          </div>
+        </div>
+
+        <div class="vs-grid-row">
+          <span class="vs-grid-label">Цвет знака</span>
+          <div class="vs-grid-value vs-color-picker-wrap">
+            <div class="vs-color-swatches">
+              <button class="vs-swatch" style="background: #ef4444;" (click)="onTemplateColorChange('#ef4444')" title="Красный (Противник)"></button>
+              <button class="vs-swatch" style="background: #3b82f6;" (click)="onTemplateColorChange('#3b82f6')" title="Синий (Свои)"></button>
+              <button class="vs-swatch" style="background: #22c55e;" (click)="onTemplateColorChange('#22c55e')" title="Зеленый"></button>
+              <button class="vs-swatch" style="background: #eab308;" (click)="onTemplateColorChange('#eab308')" title="Желтый"></button>
+              <button class="vs-swatch" style="background: #000000;" (click)="onTemplateColorChange('#000000')" title="Черный"></button>
+              <button class="vs-swatch vs-swatch-reset" (click)="onTemplateColorChange('')" title="Сбросить на оригинал">✕</button>
+            </div>
+            <input 
+              type="color" 
+              class="vs-color-input" 
+              [value]="vm.tacticalMapService.templateCustomColor() || '#000000'" 
+              (input)="onTemplateColorChange($event)" 
+              title="Произвольный цвет"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="vs-info-footer">
+        <span>💡 Кликните на карту для размещения знака с этими параметрами.</span>
+      </div>
+    } @else {
+      
+      <div class="vs-header-banner inactive-banner">
+        <div class="vs-banner-text">
+          <span class="vs-banner-title">Элемент не выбран</span>
+          <span class="vs-banner-sub">Кликните на знак в каталоге или на объект на карте для настройки.</span>
+        </div>
+      </div>
+    }
+  </div>
+</div>

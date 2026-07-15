@@ -17,9 +17,6 @@
   overflow: hidden;
 }
 
-/* =========================================================
-   QGIS DOCK PANELS & RESIZABLE SIDEBAR LAYOUT
-   ========================================================= */
 .tactical-sidebar.qgis-sidebar {
   min-width: 260px;
   max-width: 700px;
@@ -58,7 +55,6 @@
   font-weight: 500;
 }
 
-/* ДОК-ПАНЕЛЬ (Dock Container) */
 .qgis-dock-panel {
   display: flex;
   flex-direction: column;
@@ -72,7 +68,41 @@
   min-height: 140px;
 }
 
-/* ЗАГОЛОВОК ДОК-ПАНЕЛИ (QGIS Dock Header) */
+app-symbol-catalog {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+app-symbol-catalog .qgis-dock-panel {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+app-symbol-properties {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 320px;
+  max-height: 55%;
+  overflow: hidden;
+  z-index: 2;
+}
+
+app-symbol-properties .qgis-dock-panel,
+app-symbol-properties .properties-dock-panel {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 100% !important;
+  max-height: 100% !important;
+}
+
 .qgis-dock-header {
   display: flex;
   align-items: center;
@@ -123,7 +153,6 @@
   color: var(--color-danger);
 }
 
-/* ВЕРТИКАЛЬНЫЙ РЕСАЙЗЕР (Ресайз ширины сайдбара) */
 .qgis-horizontal-resizer {
   position: absolute;
   top: 0;
@@ -140,7 +169,6 @@
   background-color: rgba(59, 130, 246, 0.35);
 }
 
-/* ОБЕРТКА ПОИСКА В ПАНЕЛИ ЗНАКОВ */
 .qgis-search-wrapper {
   padding: 6px 8px;
   background-color: #f8fafc;
@@ -174,7 +202,6 @@
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
 
-/* КОНТЕНТ ДОК-ПАНЕЛЕЙ (Скроллируемый список) */
 .qgis-dock-content {
   flex: 1;
   overflow-y: auto;
@@ -203,15 +230,12 @@
   background-color: #94a3b8;
 }
 
-/* =========================================================
-   ПАНЕЛЬ СВОЙСТВ (Visual Studio Property Grid Style)
-   ========================================================= */
 .properties-dock-panel {
   border-top: 1px solid #cbd5e1;
   background-color: #ffffff;
-  flex: 0 0 auto;
-  min-height: 230px;
-  max-height: 48%;
+  flex: 1;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -407,9 +431,6 @@
   color: #94a3b8;
 }
 
-/* =========================================================
-   ДРЕВОВИДНЫЕ СПИСКИ ПО СТАНДАРТУ https://xhtml.ru/2022/html/tree-views/
-   ========================================================= */
 .xhtml-tree {
   --spacing: 18px;
   --radius: 6px;
@@ -462,7 +483,6 @@
   background-color: #f1f5f9;
 }
 
-/* СТРЕЛОЧКА-ШЕВРОН для summary */
 .tree-summary::before {
   content: '▸';
   display: inline-block;
@@ -504,7 +524,6 @@ details[open] > .tree-summary {
   font-size: 11px;
 }
 
-/* ВЛОЖЕННОЕ ДЕРЕВО (xhtml.ru tree-views lines) */
 .tree-sublayers {
   list-style: none;
   margin: 4px 0 6px calc(var(--radius) - var(--spacing));
@@ -591,7 +610,6 @@ details[open] > .tree-summary {
   color: #0f172a;
 }
 
-/* СПИСОК ЗНАКОВ В ДЕРЕВЕ */
 .symbols-tree-grid {
   display: flex;
   flex-direction: column;
@@ -1011,7 +1029,6 @@ details[open] > .tree-summary {
   color: #ffffff;
 }
 
-/* БЫСТРОЕ МЕНЮ ПЕРЕКЛЮЧЕНИЯ СЛОЕВ (Glassmorphism & QGIS Dark/Light Style) */
 .quick-layers-container {
   position: relative;
   display: flex;
@@ -1090,7 +1107,6 @@ details[open] > .tree-summary {
   stroke: var(--color-primary);
 }
 
-/* ВЫБОР ЦВЕТА ЗНАКА В PROPERTY GRID (VS Style) */
 .vs-color-picker-wrap {
   display: flex;
   align-items: center;
@@ -1155,4 +1171,3 @@ details[open] > .tree-summary {
   border: none;
   border-radius: 2px;
 }
-
