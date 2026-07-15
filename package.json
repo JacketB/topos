@@ -46,7 +46,9 @@
     "@angular/cli": "^21.1.1",
     "@angular/compiler-cli": "^21.1.0",
     "@tauri-apps/cli": "^2.11.4",
+    "d3-contour": "^4.0.2",
     "jsdom": "^27.1.0",
+    "pngjs": "^7.0.0",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"
   }

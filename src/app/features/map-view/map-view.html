@@ -1,7 +1,299 @@
-<div class="map-wrapper">
-  <div #mapContainer class="map-container"></div>
-  
-  <button class="custom-compass" (click)="resetBearing()" [style.transform]="'rotate(' + (-bearing()) + 'deg)'" title="Сбросить поворот карты">
-    <div class="compass-arrow"></div>
-  </button>
+<div class="app-root-layout">
+  <div class="map-view-layout">
+    <aside class="tactical-sidebar qgis-sidebar" [style.width.px]="sidebarWidth()">
+      <div class="sidebar-top-branding">
+        <span class="qgis-app-title">Topos GIS</span>
+      </div>
+
+      <!-- ДОК-ПАНЕЛЬ: ТАКТИЧЕСКИЕ ЗНАКИ -->
+      <div class="qgis-dock-panel bottom-dock">
+        <div class="qgis-dock-header">
+          <span class="dock-title">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/>
+            </svg>
+            Тактические знаки
+          </span>
+          <span class="dock-actions">
+            <span class="dock-badge">{{ symbolsService.symbolsCount() }} знаков</span>
+          </span>
+        </div>
+
+        <div class="qgis-search-wrapper">
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="Поиск знаков..." 
+            [value]="symbolsService.symbolSearchQuery()" 
+            (input)="onSearchInput($event)"
+          />
+        </div>
+
+        <div class="qgis-dock-content symbols-list">
+          <ul class="xhtml-tree">
+            @for (category of symbolsService.groupedSymbols(); track category.id) {
+              <li>
+                <details [open]="isCategoryOpen(category.id)" (toggle)="onSymbolCategoryToggle(category.id, $event)">
+                  <summary class="tree-summary">
+                    <span class="summary-title">{{ category.name }} <span class="summary-count">({{ category.symbols.length }})</span></span>
+                  </summary>
+
+                  <div class="symbols-tree-grid">
+                    @for (item of category.symbols; track item.id) {
+                      <button 
+                        class="symbol-item-card" 
+                        [class.selected]="tacticalMapService.selectedSymbol()?.id === item.id"
+                        (click)="tacticalMapService.selectTemplateSymbol(item)"
+                        [title]="item.name">
+                        <div class="symbol-icon-wrapper">
+                          <img [src]="'symbols/' + item.symbol + '.svg'" [alt]="item.name" class="symbol-icon" />
+                        </div>
+                        <span class="symbol-name-full">{{ item.name }}</span>
+                      </button>
+                    }
+                  </div>
+                </details>
+              </li>
+            } @empty {
+              <li><div class="empty-list">Знаки не найдены</div></li>
+            }
+          </ul>
+        </div>
+      </div>
+
+      <!-- ДОК-ПАНЕЛЬ СВОЙСТВ ВЫБРАННОГО ОБЪЕКТА -->
+      @if (tacticalMapService.selectedPlacedSymbol()) {
+        <div class="qgis-dock-panel properties-dock-panel">
+          <div class="qgis-dock-header properties-header">
+            <span class="dock-title">Свойства выбранного знака</span>
+            <button class="dock-close-btn" (click)="tacticalMapService.selectedPlacedSymbol.set(null)" title="Закрыть свойства">✕</button>
+          </div>
+
+          <div class="properties-content">
+            <div class="selected-symbol-info">
+              <img [src]="'symbols/' + tacticalMapService.selectedPlacedSymbol().properties['symbol'] + '.svg'" alt="" class="property-icon" />
+              <div class="property-name-edit">
+                <label class="name-label">Название на карте:</label>
+                <input 
+                  type="text" 
+                  class="property-name-input" 
+                  [value]="tacticalMapService.selectedPlacedSymbol().properties['name']" 
+                  (input)="updatePlacedSymbolName($event)" 
+                  placeholder="Укажите название..."
+                />
+              </div>
+            </div>
+            
+            <div class="property-field">
+              <div class="field-label-row">
+                <span>Масштаб:</span>
+                <strong>{{ tacticalMapService.selectedPlacedSymbol().properties['size'] }}</strong>
+              </div>
+              <input 
+                type="range" 
+                min="0.03" 
+                max="0.25" 
+                step="0.01" 
+                [value]="tacticalMapService.selectedPlacedSymbol().properties['size']" 
+                (input)="updatePlacedSymbolSize($event)" 
+              />
+            </div>
+
+            <div class="property-field">
+              <div class="field-label-row">
+                <span>Поворот:</span>
+                <strong>{{ tacticalMapService.selectedPlacedSymbol().properties['angle'] }}°</strong>
+              </div>
+              <input 
+                type="range" 
+                min="0" 
+                max="360" 
+                step="5" 
+                [value]="tacticalMapService.selectedPlacedSymbol().properties['angle']" 
+                (input)="updatePlacedSymbolAngle($event)" 
+              />
+            </div>
+
+            <button class="delete-btn" (click)="tacticalMapService.deleteSelectedPlacedSymbol()">
+              Удалить объект
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ВЕРТИКАЛЬНЫЙ РЕСАЙЗЕР (Изменение ширины сайдбара) -->
+      <div class="qgis-horizontal-resizer" (mousedown)="onStartSidebarResize($event)" title="Потяните для изменения ширины панели"></div>
+    </aside>
+
+    <div class="map-wrapper">
+      <div #mapContainer class="map-container"></div>
+      
+      <div class="map-controls">
+        @if (measurementResult()) {
+          <div class="measurement-badge">
+            {{ measurementResult() }}
+          </div>
+        }
+
+        <button class="control-btn ruler-btn" [class.active]="isMeasuring()" (click)="toggleMeasurement()" title="Измерить расстояние">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.3 8.7L8.7 21.3c-1 1-2.5 1-3.4 0l-2.6-2.6c-1-1-1-2.5 0-3.4L15.3 2.7c1-1 2.5-1 3.4 0l2.6 2.6c1 1 1 2.5 0 3.4z"/>
+            <path d="M7 17l-1-1"/>
+            <path d="M10 14L8 12"/>
+            <path d="M13 11l-3-3"/>
+            <path d="M16 8l-1-1"/>
+          </svg>
+        </button>
+
+        <!-- БЫСТРОЕ МЕНЮ СЛОЕВ (Кнопка и всплывающая панель с SVG-иконками) -->
+        <div class="quick-layers-container">
+          @if (isQuickLayersMenuOpen()) {
+            <div class="quick-layers-popup">
+              <div class="quick-popup-header">Быстрое переключение слоев</div>
+              <div class="quick-icons-grid">
+                <!-- Рельеф и Горизонтали -->
+                <button class="quick-icon-btn" 
+                  [class.active]="mapLayersService.groups()[0]?.layers?.[0]?.visible || mapLayersService.groups()[0]?.layers?.[1]?.visible"
+                  (click)="onQuickLayerToggle('elevation')" title="Рельеф и горизонтали">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 20h18L14 6l-4 6-2-3-5 11z"/>
+                    <path d="M5 16c3-2 7-2 7 2"/>
+                  </svg>
+                  <span>Рельеф</span>
+                </button>
+
+                <!-- Военные объекты -->
+                <button class="quick-icon-btn" 
+                  [class.active]="mapLayersService.groups()[1]?.visible"
+                  (click)="onQuickLayerToggle('military')" title="Военные объекты">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
+                    <path d="M12 8v8"/>
+                    <path d="M8 12h8"/>
+                  </svg>
+                  <span>Военные</span>
+                </button>
+
+                <!-- Тактические знаки -->
+                <button class="quick-icon-btn" 
+                  [class.active]="mapLayersService.groups()[2]?.visible"
+                  (click)="onQuickLayerToggle('tactical')" title="Тактическая обстановка">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <span>Знаки</span>
+                </button>
+
+                <!-- Гидрография -->
+                <button class="quick-icon-btn" 
+                  [class.active]="mapLayersService.groups()[3]?.visible"
+                  (click)="onQuickLayerToggle('hydro')" title="Гидрография">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                  </svg>
+                  <span>Водоемы</span>
+                </button>
+
+                <!-- Растительность и леса -->
+                <button class="quick-icon-btn" 
+                  [class.active]="mapLayersService.groups()[4]?.visible"
+                  (click)="onQuickLayerToggle('landcover')" title="Растительность и грунты">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L7 12h10L12 2z"/>
+                    <path d="M12 10l-5 8h10l-5-8z"/>
+                    <path d="M12 18v4"/>
+                  </svg>
+                  <span>Леса</span>
+                </button>
+
+                <!-- Дороги и транспорт -->
+                <button class="quick-icon-btn" 
+                  [class.active]="mapLayersService.groups()[5]?.visible"
+                  (click)="onQuickLayerToggle('transport')" title="Дороги и транспорт">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 22L8 2h8l4 20"/>
+                    <path d="M12 6v4"/>
+                    <path d="M12 14v4"/>
+                  </svg>
+                  <span>Дороги</span>
+                </button>
+
+                <!-- Застройка и сооружения -->
+                <button class="quick-icon-btn" 
+                  [class.active]="mapLayersService.groups()[6]?.visible"
+                  (click)="onQuickLayerToggle('buildings')" title="Застройка и сооружения">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 21h18"/>
+                    <path d="M5 21V7l8-4v18"/>
+                    <path d="M19 21V11l-6-3"/>
+                    <path d="M9 9v1"/>
+                    <path d="M9 13v1"/>
+                    <path d="M9 17v1"/>
+                  </svg>
+                  <span>Застройка</span>
+                </button>
+
+                <!-- Границы и подписи -->
+                <button class="quick-icon-btn" 
+                  [class.active]="mapLayersService.groups()[7]?.visible"
+                  (click)="onQuickLayerToggle('labels_boundary')" title="Подписи и границы">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span>Подписи</span>
+                </button>
+              </div>
+            </div>
+          }
+
+          <button class="control-btn quick-layers-btn" [class.active]="isQuickLayersMenuOpen()" (click)="toggleQuickLayersMenu()" title="Быстрое меню слоев">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+              <polyline points="2 17 12 22 22 17"/>
+              <polyline points="2 12 12 17 22 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <button class="control-btn compass-btn" (click)="resetBearing()" [style.transform]="'rotate(' + (-bearing()) + 'deg)'" title="Сбросить поворот карты">
+          <div class="compass-arrow"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-status-bar">
+    <div class="status-left">
+      <span class="status-dot" [class.ready]="isAppReady()"></span>
+      <span class="status-text">{{ isAppReady() ? 'Система готова' : 'Инициализация и загрузка карты...' }}</span>
+    </div>
+
+    <div class="status-center">
+      <span class="scale-label">Масштаб:</span>
+      <div class="scale-dropdown">
+        <button class="scale-btn" (click)="toggleScaleMenu($event)">
+          <span>1 : {{ formatScale(currentScale()) }}</span>
+          <span class="scale-arrow">▼</span>
+        </button>
+
+        @if (isScaleMenuOpen()) {
+          <div class="scale-menu">
+            @for (preset of scalePresets; track preset.scale) {
+              <div class="scale-menu-item" (click)="selectPresetScale(preset, $event)">
+                {{ preset.label }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="status-right">
+      <span class="coords-label">Координаты:</span>
+      <strong class="coords-value">{{ cursorCoords() }}</strong>
+    </div>
+  </footer>
 </div>

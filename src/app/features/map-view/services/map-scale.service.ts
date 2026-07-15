@@ -15,10 +15,8 @@ export class MapScaleService {
     const center = map.getCenter();
     const zoom = map.getZoom();
 
-    // 1 pixel on map at equator is 156543.033928 meters / 2^zoom
     const metersPerPixel = (156543.033928 * Math.cos(center.lat * Math.PI / 180)) / Math.pow(2, zoom);
 
-    // Target scale bar width: roughly 150-200 px
     const maxMeters = 200 * metersPerPixel;
     const distanceMeters = this.getRoundNumber(maxMeters);
     const totalWidthPx = distanceMeters / metersPerPixel;
@@ -44,8 +42,12 @@ export class MapScaleService {
   selectScale(preset: ScalePreset, map: maplibregl.Map | null) {
     this.selectedScaleOption.set(preset);
     if (map) {
-      map.zoomTo(preset.zoom, { duration: 800 });
+      map.zoomTo(preset.zoom, { duration: 500 });
     }
+  }
+
+  getCurrentScale(zoom: number): number {
+    return Math.round(50000 * Math.pow(2, 13.2 - zoom));
   }
 
   private getRoundNumber(num: number): number {

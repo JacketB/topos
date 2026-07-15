@@ -1,5 +1,591 @@
-.map-wrapper {
+.app-root-layout {
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #ffffff;
+  color: #2f3640;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+}
+
+.map-view-layout {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* =========================================================
+   QGIS DOCK PANELS & RESIZABLE SIDEBAR LAYOUT
+   ========================================================= */
+.tactical-sidebar.qgis-sidebar {
+  min-width: 260px;
+  max-width: 700px;
+  background-color: #f8f9fa;
+  border-right: 1px solid #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  z-index: 5;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+  user-select: none;
+}
+
+.sidebar-top-branding {
+  padding: 12px 16px;
+  background-color: #0f172a;
+  color: #ffffff;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--color-primary);
+  flex-shrink: 0;
+}
+
+.qgis-app-title {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.qgis-app-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ДОК-ПАНЕЛЬ (Dock Container) */
+.qgis-dock-panel {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-panel);
+  overflow: hidden;
+  position: relative;
+}
+
+.qgis-dock-panel.bottom-dock {
+  flex: 1;
+  min-height: 140px;
+}
+
+/* ЗАГОЛОВОК ДОК-ПАНЕЛИ (QGIS Dock Header) */
+.qgis-dock-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-top: 1px solid #ffffff;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-main);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  flex-shrink: 0;
+}
+
+.dock-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dock-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dock-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background-color: #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.dock-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.15s;
+}
+
+.dock-close-btn:hover {
+  color: var(--color-danger);
+}
+
+/* ВЕРТИКАЛЬНЫЙ РЕСАЙЗЕР (Ресайз ширины сайдбара) */
+.qgis-horizontal-resizer {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  transition: background-color 0.15s;
+}
+
+.qgis-horizontal-resizer:hover,
+.qgis-horizontal-resizer:active {
+  background-color: rgba(59, 130, 246, 0.35);
+}
+
+/* ОБЕРТКА ПОИСКА В ПАНЕЛИ ЗНАКОВ */
+.qgis-search-wrapper {
+  padding: 6px 8px;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 10px;
+  background-color: #ffffff;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12px;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+}
+
+.search-input:hover {
+  border-color: #94a3b8;
+}
+
+.search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+/* КОНТЕНТ ДОК-ПАНЕЛЕЙ (Скроллируемый список) */
+.qgis-dock-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8f9fa;
+}
+
+.qgis-dock-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.qgis-dock-content::-webkit-scrollbar-track {
+  background: #f8f9fa;
+}
+
+.qgis-dock-content::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 3px;
+}
+
+.qgis-dock-content::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+/* ПАНЕЛЬ СВОЙСТВ ВЫБРАННОГО ОБЪЕКТА */
+.properties-dock-panel {
+  border-top: 2px solid #3b82f6;
+  background-color: #ffffff;
+  flex-shrink: 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.properties-header {
+  background: #eff6ff;
+  border-bottom: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+.properties-content {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* =========================================================
+   ДРЕВОВИДНЫЕ СПИСКИ ПО СТАНДАРТУ https://xhtml.ru/2022/html/tree-views/
+   ========================================================= */
+.xhtml-tree {
+  --spacing: 18px;
+  --radius: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.xhtml-tree summary {
+  display: list-item;
+}
+
+.xhtml-tree li {
+  display: block;
+  position: relative;
+  line-height: 1.4;
+}
+
+.xhtml-tree details {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  overflow: visible !important;
+}
+
+.tree-summary {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  background-color: #f8fafc;
+  border-radius: 6px;
+  transition: background-color 0.15s;
+  list-style: none;
+}
+
+.tree-summary::-webkit-details-marker,
+.tree-summary::marker {
+  display: none;
+}
+
+.tree-summary:hover {
+  background-color: #f1f5f9;
+}
+
+/* СТРЕЛОЧКА-ШЕВРОН для summary */
+.tree-summary::before {
+  content: '▸';
+  display: inline-block;
+  font-size: 11px;
+  color: #64748b;
+  transition: transform 0.15s ease;
+  width: 14px;
+  text-align: center;
+}
+
+details[open] > .tree-summary::before {
+  transform: rotate(90deg);
+  color: #2563eb;
+}
+
+details[open] > .tree-summary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.summary-group-left {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.summary-title {
+  flex: 1;
+  word-break: break-word;
+  white-space: normal;
+  color: #1e293b;
+}
+
+.summary-count {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 11px;
+}
+
+/* ВЛОЖЕННОЕ ДЕРЕВО (xhtml.ru tree-views lines) */
+.tree-sublayers {
+  list-style: none;
+  margin: 4px 0 6px calc(var(--radius) - var(--spacing));
+  padding: 0 8px 0 calc(2 * var(--spacing) - var(--radius));
+}
+
+.tree-sublayers li {
+  border-left: 2px solid #cbd5e1;
+  padding-left: calc(var(--spacing) - 4px);
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.tree-sublayers li:last-child {
+  border-color: transparent;
+}
+
+.tree-sublayers li::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: calc(var(--spacing) / -1.5);
+  left: -2px;
+  width: calc(var(--spacing) - 2px);
+  height: calc(var(--spacing));
+  border: solid #cbd5e1;
+  border-width: 0 0 2px 2px;
+}
+
+.tree-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.12s;
+  position: relative;
+  z-index: 1;
+}
+
+.tree-item-row:hover {
+  background-color: #f8fafc;
+}
+
+.checkbox-box, .checkbox-box-small {
+  width: 15px;
+  height: 15px;
+  min-width: 15px;
+  min-height: 15px;
+  border-radius: 3px;
+  border: 1.5px solid #cbd5e1;
+  background-color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  margin-top: 1px;
+}
+
+.checkbox-box-small {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  min-height: 14px;
+}
+
+.checkbox-box.checked, .checkbox-box-small.checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.item-title-full {
+  font-size: 11px;
+  color: #334155;
+  flex: 1;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.tree-item-row:hover .item-title-full {
+  color: #0f172a;
+}
+
+/* СПИСОК ЗНАКОВ В ДЕРЕВЕ */
+.symbols-tree-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px 8px 16px;
+}
+
+.symbol-item-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background-color: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  width: 100%;
+  color: #334155;
+  box-sizing: border-box;
+}
+
+.symbol-item-card:hover {
+  background-color: var(--color-primary-light);
+  transform: translateX(2px);
+  color: var(--color-text-main);
+}
+
+.symbol-item-card.selected {
+  background-color: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.symbol-icon-wrapper {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s;
+  margin-top: 1px;
+}
+
+.symbol-item-card.selected .symbol-icon-wrapper {
+  border-color: #93c5fd;
+}
+
+.symbol-icon {
+  max-width: 22px;
+  max-height: 22px;
+  object-fit: contain;
+}
+
+.symbol-name-full {
+  font-size: 12px;
+  color: #334155;
+  flex: 1;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.symbol-item-card.selected .symbol-name-full {
+  color: #1d4ed8;
+}
+
+.empty-list {
+  text-align: center;
+  padding: 32px 16px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.selected-symbol-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background-color: #f8fafc;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.property-icon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  margin-top: 4px;
+}
+
+.property-name-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.name-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.property-name-input {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background-color: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.property-name-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.property-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.field-label-row strong {
+  color: #1e293b;
+}
+
+.property-field input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.delete-btn {
+  width: 100%;
+  padding: 8px;
+  background-color: transparent;
+  color: var(--color-danger);
+  border: 1.5px solid var(--color-danger-light);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.delete-btn:hover {
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #ffffff;
+}
+
+.map-wrapper {
+  flex: 1;
   height: 100%;
   position: relative;
   overflow: hidden;
@@ -10,49 +596,314 @@
   height: 100%;
 }
 
-.custom-compass {
+.map-controls {
   position: absolute;
   bottom: 24px;
   right: 24px;
-  width: 46px;
-  height: 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  z-index: 10;
+}
+
+.control-btn {
+  width: 44px;
+  height: 44px;
   background-color: #ffffff;
-  border: 2px solid #2f3542;
+  border: 1px solid var(--color-border);
   border-radius: 50%;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   outline: none;
-  z-index: 10;
   padding: 0;
-  transition: background-color 0.2s, box-shadow 0.2s;
+  color: var(--color-text-main);
+  transition: all 0.15s ease;
 }
 
-.custom-compass:hover {
-  background-color: #f1f2f6;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
+.control-btn:hover {
+  background-color: var(--color-bg-app);
+  box-shadow: var(--shadow-lg);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.control-btn.active {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+.compass-btn {
+  transition: transform 0.15s ease-out, background-color 0.15s, border-color 0.15s;
 }
 
 .compass-arrow {
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-bottom: 15px solid #ff4757; /* Красная стрелка на север */
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 13px solid var(--color-primary);
   position: relative;
-  top: -7px;
+  top: -6px;
 }
 
 .compass-arrow::after {
   content: '';
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 15px solid #747d8c; /* Серая стрелка на юг */
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 13px solid var(--color-text-muted);
   position: absolute;
-  top: 15px;
-  left: -6px;
+  top: 13px;
+  left: -5px;
+}
+
+.measurement-badge {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  border: 2px solid #ffffff;
+  animation: pulse 1.5s infinite;
+  white-space: nowrap;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+.app-status-bar {
+  height: 30px;
+  min-height: 30px;
+  background-color: #f1f5f9;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  z-index: 20;
+  user-select: none;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.status-dot.ready {
+  background-color: var(--color-success);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.status-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.coords-label {
+  color: var(--color-text-muted);
+}
+
+.coords-value {
+  color: var(--color-text-main);
+  font-family: 'Consolas', 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  background-color: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.scale-label {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.scale-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.scale-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: var(--color-text-main);
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scale-btn:hover {
+  border-color: var(--color-primary);
+  background-color: #f8fafc;
+}
+
+.scale-arrow {
+  font-size: 9px;
+  color: var(--color-text-muted);
+}
+
+.scale-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 4px;
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  min-width: 210px;
+  overflow: hidden;
+  z-index: 50;
+  animation: scaleMenuFadeIn 0.15s ease-out;
+}
+
+@keyframes scaleMenuFadeIn {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.scale-menu-item {
+  padding: 8px 12px;
+  color: var(--color-text-main);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.scale-menu-item:last-child {
+  border-bottom: none;
+}
+
+.scale-menu-item:hover {
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+/* БЫСТРОЕ МЕНЮ ПЕРЕКЛЮЧЕНИЯ СЛОЕВ (Glassmorphism & QGIS Dark/Light Style) */
+.quick-layers-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.quick-layers-popup {
+  position: absolute;
+  right: 56px;
+  bottom: 0;
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  padding: 12px;
+  width: 290px;
+  z-index: 100;
+  animation: quickMenuFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes quickMenuFadeIn {
+  from { opacity: 0; transform: translateX(8px) scale(0.96); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.quick-popup-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.quick-icons-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.quick-icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 4px;
+  background-color: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.quick-icon-btn:hover {
+  background-color: #f1f5f9;
+  color: var(--color-text-main);
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.quick-icon-btn.active {
+  background-color: #eef2ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 1px 3px rgba(70, 107, 247, 0.15);
+}
+
+.quick-icon-btn.active svg {
+  stroke: var(--color-primary);
 }

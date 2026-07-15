@@ -267,6 +267,44 @@ export const mapLayers = [
     }
   },
   {
+    id: 'contour_line',
+    type: 'line',
+    source: 'contours-source',
+    layout: {
+      visibility: 'none',
+      'line-join': 'round',
+      'line-cap': 'round'
+    },
+    paint: {
+      'line-color': '#8b5a2b',
+      'line-width': [
+        'match',
+        ['get', 'ele'],
+        [150, 180, 210, 240, 270, 300, 330],
+        1.2,
+        0.65
+      ],
+      'line-opacity': ['interpolate', ['linear'], ['zoom'], 7, 0.55, 11, 0.88]
+    }
+  },
+  {
+    id: 'contour_label',
+    type: 'symbol',
+    source: 'contours-source',
+    layout: {
+      visibility: 'none',
+      'symbol-placement': 'line',
+      'text-field': ['concat', ['to-string', ['get', 'ele']], 'м'],
+      'text-size': ['interpolate', ['linear'], ['zoom'], 11, 9, 14, 11],
+      'text-max-angle': 30
+    },
+    paint: {
+      'text-color': '#8b5a2b',
+      'text-halo-color': '#ffffff',
+      'text-halo-width': 1.2
+    }
+  },
+  {
     id: 'mountain_peak_labels',
     type: 'symbol',
     source: 'belarus-data',
