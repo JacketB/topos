@@ -224,6 +224,11 @@ export class MapView implements AfterViewInit, OnDestroy {
     this.tacticalMapService.updatePlacedSymbolName(input.value);
   }
 
+  updatePlacedSymbolColor(event: Event | string) {
+    const color = typeof event === 'string' ? event : (event.target as HTMLInputElement).value;
+    this.tacticalMapService.updatePlacedSymbolColor(color);
+  }
+
   updateTemplateSize(event: Event) {
     const input = event.target as HTMLInputElement;
     this.tacticalMapService.updateTemplateSize(parseFloat(input.value));
@@ -237,6 +242,11 @@ export class MapView implements AfterViewInit, OnDestroy {
   updateTemplateName(event: Event) {
     const input = event.target as HTMLInputElement;
     this.tacticalMapService.updateTemplateName(input.value);
+  }
+
+  updateTemplateColor(event: Event | string) {
+    const color = typeof event === 'string' ? event : (event.target as HTMLInputElement).value;
+    this.tacticalMapService.updateTemplateColor(color);
   }
 
   toggleScaleMenu(event: Event) {

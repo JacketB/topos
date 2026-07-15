@@ -133,6 +133,27 @@
               </div>
 
               <div class="vs-grid-row">
+                <span class="vs-grid-label">Цвет знака</span>
+                <div class="vs-grid-value vs-color-picker-wrap">
+                  <div class="vs-color-swatches">
+                    <button class="vs-swatch" style="background: #ef4444;" (click)="updatePlacedSymbolColor('#ef4444')" title="Красный (Противник)"></button>
+                    <button class="vs-swatch" style="background: #3b82f6;" (click)="updatePlacedSymbolColor('#3b82f6')" title="Синий (Свои)"></button>
+                    <button class="vs-swatch" style="background: #22c55e;" (click)="updatePlacedSymbolColor('#22c55e')" title="Зеленый"></button>
+                    <button class="vs-swatch" style="background: #eab308;" (click)="updatePlacedSymbolColor('#eab308')" title="Желтый"></button>
+                    <button class="vs-swatch" style="background: #000000;" (click)="updatePlacedSymbolColor('#000000')" title="Черный"></button>
+                    <button class="vs-swatch vs-swatch-reset" (click)="updatePlacedSymbolColor('')" title="Сбросить на оригинал">✕</button>
+                  </div>
+                  <input 
+                    type="color" 
+                    class="vs-color-input" 
+                    [value]="tacticalMapService.selectedPlacedSymbol().properties['color'] || '#000000'" 
+                    (input)="updatePlacedSymbolColor($event)" 
+                    title="Произвольный цвет"
+                  />
+                </div>
+              </div>
+
+              <div class="vs-grid-row">
                 <span class="vs-grid-label">Координаты</span>
                 <div class="vs-grid-value vs-readonly">
                   {{ tacticalMapService.selectedPlacedSymbol().geometry.coordinates[1] | number:'1.4-4' }}°, {{ tacticalMapService.selectedPlacedSymbol().geometry.coordinates[0] | number:'1.4-4' }}°
@@ -198,6 +219,27 @@
                   />
                 </div>
               </div>
+
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Цвет знака</span>
+                <div class="vs-grid-value vs-color-picker-wrap">
+                  <div class="vs-color-swatches">
+                    <button class="vs-swatch" style="background: #ef4444;" (click)="updateTemplateColor('#ef4444')" title="Красный (Противник)"></button>
+                    <button class="vs-swatch" style="background: #3b82f6;" (click)="updateTemplateColor('#3b82f6')" title="Синий (Свои)"></button>
+                    <button class="vs-swatch" style="background: #22c55e;" (click)="updateTemplateColor('#22c55e')" title="Зеленый"></button>
+                    <button class="vs-swatch" style="background: #eab308;" (click)="updateTemplateColor('#eab308')" title="Желтый"></button>
+                    <button class="vs-swatch" style="background: #000000;" (click)="updateTemplateColor('#000000')" title="Черный"></button>
+                    <button class="vs-swatch vs-swatch-reset" (click)="updateTemplateColor('')" title="Сбросить на оригинал">✕</button>
+                  </div>
+                  <input 
+                    type="color" 
+                    class="vs-color-input" 
+                    [value]="tacticalMapService.templateCustomColor() || '#000000'" 
+                    (input)="updateTemplateColor($event)" 
+                    title="Произвольный цвет"
+                  />
+                </div>
+              </div>
             </div>
 
             <div class="vs-info-footer">
@@ -220,11 +262,15 @@
               </div>
               <div class="vs-grid-row">
                 <span class="vs-grid-label">Масштаб</span>
-                <div class="vs-grid-value"><input type="range" class="vs-range" disabled /></div>
+                <div class="vs-grid-value"><input type="text" class="vs-input" disabled placeholder="Нет данных" /></div>
               </div>
               <div class="vs-grid-row">
                 <span class="vs-grid-label">Поворот</span>
                 <div class="vs-grid-value"><input type="range" class="vs-range" disabled /></div>
+              </div>
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Цвет знака</span>
+                <div class="vs-grid-value"><input type="text" class="vs-input" disabled placeholder="Нет данных" /></div>
               </div>
             </div>
 

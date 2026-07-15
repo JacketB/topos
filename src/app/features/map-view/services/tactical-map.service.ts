@@ -2,6 +2,8 @@ import { Injectable, signal } from '@angular/core';
 import maplibregl from 'maplibre-gl';
 import { TacticalSymbol } from '../consts/tactical-symbols.const';
 
+type SymbolLoadCallback = () => void;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -33,6 +35,8 @@ export class TacticalMapService {
   private dragFeature: any = null;
   private dragRafId: any = null;
   private pendingDragLngLat: [number, number] | null = null;
+  readonly templateCustomColor = signal<string>('');
+
 
   initLayers(map: maplibregl.Map) {
     if (!map.getSource('tactical-symbols')) {
@@ -47,7 +51,7 @@ export class TacticalMapService {
         type: 'symbol',
         source: 'tactical-symbols',
         layout: {
-          'icon-image': ['get', 'symbol'],
+          'icon-image': ['coalesce', ['get', 'iconId'], ['get', 'symbol']],
           'icon-size': ['coalesce', ['get', 'size'], 0.08],
           'icon-rotate': ['coalesce', ['get', 'angle'], 0],
           'icon-allow-overlap': true,
@@ -83,11 +87,15 @@ export class TacticalMapService {
       const template = this.selectedSymbol();
       if (template) {
         const coords: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+        const color = this.templateCustomColor();
+        const iconId = color ? `${template.symbol}_c_${color.replace('#', '')}` : template.symbol;
         const newSymbol = {
           type: 'Feature',
           properties: {
             id: Date.now(),
             symbol: template.symbol,
+            iconId: iconId,
+            color: color || '',
             name: this.templateCustomName() || template.name,
             size: this.templateCustomSize(),
             angle: this.templateCustomAngle()
@@ -98,11 +106,17 @@ export class TacticalMapService {
           }
         };
 
-        this.ensureSymbolImageLoaded(template.symbol, () => {
+        const onReady = () => {
           this.placedSymbols.update(prev => [...prev, newSymbol]);
           this.updateTacticalSymbolsSource();
           this.selectedPlacedSymbol.set(newSymbol);
-        });
+        };
+
+        if (color) {
+          this.ensureSymbolColorImageLoaded(template.symbol, color, onReady);
+        } else {
+          this.ensureSymbolImageLoaded(template.symbol, onReady);
+        }
         this.selectedSymbol.set(null);
         map.getCanvas().style.cursor = '';
         return;
@@ -125,7 +139,7 @@ export class TacticalMapService {
     });
   }
 
-  ensureSymbolImageLoaded(symbolId: string, callback?: () => void) {
+  ensureSymbolImageLoaded(symbolId: string, callback: SymbolLoadCallback | null = null) {
     if (!this.mapInstance || !symbolId) {
       if (callback) callback();
       return;
@@ -147,6 +161,64 @@ export class TacticalMapService {
     };
   }
 
+  ensureSymbolColorImageLoaded(symbolId: string, color: string, callback: SymbolLoadCallback | null = null) {
+    if (!this.mapInstance || !symbolId) {
+      if (callback) callback();
+      return;
+    }
+    if (!color) {
+      this.ensureSymbolImageLoaded(symbolId, callback);
+      return;
+    }
+
+    const coloredIconId = `${symbolId}_c_${color.replace('#', '')}`;
+    if (this.mapInstance.hasImage(coloredIconId)) {
+      if (callback) callback();
+      return;
+    }
+
+    fetch(`symbols/${symbolId}.svg`)
+      .then(r => r.text())
+      .then(svgText => {
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(svgText, 'image/svg+xml');
+          const elements = doc.querySelectorAll('path, polygon, circle, rect, line, polyline, ellipse');
+          elements.forEach(el => {
+            const stroke = el.getAttribute('stroke');
+            if (stroke && stroke !== 'none' && stroke !== 'transparent') {
+              el.setAttribute('stroke', color);
+            }
+            const fill = el.getAttribute('fill');
+            if (fill && fill !== 'none' && fill !== 'transparent') {
+              el.setAttribute('fill', color);
+            }
+            if (!stroke && !fill && el.tagName.toLowerCase() === 'path') {
+              el.setAttribute('fill', color);
+            }
+          });
+          const serialized = new XMLSerializer().serializeToString(doc);
+          const img = new Image();
+          img.src = `data:image/svg+xml;charset=utf-8,` + encodeURIComponent(serialized);
+          img.onload = () => {
+            if (this.mapInstance && !this.mapInstance.hasImage(coloredIconId)) {
+              this.mapInstance.addImage(coloredIconId, img);
+            }
+            if (callback) callback();
+          };
+          img.onerror = () => {
+            if (callback) callback();
+          };
+        } catch (e) {
+          console.error('Ошибка перекраски символа:', e);
+          if (callback) callback();
+        }
+      })
+      .catch(() => {
+        if (callback) callback();
+      });
+  }
+
   selectTemplateSymbol(symbol: TacticalSymbol) {
     if (this.selectedSymbol()?.id === symbol.id) {
       this.selectedSymbol.set(null);
@@ -156,6 +228,7 @@ export class TacticalMapService {
       this.templateCustomName.set(symbol.name);
       this.templateCustomSize.set(0.08);
       this.templateCustomAngle.set(0);
+      this.templateCustomColor.set('');
       if (this.mapInstance) {
         this.mapInstance.getCanvas().style.cursor = 'copy';
         this.ensureSymbolImageLoaded(symbol.symbol);
@@ -204,6 +277,35 @@ export class TacticalMapService {
       this.syncSelectedPlacedSymbol();
       this.updateTacticalSymbolsSource();
     }
+  }
+
+  updatePlacedSymbolColor(color: string) {
+    const selected = this.selectedPlacedSymbol();
+    if (selected) {
+      const symbolId = selected.properties['symbol'];
+      const iconId = color ? `${symbolId}_c_${color.replace('#', '')}` : symbolId;
+
+      const applyUpdate = () => {
+        this.placedSymbols.update(prev => 
+          prev.map(s => s.properties['id'] === selected.properties['id'] ? {
+            ...s,
+            properties: { ...s.properties, color, iconId }
+          } : s)
+        );
+        this.syncSelectedPlacedSymbol();
+        this.updateTacticalSymbolsSource();
+      };
+
+      if (color) {
+        this.ensureSymbolColorImageLoaded(symbolId, color, applyUpdate);
+      } else {
+        applyUpdate();
+      }
+    }
+  }
+
+  updateTemplateColor(color: string) {
+    this.templateCustomColor.set(color);
   }
 
   deleteSelectedPlacedSymbol() {
