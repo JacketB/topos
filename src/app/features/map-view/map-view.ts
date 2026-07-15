@@ -1,4 +1,5 @@
 import { Component, AfterViewInit, OnDestroy, viewChild, ElementRef, signal, inject } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import maplibregl from 'maplibre-gl';
 import { PMTiles, Protocol } from 'pmtiles';
 import { mapLayers } from '../../consts/map-layers';
@@ -12,7 +13,7 @@ import { SCALE_PRESETS, ScalePreset } from './consts/map-scale.const';
 
 @Component({
   selector: 'app-map-view',
-  imports: [],
+  imports: [DecimalPipe],
   templateUrl: './map-view.html',
   styleUrl: './map-view.css',
 })
@@ -221,6 +222,21 @@ export class MapView implements AfterViewInit, OnDestroy {
   updatePlacedSymbolName(event: Event) {
     const input = event.target as HTMLInputElement;
     this.tacticalMapService.updatePlacedSymbolName(input.value);
+  }
+
+  updateTemplateSize(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.tacticalMapService.updateTemplateSize(parseFloat(input.value));
+  }
+
+  updateTemplateAngle(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.tacticalMapService.updateTemplateAngle(parseInt(input.value, 10));
+  }
+
+  updateTemplateName(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.tacticalMapService.updateTemplateName(input.value);
   }
 
   toggleScaleMenu(event: Event) {

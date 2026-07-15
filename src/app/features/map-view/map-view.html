@@ -61,65 +61,179 @@
         </div>
       </div>
 
-      <!-- ДОК-ПАНЕЛЬ СВОЙСТВ ВЫБРАННОГО ОБЪЕКТА -->
-      @if (tacticalMapService.selectedPlacedSymbol()) {
-        <div class="qgis-dock-panel properties-dock-panel">
-          <div class="qgis-dock-header properties-header">
-            <span class="dock-title">Свойства выбранного знака</span>
-            <button class="dock-close-btn" (click)="tacticalMapService.selectedPlacedSymbol.set(null)" title="Закрыть свойства">✕</button>
-          </div>
-
-          <div class="properties-content">
-            <div class="selected-symbol-info">
-              <img [src]="'symbols/' + tacticalMapService.selectedPlacedSymbol().properties['symbol'] + '.svg'" alt="" class="property-icon" />
-              <div class="property-name-edit">
-                <label class="name-label">Название на карте:</label>
-                <input 
-                  type="text" 
-                  class="property-name-input" 
-                  [value]="tacticalMapService.selectedPlacedSymbol().properties['name']" 
-                  (input)="updatePlacedSymbolName($event)" 
-                  placeholder="Укажите название..."
-                />
-              </div>
-            </div>
-            
-            <div class="property-field">
-              <div class="field-label-row">
-                <span>Масштаб:</span>
-                <strong>{{ tacticalMapService.selectedPlacedSymbol().properties['size'] }}</strong>
-              </div>
-              <input 
-                type="range" 
-                min="0.03" 
-                max="0.25" 
-                step="0.01" 
-                [value]="tacticalMapService.selectedPlacedSymbol().properties['size']" 
-                (input)="updatePlacedSymbolSize($event)" 
-              />
-            </div>
-
-            <div class="property-field">
-              <div class="field-label-row">
-                <span>Поворот:</span>
-                <strong>{{ tacticalMapService.selectedPlacedSymbol().properties['angle'] }}°</strong>
-              </div>
-              <input 
-                type="range" 
-                min="0" 
-                max="360" 
-                step="5" 
-                [value]="tacticalMapService.selectedPlacedSymbol().properties['angle']" 
-                (input)="updatePlacedSymbolAngle($event)" 
-              />
-            </div>
-
-            <button class="delete-btn" (click)="tacticalMapService.deleteSelectedPlacedSymbol()">
-              Удалить объект
-            </button>
-          </div>
+      <!-- ДОК-ПАНЕЛЬ СВОЙСТВ (Visual Studio Property Grid Style) -->
+      <div class="qgis-dock-panel properties-dock-panel">
+        <div class="qgis-dock-header properties-header">
+          <span class="dock-title">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 3h12M2 8h12M2 13h12"/>
+            </svg>
+            Свойства элемента
+          </span>
+          @if (tacticalMapService.selectedPlacedSymbol()) {
+            <button class="dock-close-btn" (click)="tacticalMapService.selectedPlacedSymbol.set(null)" title="Сбросить выбор">✕</button>
+          } @else if (tacticalMapService.selectedSymbol()) {
+            <button class="dock-close-btn" (click)="tacticalMapService.selectedSymbol.set(null)" title="Сбросить шаблон">✕</button>
+          }
         </div>
-      }
+
+        <div class="properties-content vs-property-grid">
+          @if (tacticalMapService.selectedPlacedSymbol()) {
+            <!-- 1. СВОЙСТВА ОБЪЕКТА НА КАРТЕ -->
+            <div class="vs-header-banner active-banner">
+              <img [src]="'symbols/' + tacticalMapService.selectedPlacedSymbol().properties['symbol'] + '.svg'" alt="" class="property-icon" />
+              <div class="vs-banner-text">
+                <span class="vs-banner-title">Объект на карте</span>
+                <span class="vs-banner-sub">{{ tacticalMapService.selectedPlacedSymbol().properties['symbol'] }}</span>
+              </div>
+            </div>
+
+            <div class="vs-grid-table">
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Название</span>
+                <div class="vs-grid-value">
+                  <input 
+                    type="text" 
+                    class="vs-input" 
+                    [value]="tacticalMapService.selectedPlacedSymbol().properties['name']" 
+                    (input)="updatePlacedSymbolName($event)" 
+                    placeholder="Название на карте..."
+                  />
+                </div>
+              </div>
+
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Масштаб ({{ tacticalMapService.selectedPlacedSymbol().properties['size'] }})</span>
+                <div class="vs-grid-value">
+                  <input 
+                    type="range" 
+                    min="0.03" 
+                    max="0.25" 
+                    step="0.01" 
+                    class="vs-range"
+                    [value]="tacticalMapService.selectedPlacedSymbol().properties['size']" 
+                    (input)="updatePlacedSymbolSize($event)" 
+                  />
+                </div>
+              </div>
+
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Поворот ({{ tacticalMapService.selectedPlacedSymbol().properties['angle'] }}°)</span>
+                <div class="vs-grid-value">
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="360" 
+                    step="5" 
+                    class="vs-range"
+                    [value]="tacticalMapService.selectedPlacedSymbol().properties['angle']" 
+                    (input)="updatePlacedSymbolAngle($event)" 
+                  />
+                </div>
+              </div>
+
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Координаты</span>
+                <div class="vs-grid-value vs-readonly">
+                  {{ tacticalMapService.selectedPlacedSymbol().geometry.coordinates[1] | number:'1.4-4' }}°, {{ tacticalMapService.selectedPlacedSymbol().geometry.coordinates[0] | number:'1.4-4' }}°
+                </div>
+              </div>
+            </div>
+
+            <div class="vs-actions-footer">
+              <button class="vs-delete-btn" (click)="tacticalMapService.deleteSelectedPlacedSymbol()">
+                Удалить объект с карты
+              </button>
+            </div>
+          } @else if (tacticalMapService.selectedSymbol()) {
+            <!-- 2. СВОЙСТВА ШАБЛОНА (Клик по иконке в каталоге, перед нанесением) -->
+            <div class="vs-header-banner active-banner template-banner">
+              <img [src]="'symbols/' + tacticalMapService.selectedSymbol()!.symbol + '.svg'" alt="" class="property-icon" />
+              <div class="vs-banner-text">
+                <span class="vs-banner-title">Шаблон для нанесения</span>
+                <span class="vs-banner-sub">{{ tacticalMapService.selectedSymbol()!.name }}</span>
+              </div>
+            </div>
+
+            <div class="vs-grid-table">
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Название</span>
+                <div class="vs-grid-value">
+                  <input 
+                    type="text" 
+                    class="vs-input" 
+                    [value]="tacticalMapService.templateCustomName()" 
+                    (input)="updateTemplateName($event)" 
+                    placeholder="Название по умолчанию..."
+                  />
+                </div>
+              </div>
+
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Масштаб ({{ tacticalMapService.templateCustomSize() }})</span>
+                <div class="vs-grid-value">
+                  <input 
+                    type="range" 
+                    min="0.03" 
+                    max="0.25" 
+                    step="0.01" 
+                    class="vs-range"
+                    [value]="tacticalMapService.templateCustomSize()" 
+                    (input)="updateTemplateSize($event)" 
+                  />
+                </div>
+              </div>
+
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Поворот ({{ tacticalMapService.templateCustomAngle() }}°)</span>
+                <div class="vs-grid-value">
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="360" 
+                    step="5" 
+                    class="vs-range"
+                    [value]="tacticalMapService.templateCustomAngle()" 
+                    (input)="updateTemplateAngle($event)" 
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="vs-info-footer">
+              <span>💡 Кликните на карту для размещения знака с этими параметрами.</span>
+            </div>
+          } @else {
+            <!-- 3. НИЧЕГО НЕ ВЫБРАНО (Закрепленная панель Visual Studio Style) -->
+            <div class="vs-header-banner inactive-banner">
+              <div class="vs-icon-placeholder"></div>
+              <div class="vs-banner-text">
+                <span class="vs-banner-title"></span>
+                <span class="vs-banner-sub"></span>
+              </div>
+            </div>
+
+            <div class="vs-grid-table disabled-grid">
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Название</span>
+                <div class="vs-grid-value"><input type="text" class="vs-input" disabled placeholder="Нет данных" /></div>
+              </div>
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Масштаб</span>
+                <div class="vs-grid-value"><input type="range" class="vs-range" disabled /></div>
+              </div>
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Поворот</span>
+                <div class="vs-grid-value"><input type="range" class="vs-range" disabled /></div>
+              </div>
+            </div>
+
+            <div class="vs-info-footer inactive-footer">
+              <span>💡 Выберите иконку в каталоге или знак на карте для настройки его свойств.</span>
+            </div>
+          }
+        </div>
+      </div>
 
       <!-- ВЕРТИКАЛЬНЫЙ РЕСАЙЗЕР (Изменение ширины сайдбара) -->
       <div class="qgis-horizontal-resizer" (mousedown)="onStartSidebarResize($event)" title="Потяните для изменения ширины панели"></div>

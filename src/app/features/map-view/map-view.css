@@ -203,26 +203,208 @@
   background-color: #94a3b8;
 }
 
-/* ПАНЕЛЬ СВОЙСТВ ВЫБРАННОГО ОБЪЕКТА */
+/* =========================================================
+   ПАНЕЛЬ СВОЙСТВ (Visual Studio Property Grid Style)
+   ========================================================= */
 .properties-dock-panel {
-  border-top: 2px solid #3b82f6;
+  border-top: 1px solid #cbd5e1;
   background-color: #ffffff;
-  flex-shrink: 0;
-  max-height: 260px;
-  overflow-y: auto;
+  flex: 0 0 auto;
+  min-height: 230px;
+  max-height: 48%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.04);
 }
 
 .properties-header {
-  background: #eff6ff;
-  border-bottom: 1px solid #bfdbfe;
-  color: #1d4ed8;
+  background: #f1f5f9;
+  border-bottom: 1px solid #cbd5e1;
+  color: #334155;
+  font-weight: 700;
 }
 
-.properties-content {
-  padding: 10px;
+.vs-property-grid {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  background-color: #f8fafc;
+  font-size: 12px;
+}
+
+.vs-header-banner {
+  display: flex;
+  align-items: center;
   gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  flex-shrink: 0;
+}
+
+.vs-header-banner.active-banner {
+  border-left: 4px solid var(--color-primary);
+}
+
+.vs-header-banner.template-banner {
+  border-left-color: #10b981;
+}
+
+.vs-header-banner.inactive-banner {
+  border-left: 4px solid #cbd5e1;
+  opacity: 0.8;
+}
+
+.vs-icon-placeholder {
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.vs-banner-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vs-banner-title {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vs-banner-sub {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vs-grid-table {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #ffffff;
+}
+
+.vs-grid-row {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.vs-grid-row:last-child {
+  border-bottom: none;
+}
+
+.vs-grid-label {
+  width: 44%;
+  padding: 4px 8px;
+  color: #475569;
+  font-weight: 600;
+  background-color: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vs-grid-value {
+  flex: 1;
+  padding: 2px 8px;
+  display: flex;
+  align-items: center;
+}
+
+.vs-grid-value.vs-readonly {
+  color: #334155;
+  font-family: monospace;
+  font-size: 11px;
+  user-select: text;
+}
+
+.vs-input {
+  width: 100%;
+  border: 1px solid transparent;
+  padding: 3px 6px;
+  font-size: 12px;
+  color: #0f172a;
+  background: transparent;
+  outline: none;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.vs-input:focus {
+  border-color: var(--color-primary);
+  background: #ffffff;
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.vs-input:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.vs-range {
+  width: 100%;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.vs-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.vs-actions-footer {
+  padding: 8px 12px;
+  background: #ffffff;
+  margin-top: auto;
+}
+
+.vs-delete-btn {
+  width: 100%;
+  padding: 6px;
+  background-color: #fef2f2;
+  color: var(--color-danger);
+  border: 1px solid #fca5a5;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vs-delete-btn:hover {
+  background-color: var(--color-danger);
+  color: #ffffff;
+  border-color: var(--color-danger);
+}
+
+.vs-info-footer {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #64748b;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  margin-top: auto;
+}
+
+.vs-info-footer.inactive-footer {
+  color: #94a3b8;
 }
 
 /* =========================================================

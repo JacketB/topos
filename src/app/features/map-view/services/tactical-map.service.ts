@@ -8,6 +8,20 @@ import { TacticalSymbol } from '../consts/tactical-symbols.const';
 export class TacticalMapService {
   readonly placedSymbols = signal<any[]>([]);
   readonly selectedSymbol = signal<TacticalSymbol | null>(null);
+  readonly templateCustomName = signal<string>('');
+  readonly templateCustomSize = signal<number>(0.08);
+  readonly templateCustomAngle = signal<number>(0);
+
+  updateTemplateName(name: string) {
+    this.templateCustomName.set(name);
+  }
+  updateTemplateSize(size: number) {
+    this.templateCustomSize.set(size);
+  }
+  updateTemplateAngle(angle: number) {
+    this.templateCustomAngle.set(angle);
+  }
+
   readonly selectedPlacedSymbol = signal<any | null>(null);
 
   selectPlacedSymbol(symbol: any | null) {
@@ -74,9 +88,9 @@ export class TacticalMapService {
           properties: {
             id: Date.now(),
             symbol: template.symbol,
-            name: template.name,
-            size: 0.08,
-            angle: 0
+            name: this.templateCustomName() || template.name,
+            size: this.templateCustomSize(),
+            angle: this.templateCustomAngle()
           },
           geometry: {
             type: 'Point',
@@ -87,6 +101,7 @@ export class TacticalMapService {
         this.ensureSymbolImageLoaded(template.symbol, () => {
           this.placedSymbols.update(prev => [...prev, newSymbol]);
           this.updateTacticalSymbolsSource();
+          this.selectedPlacedSymbol.set(newSymbol);
         });
         this.selectedSymbol.set(null);
         map.getCanvas().style.cursor = '';
@@ -138,6 +153,9 @@ export class TacticalMapService {
       if (this.mapInstance) this.mapInstance.getCanvas().style.cursor = '';
     } else {
       this.selectedSymbol.set(symbol);
+      this.templateCustomName.set(symbol.name);
+      this.templateCustomSize.set(0.08);
+      this.templateCustomAngle.set(0);
       if (this.mapInstance) {
         this.mapInstance.getCanvas().style.cursor = 'copy';
         this.ensureSymbolImageLoaded(symbol.symbol);
