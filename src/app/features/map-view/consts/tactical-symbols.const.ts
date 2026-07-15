@@ -79,6 +79,108 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
     ]
   },
   {
+    id: "fortification_ussr",
+    name: "Инженерная фортификация (МО СССР)",
+    symbols: [
+      {
+        id: "fort_trench_shelter",
+        name: "Стрелковая ячейка",
+        symbol: "fort_trench_shelter",
+        size: 0.08
+      },
+      {
+        id: "fort_tank_trench",
+        name: "Окоп для танка",
+        symbol: "fort_tank_trench",
+        size: 0.08
+      },
+      {
+        id: "fort_bmp_trench",
+        name: "Окоп для БМП/БТР",
+        symbol: "fort_bmp_trench",
+        size: 0.08
+      },
+      {
+        id: "fort_art_trench",
+        name: "Окоп для орудия",
+        symbol: "fort_art_trench",
+        size: 0.08
+      },
+      {
+        id: "fort_dzot",
+        name: "ДЗОТ",
+        symbol: "fort_dzot",
+        size: 0.08
+      },
+      {
+        id: "fort_dot",
+        name: "ДОТ (усиленный)",
+        symbol: "fort_dot",
+        size: 0.08
+      },
+      {
+        id: "dot_tipovoy1",
+        name: "ДОТ (типовой)",
+        symbol: "dot_tipovoy1",
+        size: 0.08
+      },
+      {
+        id: "fort_knp",
+        name: "КНП в укрытии",
+        symbol: "fort_knp",
+        size: 0.08
+      },
+      {
+        id: "fort_blindage",
+        name: "Блиндаж",
+        symbol: "fort_blindage",
+        size: 0.08
+      },
+      {
+        id: "blindazh",
+        name: "Блиндаж (общ.)",
+        symbol: "blindazh",
+        size: 0.08
+      },
+      {
+        id: "blindazh_zhb",
+        name: "Блиндаж ЖБ",
+        symbol: "blindazh_zhb",
+        size: 0.08
+      },
+      {
+        id: "schel1",
+        name: "Открытая щель",
+        symbol: "schel1",
+        size: 0.08
+      },
+      {
+        id: "schel_per1",
+        name: "Перекрытая щель",
+        symbol: "schel_per1",
+        size: 0.08
+      },
+      {
+        id: "ukrytie",
+        name: "Укрытие для техники",
+        symbol: "ukrytie",
+        size: 0.08
+      },
+      {
+        id: "ukrytie_zhb",
+        name: "Укрытие ЖБ",
+        symbol: "ukrytie_zhb",
+        size: 0.08
+      },
+      {
+        id: "sps1",
+        name: "СПС",
+        symbol: "sps1",
+        size: 0.08
+      }
+    ]
+  },
+  {
     id: "artillery",
     name: "Артиллерия, РСЗО, Минометы и АГС",
     symbols: [

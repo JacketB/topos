@@ -1,4 +1,31 @@
 <div class="app-root-layout">
+  <header class="app-top-toolbar">
+    <div class="toolbar-left">
+      <div class="toolbar-group">
+        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'trench'" (click)="vm.activeLineMode() === 'trench' ? vm.cancelDrawingLine() : vm.startDrawingLine('trench')" title="Прокладка траншеи с бруствером">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 17l4-8 4 8 4-8 4 8 2-4" />
+          </svg>
+        </button>
+        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'comm_open'" (click)="vm.activeLineMode() === 'comm_open' ? vm.cancelDrawingLine() : vm.startDrawingLine('comm_open')" title="Открытый ход сообщения (двухсторонний бруствер)">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M7 12v5M11 7v5M15 12v5M19 7v5" />
+          </svg>
+        </button>
+        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'comm_covered'" (click)="vm.activeLineMode() === 'comm_covered' ? vm.cancelDrawingLine() : vm.startDrawingLine('comm_covered')" title="Крытый ход сообщения (перекрытая щель / блиндажное перекрытие)">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M6 8v8M10 8v8M14 8v8M18 8v8" />
+          </svg>
+        </button>
+        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'wire'" (click)="vm.activeLineMode() === 'wire' ? vm.cancelDrawingLine() : vm.startDrawingLine('wire')" title="Проволочное заграждение (МЗП)">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 12h16M7 8l2 8M15 8l2 8M8 12c0-2 2-4 4-4s4 2 4 4" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
   <div class="map-view-layout">
     
     <app-map-sidebar />

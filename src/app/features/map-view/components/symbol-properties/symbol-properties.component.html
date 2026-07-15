@@ -14,94 +14,209 @@
   </div>
 
   <div class="properties-content vs-property-grid">
-    @if (vm.tacticalMapService.selectedPlacedSymbol(); as placed) {
+    @if (vm.activeLineMode() !== 'none') {
       
-      <div class="vs-header-banner active-banner">
-        <img [src]="'symbols/' + placed.properties['symbol'] + '.svg'" alt="" class="property-icon" />
+      <div class="vs-header-banner active-banner drawing-banner">
         <div class="vs-banner-text">
-          <span class="vs-banner-title">Объект на карте</span>
-          <span class="vs-banner-sub">{{ placed.properties['symbol'] }}</span>
+          <span class="vs-banner-title">Прокладка линии</span>
+          <span class="vs-banner-sub">{{ vm.activeLineMode() === 'trench' ? 'Траншея (МО СССР)' : 'Проволока (МЗП)' }}</span>
         </div>
       </div>
 
       <div class="vs-grid-table">
         <div class="vs-grid-row">
-          <span class="vs-grid-label">Название</span>
-          <div class="vs-grid-value">
-            <input 
-              type="text" 
-              class="vs-input" 
-              [value]="placed.properties['name']" 
-              (input)="onPlacedNameChange($event)" 
-              placeholder="Название на карте..."
-            />
-          </div>
-        </div>
-
-        <div class="vs-grid-row">
-          <span class="vs-grid-label">Масштаб ({{ placed.properties['size'] }})</span>
-          <div class="vs-grid-value">
-            <input 
-              type="range" 
-              min="0.03" 
-              max="0.25" 
-              step="0.01" 
-              class="vs-range"
-              [value]="placed.properties['size']" 
-              (input)="onPlacedSizeChange($event)" 
-            />
-          </div>
-        </div>
-
-        <div class="vs-grid-row">
-          <span class="vs-grid-label">Поворот ({{ placed.properties['angle'] }}°)</span>
-          <div class="vs-grid-value">
-            <input 
-              type="range" 
-              min="0" 
-              max="360" 
-              step="5" 
-              class="vs-range"
-              [value]="placed.properties['angle']" 
-              (input)="onPlacedAngleChange($event)" 
-            />
-          </div>
-        </div>
-
-        <div class="vs-grid-row">
-          <span class="vs-grid-label">Цвет знака</span>
-          <div class="vs-grid-value vs-color-picker-wrap">
-            <div class="vs-color-swatches">
-              <button class="vs-swatch" style="background: #ef4444;" (click)="onPlacedColorChange('#ef4444')" title="Красный (Противник)"></button>
-              <button class="vs-swatch" style="background: #3b82f6;" (click)="onPlacedColorChange('#3b82f6')" title="Синий (Свои)"></button>
-              <button class="vs-swatch" style="background: #22c55e;" (click)="onPlacedColorChange('#22c55e')" title="Зеленый"></button>
-              <button class="vs-swatch" style="background: #eab308;" (click)="onPlacedColorChange('#eab308')" title="Желтый"></button>
-              <button class="vs-swatch" style="background: #000000;" (click)="onPlacedColorChange('#000000')" title="Черный"></button>
-              <button class="vs-swatch vs-swatch-reset" (click)="onPlacedColorChange('')" title="Сбросить на оригинал">✕</button>
-            </div>
-            <input 
-              type="color" 
-              class="vs-color-input" 
-              [value]="placed.properties['color'] || '#000000'" 
-              (input)="onPlacedColorChange($event)" 
-              title="Произвольный цвет"
-            />
-          </div>
-        </div>
-
-        <div class="vs-grid-row">
-          <span class="vs-grid-label">Координаты</span>
+          <span class="vs-grid-label">Узлов на карте</span>
           <div class="vs-grid-value vs-readonly">
-            {{ placed.geometry.coordinates[1] }}°, {{ placed.geometry.coordinates[0] }}°
+            <strong>{{ vm.activeLineCoords().length }}</strong> шт.
           </div>
         </div>
       </div>
 
       <div class="vs-actions-footer">
-        <button class="vs-delete-btn" (click)="vm.deletePlacedSymbol()">
-          Удалить объект с карты
+        @if (vm.activeLineMode() === 'trench' || vm.activeLineMode() === 'comm_open') {
+          <button class="vs-btn-action secondary" (click)="vm.toggleLinearSymbolSide()" title="Перенаправить зубцы бруствера в другую сторону">
+            ⇄ Развернуть бруствер
+          </button>
+        }
+        @if (vm.activeLineCoords().length > 0) {
+          <button class="vs-btn-action secondary" (click)="vm.removeDrawingLastPoint()" title="Удалить последний поставленный узел">
+            ↩ Шаг назад
+          </button>
+        }
+        @if (vm.activeLineCoords().length >= 2) {
+          <button class="vs-btn-action primary" (click)="vm.finishDrawingLine()" title="Завершить и построить тактическую штриховку">
+            ✓ Построить линию
+          </button>
+        }
+        <button class="vs-delete-btn" (click)="vm.cancelDrawingLine()" title="Отменить рисование">
+          ✕ Отменить рисование
         </button>
       </div>
+
+    } @else if (vm.tacticalMapService.selectedPlacedSymbol(); as placed) {
+      
+      @if (placed.properties['isLinear']) {
+        <div class="vs-header-banner active-banner">
+          <div class="vs-banner-text">
+            <span class="vs-banner-title">Выбрана линия на карте</span>
+            <span class="vs-banner-sub">{{ placed.properties['name'] || (placed.properties['lineType'] === 'trench' ? 'Траншея' : placed.properties['lineType'] === 'comm_open' ? 'Открытый ход сообщения' : placed.properties['lineType'] === 'comm_covered' ? 'Крытый ход сообщения' : 'Проволока / МЗП') }}</span>
+          </div>
+        </div>
+
+        <div class="vs-grid-table">
+          <div class="vs-grid-row">
+            <span class="vs-grid-label">Название</span>
+            <div class="vs-grid-value">
+              <input 
+                type="text" 
+                class="vs-input" 
+                [value]="placed.properties['name'] || ''" 
+                (input)="onPlacedNameChange($event)" 
+                placeholder="Название линии..."
+              />
+            </div>
+          </div>
+
+          <div class="vs-grid-row">
+            <span class="vs-grid-label">Толщина</span>
+            <div class="vs-grid-value">
+              <input 
+                type="range" 
+                min="1" 
+                max="10" 
+                step="0.5" 
+                class="vs-range"
+                [value]="placed.properties['lineWidth'] || 3" 
+                (input)="onPlacedSizeChange($event)" 
+              />
+            </div>
+          </div>
+
+          <div class="vs-grid-row">
+            <span class="vs-grid-label">Цвет</span>
+            <div class="vs-grid-value vs-color-picker-wrap">
+              <div class="vs-color-swatches">
+                <button class="vs-swatch" style="background: #ef4444;" (click)="onPlacedColorChange('#ef4444')" title="Красный (Противник)"></button>
+                <button class="vs-swatch" style="background: #3b82f6;" (click)="onPlacedColorChange('#3b82f6')" title="Синий (Свои)"></button>
+                <button class="vs-swatch" style="background: #22c55e;" (click)="onPlacedColorChange('#22c55e')" title="Зеленый"></button>
+                <button class="vs-swatch" style="background: #eab308;" (click)="onPlacedColorChange('#eab308')" title="Желтый"></button>
+                <button class="vs-swatch" style="background: #000000;" (click)="onPlacedColorChange('#000000')" title="Черный"></button>
+              </div>
+              <input 
+                type="color" 
+                class="vs-color-input" 
+                [value]="placed.properties['color'] || '#000000'" 
+                (input)="onPlacedColorChange($event)" 
+                title="Произвольный цвет"
+              />
+            </div>
+          </div>
+
+        </div>
+
+        <div class="vs-actions-footer">
+          @if (placed.properties['lineType'] === 'trench' || placed.properties['lineType'] === 'comm_open') {
+            <button class="vs-btn-action secondary" (click)="vm.toggleLinearSymbolSide()" title="Перенаправить зубцы бруствера на противоположную сторону">
+              ⇄ Развернуть бруствер
+            </button>
+          }
+          <button class="vs-btn-action primary" (click)="vm.continueDrawingSelectedLine()" title="Включить режим дорисовывания новых точек к этой линии">
+            ✏ Продолжить линию
+          </button>
+          <button class="vs-delete-btn" (click)="vm.deletePlacedSymbol()">
+            Удалить линию с карты
+          </button>
+        </div>
+
+      } @else {
+        <div class="vs-header-banner active-banner">
+          <img [src]="'symbols/' + placed.properties['symbol'] + '.svg'" alt="" class="property-icon" />
+          <div class="vs-banner-text">
+            <span class="vs-banner-title">Объект на карте</span>
+            <span class="vs-banner-sub">{{ placed.properties['symbol'] }}</span>
+          </div>
+        </div>
+
+        <div class="vs-grid-table">
+          <div class="vs-grid-row">
+            <span class="vs-grid-label">Название</span>
+            <div class="vs-grid-value">
+              <input 
+                type="text" 
+                class="vs-input" 
+                [value]="placed.properties['name'] || ''" 
+                (input)="onPlacedNameChange($event)" 
+                placeholder="Название на карте..."
+              />
+            </div>
+          </div>
+
+          <div class="vs-grid-row">
+            <span class="vs-grid-label">Масштаб ({{ placed.properties['size'] }})</span>
+            <div class="vs-grid-value">
+              <input 
+                type="range" 
+                min="0.03" 
+                max="0.25" 
+                step="0.01" 
+                class="vs-range"
+                [value]="placed.properties['size']" 
+                (input)="onPlacedSizeChange($event)" 
+              />
+            </div>
+          </div>
+
+          <div class="vs-grid-row">
+            <span class="vs-grid-label">Поворот ({{ placed.properties['angle'] }}°)</span>
+            <div class="vs-grid-value">
+              <input 
+                type="range" 
+                min="0" 
+                max="360" 
+                step="5" 
+                class="vs-range"
+                [value]="placed.properties['angle']" 
+                (input)="onPlacedAngleChange($event)" 
+              />
+            </div>
+          </div>
+
+          <div class="vs-grid-row">
+            <span class="vs-grid-label">Цвет знака</span>
+            <div class="vs-grid-value vs-color-picker-wrap">
+              <div class="vs-color-swatches">
+                <button class="vs-swatch" style="background: #ef4444;" (click)="onPlacedColorChange('#ef4444')" title="Красный (Противник)"></button>
+                <button class="vs-swatch" style="background: #3b82f6;" (click)="onPlacedColorChange('#3b82f6')" title="Синий (Свои)"></button>
+                <button class="vs-swatch" style="background: #22c55e;" (click)="onPlacedColorChange('#22c55e')" title="Зеленый"></button>
+                <button class="vs-swatch" style="background: #eab308;" (click)="onPlacedColorChange('#eab308')" title="Желтый"></button>
+                <button class="vs-swatch" style="background: #000000;" (click)="onPlacedColorChange('#000000')" title="Черный"></button>
+                <button class="vs-swatch vs-swatch-reset" (click)="onPlacedColorChange('')" title="Сбросить на оригинал">✕</button>
+              </div>
+              <input 
+                type="color" 
+                class="vs-color-input" 
+                [value]="placed.properties['color'] || '#000000'" 
+                (input)="onPlacedColorChange($event)" 
+                title="Произвольный цвет"
+              />
+            </div>
+          </div>
+
+          <div class="vs-grid-row">
+            <span class="vs-grid-label">Координаты</span>
+            <div class="vs-grid-value vs-readonly">
+              {{ placed.geometry.coordinates[1] }}°, {{ placed.geometry.coordinates[0] }}°
+            </div>
+          </div>
+        </div>
+
+        <div class="vs-actions-footer">
+          <button class="vs-delete-btn" (click)="vm.deletePlacedSymbol()">
+            Удалить объект с карты
+          </button>
+        </div>
+      }
+
     } @else if (vm.tacticalMapService.selectedSymbol(); as template) {
       
       <div class="vs-header-banner active-banner template-banner">
@@ -177,16 +292,11 @@
           </div>
         </div>
       </div>
-
-      <div class="vs-info-footer">
-        <span>💡 Кликните на карту для размещения знака с этими параметрами.</span>
-      </div>
     } @else {
-      
       <div class="vs-header-banner inactive-banner">
         <div class="vs-banner-text">
           <span class="vs-banner-title">Элемент не выбран</span>
-          <span class="vs-banner-sub">Кликните на знак в каталоге или на объект на карте для настройки.</span>
+          <span class="vs-banner-sub">Выберите знак или объект на карте</span>
         </div>
       </div>
     }

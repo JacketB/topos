@@ -27,6 +27,6 @@ export class SymbolCatalogComponent {
   }
 
   onSymbolClick(template: any) {
-    this.vm.tacticalMapService.selectTemplateSymbol(template);
+    this.vm.selectSymbol(template);
   }
 }

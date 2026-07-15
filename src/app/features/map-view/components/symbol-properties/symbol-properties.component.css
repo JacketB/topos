@@ -1,1 +1,41 @@
+.vs-actions-footer {
+  padding: 8px 12px;
+  background: #ffffff;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
+.vs-btn-action {
+  width: 100%;
+  padding: 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.vs-btn-action.primary {
+  background-color: #2563eb;
+  color: #ffffff;
+  border: 1px solid #1d4ed8;
+}
+.vs-btn-action.primary:hover {
+  background-color: #1d4ed8;
+}
+
+.vs-btn-action.secondary {
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+.vs-btn-action.secondary:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}

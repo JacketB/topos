@@ -1,6 +1,7 @@
-import { Injectable, signal, effect } from '@angular/core';
+import { Injectable, signal, effect, inject } from '@angular/core';
 import maplibregl from 'maplibre-gl';
 import { TacticalSymbol } from '../consts/tactical-symbols.const';
+import { TrenchGeometryService } from './trench-geometry.service';
 
 type SymbolLoadCallback = () => void;
 
@@ -8,6 +9,7 @@ type SymbolLoadCallback = () => void;
   providedIn: 'root'
 })
 export class TacticalMapService {
+  private trenchGeometryService = inject(TrenchGeometryService);
   readonly placedSymbols = signal<any[]>(this.loadFromStorage());
 
   constructor() {
@@ -18,6 +20,12 @@ export class TacticalMapService {
       } catch (e) {
         console.error('Ошибка сохранения символов в localStorage:', e);
       }
+    });
+
+    effect(() => {
+      this.selectedPlacedSymbol();
+      this.placedSymbols();
+      this.updateLinearVerticesSource();
     });
   }
 
@@ -49,6 +57,7 @@ export class TacticalMapService {
 
   selectPlacedSymbol(symbol: any | null) {
     this.selectedPlacedSymbol.set(symbol);
+    this.updateLinearVerticesSource();
   }
 
   private mapInstance: maplibregl.Map | null = null;
@@ -56,7 +65,35 @@ export class TacticalMapService {
   private dragFeature: any = null;
   private dragRafId: any = null;
   private pendingDragLngLat: [number, number] | null = null;
+
+  private isDraggingVertex = false;
+  private dragVertexFeature: any = null;
+  private dragVertexRafId: any = null;
+  private pendingDragVertexLngLat: [number, number] | null = null;
+
   readonly templateCustomColor = signal<string>('');
+
+  updateLinearVerticesSource() {
+    if (!this.mapInstance) return;
+    const source = this.mapInstance.getSource('linear-vertices') as maplibregl.GeoJSONSource;
+    if (!source) return;
+
+    const selected = this.selectedPlacedSymbol();
+    if (selected && selected.properties?.['isLinear']) {
+      const origCoords = selected.properties['origCoords'] as [number, number][];
+      const symbolId = selected.properties['id'];
+      if (origCoords) {
+        const features = origCoords.map((coord, idx) => ({
+          type: 'Feature' as const,
+          properties: { symbolId, vertexIndex: idx },
+          geometry: { type: 'Point' as const, coordinates: coord }
+        }));
+        source.setData({ type: 'FeatureCollection', features });
+        return;
+      }
+    }
+    source.setData({ type: 'FeatureCollection', features: [] });
+  }
 
   initLayers(map: maplibregl.Map) {
     if (!map.getSource('tactical-symbols')) {
@@ -65,11 +102,31 @@ export class TacticalMapService {
         data: { type: 'FeatureCollection', features: this.placedSymbols() }
       });
     }
+
+    if (!map.getLayer('tactical_lines_layer')) {
+      map.addLayer({
+        id: 'tactical_lines_layer',
+        type: 'line',
+        source: 'tactical-symbols',
+        filter: ['==', '$type', 'LineString'],
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': ['coalesce', ['get', 'color'], '#854d0e'],
+          'line-width': ['coalesce', ['get', 'lineWidth'], 3.5],
+          'line-opacity': 0.95
+        }
+      });
+    }
+
     if (!map.getLayer('tactical_symbols_layer')) {
       map.addLayer({
         id: 'tactical_symbols_layer',
         type: 'symbol',
         source: 'tactical-symbols',
+        filter: ['==', '$type', 'Point'],
         layout: {
           'icon-image': ['coalesce', ['get', 'iconId'], ['get', 'symbol']],
           'icon-size': ['coalesce', ['get', 'size'], 0.08],
@@ -91,6 +148,27 @@ export class TacticalMapService {
           'icon-opacity-transition': { duration: 0 },
           'text-opacity': 1,
           'text-opacity-transition': { duration: 0 }
+        }
+      });
+    }
+
+    if (!map.getSource('linear-vertices')) {
+      map.addSource('linear-vertices', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+    }
+
+    if (!map.getLayer('linear_vertices_layer')) {
+      map.addLayer({
+        id: 'linear_vertices_layer',
+        type: 'circle',
+        source: 'linear-vertices',
+        paint: {
+          'circle-radius': 6,
+          'circle-color': '#ffffff',
+          'circle-stroke-color': '#2563eb',
+          'circle-stroke-width': 2.5
         }
       });
     }
@@ -153,8 +231,12 @@ export class TacticalMapService {
         return;
       }
 
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ['tactical_symbols_layer']
+      const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+        [e.point.x - 6, e.point.y - 6],
+        [e.point.x + 6, e.point.y + 6]
+      ];
+      const features = map.queryRenderedFeatures(bbox, {
+        layers: ['tactical_symbols_layer', 'tactical_lines_layer']
       });
 
       if (features.length > 0) {
@@ -313,10 +395,15 @@ export class TacticalMapService {
   updatePlacedSymbolSize(size: number) {
     const selected = this.selectedPlacedSymbol();
     if (selected) {
+      const isLin = selected.properties?.['isLinear'];
       this.placedSymbols.update(prev => 
         prev.map(s => s.properties['id'] === selected.properties['id'] ? {
           ...s,
-          properties: { ...s.properties, size }
+          properties: { 
+            ...s.properties, 
+            size,
+            lineWidth: isLin ? Math.max(1, size * 40) : s.properties['lineWidth']
+          }
         } : s)
       );
       this.syncSelectedPlacedSymbol();
@@ -355,6 +442,18 @@ export class TacticalMapService {
   updatePlacedSymbolColor(color: string) {
     const selected = this.selectedPlacedSymbol();
     if (selected) {
+      if (selected.properties?.['isLinear']) {
+        this.placedSymbols.update(prev => 
+          prev.map(s => s.properties['id'] === selected.properties['id'] ? {
+            ...s,
+            properties: { ...s.properties, color }
+          } : s)
+        );
+        this.syncSelectedPlacedSymbol();
+        this.updateTacticalSymbolsSource();
+        return;
+      }
+
       const symbolId = selected.properties['symbol'];
       const iconId = color ? `${symbolId}_c_${color.replace('#', '')}` : symbolId;
 
@@ -387,6 +486,7 @@ export class TacticalMapService {
       this.placedSymbols.update(prev => prev.filter(s => s.properties['id'] !== selected.properties['id']));
       this.selectedPlacedSymbol.set(null);
       this.updateTacticalSymbolsSource();
+      this.updateLinearVerticesSource();
     }
   }
 
@@ -396,6 +496,7 @@ export class TacticalMapService {
     if (this.mapInstance) {
       this.mapInstance.getCanvas().style.cursor = '';
     }
+    this.updateLinearVerticesSource();
   }
 
   placeSelectedSymbol() {
@@ -426,7 +527,7 @@ export class TacticalMapService {
     const onReady = () => {
       this.placedSymbols.update(prev => [...prev, newSymbol]);
       this.updateTacticalSymbolsSource();
-      this.selectedPlacedSymbol.set(newSymbol);
+      this.selectPlacedSymbol(newSymbol);
       this.selectedSymbol.set(null);
       if (this.mapInstance) this.mapInstance.getCanvas().style.cursor = '';
     };
@@ -438,6 +539,86 @@ export class TacticalMapService {
     }
   }
 
+  placeLinearSymbol(coords: [number, number][], lineType: 'trench' | 'comm_open' | 'comm_covered' | 'wire' | string, name: string, flipSide: boolean = false) {
+    if (!coords || coords.length < 2) return;
+    const geom = this.trenchGeometryService.generateLinearGeometry(coords, lineType, flipSide);
+    
+    let color = this.templateCustomColor();
+    if (!color) {
+      if (lineType === 'wire') color = '#475569';
+      else if (lineType === 'comm_covered') color = '#78350f';
+      else color = '#854d0e';
+    }
+
+    let symbolId = 'wire_line';
+    if (lineType === 'trench') symbolId = 'trench_line';
+    else if (lineType === 'comm_open') symbolId = 'comm_open_line';
+    else if (lineType === 'comm_covered') symbolId = 'comm_covered_line';
+
+    const newFeature = {
+      type: 'Feature',
+      properties: {
+        id: Date.now(),
+        symbol: symbolId,
+        iconId: symbolId,
+        color: color,
+        name: name,
+        lineWidth: (lineType === 'wire' || lineType === 'comm_open') ? 3 : 4,
+        isLinear: true,
+        lineType: lineType,
+        origCoords: coords,
+        flipSide: flipSide
+      },
+      geometry: geom
+    };
+
+    this.placedSymbols.update(prev => [...prev, newFeature]);
+    this.updateTacticalSymbolsSource();
+    this.selectPlacedSymbol(newFeature);
+  }
+
+  updateLinearSymbolCoords(id: number, newCoords: [number, number][]) {
+    if (!newCoords || newCoords.length < 2) return;
+    const symbol = this.placedSymbols().find(s => s.properties['id'] === id);
+    if (!symbol || !symbol.properties['isLinear']) return;
+
+    const lineType = symbol.properties['lineType'];
+    const flipSide = !!symbol.properties['flipSide'];
+    const geom = this.trenchGeometryService.generateLinearGeometry(newCoords, lineType, flipSide);
+
+    this.placedSymbols.update(prev =>
+      prev.map(s => s.properties['id'] === id ? {
+        ...s,
+        properties: { ...s.properties, origCoords: newCoords },
+        geometry: geom
+      } : s)
+    );
+    this.syncSelectedPlacedSymbol();
+    this.updateTacticalSymbolsSource();
+    this.updateLinearVerticesSource();
+  }
+
+  toggleSelectedLinearSymbolSide() {
+    const selected = this.selectedPlacedSymbol();
+    if (!selected || !selected.properties['isLinear']) return;
+
+    const id = selected.properties['id'];
+    const newFlip = !selected.properties['flipSide'];
+    const origCoords = selected.properties['origCoords'] as [number, number][];
+    const lineType = selected.properties['lineType'];
+    const geom = this.trenchGeometryService.generateLinearGeometry(origCoords, lineType, newFlip);
+
+    this.placedSymbols.update(prev =>
+      prev.map(s => s.properties['id'] === id ? {
+        ...s,
+        properties: { ...s.properties, flipSide: newFlip },
+        geometry: geom
+      } : s)
+    );
+    this.syncSelectedPlacedSymbol();
+    this.updateTacticalSymbolsSource();
+  }
+
   private syncSelectedPlacedSymbol() {
     const selected = this.selectedPlacedSymbol();
     if (selected) {
@@ -446,11 +627,74 @@ export class TacticalMapService {
         this.selectedPlacedSymbol.set(found);
       }
     }
+    this.updateLinearVerticesSource();
+  }
+
+  private removeLinearVertexFeature(feature: any) {
+    if (!feature || !feature.properties) return;
+    const symbolId = feature.properties['symbolId'];
+    const vertexIndex = feature.properties['vertexIndex'];
+    const symbol = this.placedSymbols().find(s => s.properties['id'] === symbolId);
+    if (symbol && symbol.properties['isLinear']) {
+      const origCoords = [...(symbol.properties['origCoords'] as [number, number][])];
+      if (origCoords.length > 2) {
+        origCoords.splice(vertexIndex, 1);
+        this.updateLinearSymbolCoords(symbolId, origCoords);
+      } else {
+        this.deleteSelectedPlacedSymbol();
+      }
+    }
   }
 
   private setupSymbolDragging(map: maplibregl.Map) {
+    map.on('mousedown', 'linear_vertices_layer', (e: any) => {
+      if (e.features && e.features.length > 0) {
+        if (e.originalEvent && e.originalEvent.button === 2) {
+          e.preventDefault();
+          if (e.originalEvent) e.originalEvent.stopPropagation();
+          this.removeLinearVertexFeature(e.features[0]);
+          return;
+        }
+        e.preventDefault();
+        if (e.originalEvent) e.originalEvent.stopPropagation();
+        this.isDraggingVertex = true;
+        this.dragVertexFeature = e.features[0];
+        map.getCanvas().style.cursor = 'grabbing';
+      }
+    });
+
+    map.on('contextmenu', 'linear_vertices_layer', (e: any) => {
+      if (e.features && e.features.length > 0) {
+        e.preventDefault();
+        if (e.originalEvent) e.originalEvent.stopPropagation();
+        this.removeLinearVertexFeature(e.features[0]);
+      }
+    });
+
+    map.on('contextmenu', (e: any) => {
+      const features = map.queryRenderedFeatures(e.point, { layers: ['linear_vertices_layer'] });
+      if (features && features.length > 0) {
+        e.preventDefault();
+        if (e.originalEvent) e.originalEvent.stopPropagation();
+        this.removeLinearVertexFeature(features[0]);
+      }
+    });
+
+    map.on('mouseenter', 'linear_vertices_layer', () => {
+      if (!this.isDraggingVertex) {
+        map.getCanvas().style.cursor = 'grab';
+      }
+    });
+
+    map.on('mouseleave', 'linear_vertices_layer', () => {
+      if (!this.isDraggingVertex && !this.selectedSymbol()) {
+        map.getCanvas().style.cursor = '';
+      }
+    });
+
     map.on('mousedown', 'tactical_symbols_layer', (e: any) => {
-      if (e.features && e.features.length > 0 && !this.selectedSymbol()) {
+      if (e.originalEvent && e.originalEvent.button === 2) return;
+      if (e.features && e.features.length > 0 && !this.selectedSymbol() && !this.isDraggingVertex) {
         e.preventDefault();
         this.isDragging = true;
         this.dragFeature = e.features[0];
@@ -459,6 +703,27 @@ export class TacticalMapService {
     });
 
     map.on('mousemove', (e) => {
+      if (this.isDraggingVertex && this.dragVertexFeature) {
+        this.pendingDragVertexLngLat = [e.lngLat.lng, e.lngLat.lat];
+        if (this.dragVertexRafId === null) {
+          this.dragVertexRafId = requestAnimationFrame(() => {
+            this.dragVertexRafId = null;
+            if (this.isDraggingVertex && this.dragVertexFeature && this.pendingDragVertexLngLat) {
+              const symbolId = this.dragVertexFeature.properties['symbolId'];
+              const vertexIndex = this.dragVertexFeature.properties['vertexIndex'];
+              const [lng, lat] = this.pendingDragVertexLngLat;
+              const symbol = this.placedSymbols().find(s => s.properties['id'] === symbolId);
+              if (symbol && symbol.properties['isLinear']) {
+                const origCoords = [...(symbol.properties['origCoords'] as [number, number][])];
+                origCoords[vertexIndex] = [lng, lat];
+                this.updateLinearSymbolCoords(symbolId, origCoords);
+              }
+            }
+          });
+        }
+        return;
+      }
+
       if (this.isDragging && this.dragFeature) {
         this.pendingDragLngLat = [e.lngLat.lng, e.lngLat.lat];
         if (this.dragRafId === null) {
@@ -482,6 +747,29 @@ export class TacticalMapService {
     });
 
     map.on('mouseup', () => {
+      if (this.isDraggingVertex) {
+        if (this.dragVertexRafId !== null) {
+          cancelAnimationFrame(this.dragVertexRafId);
+          this.dragVertexRafId = null;
+        }
+        if (this.dragVertexFeature && this.pendingDragVertexLngLat) {
+          const symbolId = this.dragVertexFeature.properties['symbolId'];
+          const vertexIndex = this.dragVertexFeature.properties['vertexIndex'];
+          const [lng, lat] = this.pendingDragVertexLngLat;
+          const symbol = this.placedSymbols().find(s => s.properties['id'] === symbolId);
+          if (symbol && symbol.properties['isLinear']) {
+            const origCoords = [...(symbol.properties['origCoords'] as [number, number][])];
+            origCoords[vertexIndex] = [lng, lat];
+            this.updateLinearSymbolCoords(symbolId, origCoords);
+          }
+        }
+        this.isDraggingVertex = false;
+        this.dragVertexFeature = null;
+        this.pendingDragVertexLngLat = null;
+        map.getCanvas().style.cursor = '';
+        return;
+      }
+
       if (this.isDragging) {
         if (this.dragRafId !== null) {
           cancelAnimationFrame(this.dragRafId);

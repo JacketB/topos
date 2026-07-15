@@ -85,12 +85,28 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       if (this.vm.isScaleMenuOpen()) {
         this.vm.isScaleMenuOpen.set(false);
       }
+      if (this.vm.activeLineMode() !== 'none') {
+        this.vm.addDrawingPoint([e.lngLat.lng, e.lngLat.lat]);
+        return;
+      }
       if (this.vm.isMeasuring() && this.map) {
         this.vm.mapMeasurementService.addPoint([e.lngLat.lng, e.lngLat.lat], this.map);
       }
     });
 
+    this.map.on('dblclick', (e) => {
+      if (this.vm.activeLineMode() !== 'none') {
+        e.preventDefault();
+        this.vm.finishDrawingLine();
+      }
+    });
+
     this.map.on('contextmenu', (e) => {
+      if (this.vm.activeLineMode() !== 'none') {
+        e.preventDefault();
+        this.vm.cancelDrawingLine();
+        return;
+      }
       if (this.vm.isMeasuring() && this.map) {
         e.preventDefault();
         this.vm.mapMeasurementService.cancelMeasurement(this.map);

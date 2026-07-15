@@ -150,6 +150,149 @@ export class MapViewModel {
     return scale.toLocaleString('ru-RU');
   }
 
+  readonly activeLineMode = signal<'none' | 'trench' | 'comm_open' | 'comm_covered' | 'wire' | string>('none');
+  readonly activeLineCoords = signal<[number, number][]>([]);
+  readonly activeLineFlipSide = signal<boolean>(false);
+
+  selectSymbol(symbol: any) {
+    if (symbol.id === 'trench_line' || symbol.id === 'wire_line' || symbol.id === 'comm_open_line' || symbol.id === 'comm_covered_line') {
+      this.tacticalMapService.clearSymbolSelection();
+      let mode = 'wire';
+      if (symbol.id === 'trench_line') mode = 'trench';
+      else if (symbol.id === 'comm_open_line') mode = 'comm_open';
+      else if (symbol.id === 'comm_covered_line') mode = 'comm_covered';
+      this.startDrawingLine(mode);
+    } else {
+      this.cancelDrawingLine();
+      this.tacticalMapService.selectTemplateSymbol(symbol);
+    }
+  }
+
+  startDrawingLine(mode: 'trench' | 'comm_open' | 'comm_covered' | 'wire' | string) {
+    this.activeLineMode.set(mode);
+    this.activeLineCoords.set([]);
+    this.activeLineFlipSide.set(false);
+    if (this.mapInstance) {
+      this.mapInstance.getCanvas().style.cursor = 'crosshair';
+    }
+  }
+
+  addDrawingPoint(coord: [number, number]) {
+    if (this.activeLineMode() === 'none') return;
+    this.activeLineCoords.update(prev => [...prev, coord]);
+    this.updateDrawingPreview();
+  }
+
+  finishDrawingLine() {
+    const mode = this.activeLineMode();
+    const coords = this.activeLineCoords();
+    if (mode !== 'none' && coords.length >= 2) {
+      let name = 'Проволочное заграждение (МЗП)';
+      if (mode === 'trench') name = 'Траншея (МО СССР)';
+      else if (mode === 'comm_open') name = 'Открытый ход сообщения';
+      else if (mode === 'comm_covered') name = 'Крытый ход сообщения (перекрытая щель)';
+      this.tacticalMapService.placeLinearSymbol(coords, mode, name, this.activeLineFlipSide());
+    }
+    this.cancelDrawingLine();
+  }
+
+  cancelDrawingLine() {
+    this.activeLineMode.set('none');
+    this.activeLineCoords.set([]);
+    this.activeLineFlipSide.set(false);
+    if (this.mapInstance) {
+      const source = this.mapInstance.getSource('drawing-preview') as maplibregl.GeoJSONSource;
+      if (source) {
+        source.setData({ type: 'FeatureCollection', features: [] });
+      }
+      if (!this.selectedSymbol()) {
+        this.mapInstance.getCanvas().style.cursor = '';
+      }
+    }
+  }
+
+  toggleLinearSymbolSide() {
+    if (this.activeLineMode() !== 'none') {
+      this.activeLineFlipSide.update(v => !v);
+    } else {
+      this.tacticalMapService.toggleSelectedLinearSymbolSide();
+    }
+  }
+
+  removeLastNodeOfSelectedLine() {
+    const selected = this.selectedPlacedSymbol();
+    if (selected && selected.properties?.['isLinear']) {
+      const origCoords = selected.properties['origCoords'] as [number, number][];
+      if (origCoords && origCoords.length > 2) {
+        const newCoords = origCoords.slice(0, -1);
+        this.tacticalMapService.updateLinearSymbolCoords(selected.properties['id'], newCoords);
+      } else {
+        this.deletePlacedSymbol();
+      }
+    }
+  }
+
+  continueDrawingSelectedLine() {
+    const selected = this.selectedPlacedSymbol();
+    if (selected && selected.properties?.['isLinear']) {
+      const origCoords = selected.properties['origCoords'] as [number, number][];
+      const lineType = selected.properties['lineType'];
+      const flipSide = !!selected.properties['flipSide'];
+      if (origCoords && origCoords.length >= 2) {
+        this.tacticalMapService.deleteSelectedPlacedSymbol();
+        this.activeLineFlipSide.set(flipSide);
+        this.activeLineMode.set(lineType);
+        this.activeLineCoords.set([...origCoords]);
+        if (this.mapInstance) {
+          this.mapInstance.getCanvas().style.cursor = 'crosshair';
+        }
+        this.updateDrawingPreview();
+      }
+    }
+  }
+
+  removeDrawingLastPoint() {
+    if (this.activeLineMode() === 'none') return;
+    this.activeLineCoords.update(prev => prev.slice(0, -1));
+    this.updateDrawingPreview();
+  }
+
+  updateDrawingPreview() {
+    if (!this.mapInstance || this.activeLineMode() === 'none') return;
+    const coords = this.activeLineCoords();
+    if (coords.length < 1) return;
+
+    if (!this.mapInstance.getSource('drawing-preview')) {
+      this.mapInstance.addSource('drawing-preview', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+      this.mapInstance.addLayer({
+        id: 'drawing-preview-layer',
+        type: 'line',
+        source: 'drawing-preview',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': '#e11d48',
+          'line-width': 3.5,
+          'line-dasharray': [2, 2]
+        }
+      });
+    }
+
+    const source = this.mapInstance.getSource('drawing-preview') as maplibregl.GeoJSONSource;
+    if (source && coords.length >= 2) {
+      source.setData({
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: coords }
+        }]
+      });
+    }
+  }
+
   deletePlacedSymbol() {
     this.tacticalMapService.deleteSelectedPlacedSymbol();
   }
