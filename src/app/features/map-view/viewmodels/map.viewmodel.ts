@@ -26,6 +26,7 @@ export class MapViewModel {
   readonly currentScale = signal<number>(50000);
   readonly isScaleMenuOpen = signal<boolean>(false);
   readonly isQuickLayersMenuOpen = signal<boolean>(false);
+  readonly isToogleMapMenuOpen = signal<boolean>(false);
   readonly manuallyOpenedCategories = signal<Record<string, boolean>>({});
 
   readonly isMeasuring = this.mapMeasurementService.isMeasuring;
