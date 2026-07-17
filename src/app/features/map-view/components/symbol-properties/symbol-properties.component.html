@@ -139,6 +139,72 @@
             </div>
           </div>
 
+          @if (placed.properties['lineType'] === 'trench' || placed.properties['lineType'] === 'comm_open') {
+            <div class="vs-grid-row">
+              <span class="vs-grid-label">Профиль</span>
+              <div class="vs-grid-value">
+                <select 
+                  class="vs-select" 
+                  style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid var(--color-border); border-radius: 4px; background: white; color: var(--color-text-main); font-weight: 600; outline: none;"
+                  [value]="placed.properties['fortProfile'] || 'main'"
+                  (change)="onPlacedProfileChange($event)"
+                >
+                  <option value="main">Основной (глубина 110 см)</option>
+                  <option value="full">Полный (глубина 150 см)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="vs-grid-row">
+              <span class="vs-grid-label">Крутости рва</span>
+              <div class="vs-grid-value">
+                <select 
+                  class="vs-select" 
+                  style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid var(--color-border); border-radius: 4px; background: white; color: var(--color-text-main); font-weight: 600; outline: none;"
+                  [value]="placed.properties['fortRevetment'] || 'none'"
+                  (change)="onPlacedRevetmentChange($event)"
+                >
+                  <option value="none">Без укрепления (устойчивый грунт)</option>
+                  <option value="wood">Жердевая одежда (круглый лес)</option>
+                  <option value="board">Дощатая одежда / горбыль</option>
+                  <option value="wattle">Одежда из плетня (хворост)</option>
+                </select>
+              </div>
+            </div>
+          }
+
+          @if (vm.selectedPlacedSymbolNorms(); as norms) {
+            <div class="vs-property-section-title" style="margin-top: 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 700; border-top: 1px solid #e2e8f0; padding-top: 8px; padding-left: 8px;">
+              Фортификационный расчет (1984)
+            </div>
+            <div class="vs-grid-row">
+              <span class="vs-grid-label">Земляные работы</span>
+              <div class="vs-grid-value vs-readonly"><strong>{{ norms.earthVolume }}</strong> м³</div>
+            </div>
+            <div class="vs-grid-row">
+              <span class="vs-grid-label">Трудозатраты</span>
+              <div class="vs-grid-value vs-readonly"><strong>{{ norms.laborHrs }}</strong> чел.-ч</div>
+            </div>
+            @if (norms.woodVol) {
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Круглый лес</span>
+                <div class="vs-grid-value vs-readonly"><strong>{{ norms.woodVol }}</strong> м³</div>
+              </div>
+            }
+            @if (norms.wireKg) {
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Проволока</span>
+                <div class="vs-grid-value vs-readonly"><strong>{{ norms.wireKg }}</strong> кг</div>
+              </div>
+            }
+            @if (norms.polesCount) {
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Колья</span>
+                <div class="vs-grid-value vs-readonly"><strong>{{ norms.polesCount }}</strong> шт.</div>
+              </div>
+            }
+          }
+
         </div>
 
         <div class="vs-actions-footer">
@@ -235,6 +301,38 @@
               {{ placed.geometry.coordinates[1] }}°, {{ placed.geometry.coordinates[0] }}°
             </div>
           </div>
+
+          @if (vm.selectedPlacedSymbolNorms(); as norms) {
+            <div class="vs-property-section-title" style="margin-top: 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 700; border-top: 1px solid #e2e8f0; padding-top: 8px; padding-left: 8px;">
+              Фортификационный расчет (1984)
+            </div>
+            <div class="vs-grid-row">
+              <span class="vs-grid-label">Земляные работы</span>
+              <div class="vs-grid-value vs-readonly"><strong>{{ norms.earthVolume }}</strong> м³</div>
+            </div>
+            <div class="vs-grid-row">
+              <span class="vs-grid-label">Трудозатраты</span>
+              <div class="vs-grid-value vs-readonly"><strong>{{ norms.laborHrs }}</strong> чел.-ч</div>
+            </div>
+            @if (norms.machHrs) {
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Работа техники</span>
+                <div class="vs-grid-value vs-readonly"><strong>{{ norms.machHrs }}</strong> маш.-ч ({{ norms.machType }})</div>
+              </div>
+            }
+            @if (norms.woodVol) {
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Круглый лес</span>
+                <div class="vs-grid-value vs-readonly"><strong>{{ norms.woodVol }}</strong> м³</div>
+              </div>
+            }
+            @if (norms.metalKg) {
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Металл/СПС</span>
+                <div class="vs-grid-value vs-readonly"><strong>{{ norms.metalKg }}</strong> кг</div>
+              </div>
+            }
+          }
         </div>
 
         <div class="vs-actions-footer">

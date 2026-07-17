@@ -7,6 +7,7 @@ import { MapScaleService } from '../services/map-scale.service';
 import { MapMeasurementService } from '../services/map-measurement.service';
 import { MapLayersService } from '../services/map-layers.service';
 import { SCALE_PRESETS, ScalePreset } from '../consts/map-scale.const';
+import { FortificationCalculationService } from '../services/fortification-calculation.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +19,7 @@ export class MapViewModel {
   readonly mapScaleService = inject(MapScaleService);
   readonly mapMeasurementService = inject(MapMeasurementService);
   readonly mapLayersService = inject(MapLayersService);
+  readonly fortificationService = inject(FortificationCalculationService);
 
   readonly scalePresets = SCALE_PRESETS;
 
@@ -50,6 +52,83 @@ export class MapViewModel {
   readonly selectedPlacedSymbol = this.tacticalMapService.selectedPlacedSymbol;
   readonly placedSymbols = this.tacticalMapService.placedSymbols;
   readonly layerGroups = this.mapLayersService.groups;
+
+  readonly isAreaReportOpen = signal<boolean>(false);
+
+  readonly selectedPlacedSymbolNorms = computed(() => {
+    const selected = this.selectedPlacedSymbol();
+    if (!selected) return null;
+    return this.fortificationService.calculateFeatureNorms(selected);
+  });
+
+  readonly placedFortifications = computed(() => {
+    const placed = this.placedSymbols();
+    return placed.filter(f => {
+      if (f.properties?.isLinear) {
+        return ['trench', 'comm_open', 'comm_covered', 'wire'].includes(f.properties.lineType);
+      }
+      return !!this.fortificationService.pointNorms[f.properties?.symbol];
+    });
+  });
+
+  readonly placedFortificationsCount = computed(() => {
+    return this.placedFortifications().length;
+  });
+
+  readonly totalAreaNorms = computed(() => {
+    const fortList = this.placedFortifications();
+    return this.fortificationService.calculateTotalNorms(fortList);
+  });
+
+  toggleAreaReport() {
+    this.isAreaReportOpen.update(v => !v);
+  }
+
+  copyAreaReportToClipboard() {
+    const norms = this.totalAreaNorms();
+    let text = `=== ИНЖЕНЕРНО-ФОРТИФИКАЦИОННАЯ ВЕДОМОСТЬ РАЙОНА ===\n`;
+    text += `Дата расчета: ${new Date().toLocaleDateString()}\n\n`;
+    text += `1. Сводные показатели:\n`;
+    text += `- Объем земляных работ: ${norms.totalEarthVolume} м³\n`;
+    text += `- Трудозатраты личного состава: ${norms.totalLaborHrs} чел.-ч\n`;
+    if (norms.totalWoodVol > 0) text += `- Потребность в круглом лесе: ${norms.totalWoodVol} м³\n`;
+    if (norms.totalWireKg > 0) text += `- Потребность в колючей проволоке: ${norms.totalWireKg} кг\n`;
+    if (norms.totalMetalKg > 0) text += `- Потребность в металлоконструкциях: ${norms.totalMetalKg} кг\n`;
+    if (norms.totalPolesCount > 0) text += `- Количество кольев: ${norms.totalPolesCount} шт.\n`;
+    
+    if (norms.totalLengths.trench > 0 || norms.totalLengths.comm_open > 0 || norms.totalLengths.comm_covered > 0 || norms.totalLengths.wire > 0) {
+      text += `\n2. Протяженность линейных сооружений:\n`;
+      if (norms.totalLengths.trench > 0) text += `- Общая длина траншей: ${norms.totalLengths.trench} м\n`;
+      if (norms.totalLengths.comm_open > 0) text += `- Общая длина открытых ходов сообщения: ${norms.totalLengths.comm_open} м\n`;
+      if (norms.totalLengths.comm_covered > 0) text += `- Общая длина перекрытых щелей (крытых ходов): ${norms.totalLengths.comm_covered} м\n`;
+      if (norms.totalLengths.wire > 0) text += `- Общая длина проволочных заграждений (МЗП): ${norms.totalLengths.wire} м\n`;
+    }
+
+    if (norms.machinerySummary.length > 0) {
+      text += `\n3. Потребность в инженерной технике:\n`;
+      norms.machinerySummary.forEach(m => {
+        text += `- ${m.type}: ${m.hours} маш.-ч\n`;
+      });
+    }
+    
+    text += `\n4. Состав сооружений в районе:\n`;
+    Object.keys(norms.elementsCount).forEach(k => {
+      text += `- ${k}: ${norms.elementsCount[k]} шт.\n`;
+    });
+
+    if (norms.items.length > 0) {
+      text += `\n5. Детальная спецификация сооружений:\n`;
+      norms.items.forEach(item => {
+        const namePart = item.name ? ` "${item.name}"` : '';
+        text += `- ${item.type}${namePart}: земля ${item.earth} м³, трудозатраты ${item.labor} чел.-ч.\n`;
+        if (item.notes) text += `  Конфигурация: ${item.notes}\n`;
+      });
+    }
+    
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Ведомость скопирована в буфер обмена!');
+    });
+  }
 
   private mapInstance: maplibregl.Map | null = null;
 
@@ -266,6 +345,10 @@ export class MapViewModel {
 
   updatePlacedSymbolColor(color: string) {
     this.tacticalMapService.updatePlacedSymbolColor(color);
+  }
+
+  updatePlacedSymbolProperty(key: string, value: any) {
+    this.tacticalMapService.updatePlacedSymbolProperty(key, value);
   }
 
   updateTemplateSize(size: number) {

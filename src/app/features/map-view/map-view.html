@@ -111,10 +111,180 @@
       }
 
       <div class="map-controls">
+        <!-- Кнопка Инженерной ведомости -->
+        <button 
+          class="control-btn fort-report-btn" 
+          [class.active]="vm.isAreaReportOpen()" 
+          (click)="vm.toggleAreaReport()" 
+          title="Инженерно-фортификационная ведомость района"
+          style="position: relative;"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          @if (vm.placedFortificationsCount() > 0) {
+            <span class="badge" style="position: absolute; top: -5px; right: -5px; background: #e11d48; color: white; border-radius: 50%; width: 15px; height: 15px; font-size: 8px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.25);">
+              {{ vm.placedFortificationsCount() }}
+            </span>
+          }
+        </button>
+
         <app-scale-ruler style="display: contents;" />
         <app-toogle-map style="display: contents;" />
         <app-quick-layers-menu style="display: contents;" />
       </div>
+
+      <!-- Инженерная ведомость фортификации района -->
+      @if (vm.isAreaReportOpen()) {
+        <div class="fort-area-report-overlay" (click)="vm.toggleAreaReport()">
+          <div class="fort-area-report-modal" (click)="$event.stopPropagation()">
+            <div class="fort-report-header">
+              <span class="fort-report-title">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #466bf7;">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Инженерно-фортификационная ведомость района
+              </span>
+              <button class="fort-report-close-btn" (click)="vm.toggleAreaReport()" title="Закрыть ведомость">✕</button>
+            </div>
+
+            <div class="fort-report-body">
+              @if (vm.placedFortificationsCount() === 0) {
+                <div class="fort-report-empty">
+                  <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <p style="font-weight: 600; font-size: 13px; margin: 8px 0 0 0; color: #475569;">Нет нанесенных элементов</p>
+                  <p style="font-size: 11px; margin: 4px 0 0 0; color: #64748b; max-width: 320px;">Нанесите на карту траншеи, ходы сообщения, окопы или блиндажи, чтобы рассчитать сводные объемы работ.</p>
+                </div>
+              } @else {
+                @let report = vm.totalAreaNorms();
+                
+                <!-- Карточки суммарных показателей -->
+                <div class="fort-summary-grid">
+                  <div class="fort-summary-card">
+                    <span class="fort-summary-label">Земляные работы</span>
+                    <span class="fort-summary-value">{{ report.totalEarthVolume }}<span class="fort-summary-unit">м³</span></span>
+                  </div>
+                  <div class="fort-summary-card">
+                    <span class="fort-summary-label">Личный состав</span>
+                    <span class="fort-summary-value">{{ report.totalLaborHrs }}<span class="fort-summary-unit">чел.-ч</span></span>
+                  </div>
+                  <div class="fort-summary-card">
+                    <span class="fort-summary-label">Круглый лес</span>
+                    <span class="fort-summary-value">{{ report.totalWoodVol }}<span class="fort-summary-unit">м³</span></span>
+                  </div>
+                  <div class="fort-summary-card">
+                    <span class="fort-summary-label">Проволока (МЗП)</span>
+                    <span class="fort-summary-value">{{ report.totalWireKg }}<span class="fort-summary-unit">кг</span></span>
+                  </div>
+                </div>
+
+                <!-- Дополнительные материалы, техника и длины -->
+                <div style="display: flex; gap: 16px; margin-top: 8px;">
+                  @if (report.totalLengths.trench > 0 || report.totalLengths.comm_open > 0 || report.totalLengths.comm_covered > 0 || report.totalLengths.wire > 0) {
+                    <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+                      <h4 style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 0 0 8px 0; letter-spacing: 0.5px;">Протяженность</h4>
+                      <ul style="font-size: 11px; margin: 0; padding-left: 16px; color: #1e293b; display: flex; flex-direction: column; gap: 4px; list-style-type: square;">
+                        @if (report.totalLengths.trench > 0) {
+                          <li>Траншеи: <strong>{{ report.totalLengths.trench }}</strong> м</li>
+                        }
+                        @if (report.totalLengths.comm_open > 0) {
+                          <li>Открытые ходы: <strong>{{ report.totalLengths.comm_open }}</strong> м</li>
+                        }
+                        @if (report.totalLengths.comm_covered > 0) {
+                          <li>Перекрытые щели: <strong>{{ report.totalLengths.comm_covered }}</strong> м</li>
+                        }
+                        @if (report.totalLengths.wire > 0) {
+                          <li>Проволочные (МЗП): <strong>{{ report.totalLengths.wire }}</strong> м</li>
+                        }
+                      </ul>
+                    </div>
+                  }
+
+                  @if (report.machinerySummary.length > 0 || report.totalPolesCount > 0 || report.totalMetalKg > 0) {
+                    <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+                      <h4 style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 0 0 8px 0; letter-spacing: 0.5px;">Техника и детали</h4>
+                      <ul style="font-size: 11px; margin: 0; padding-left: 16px; color: #1e293b; display: flex; flex-direction: column; gap: 4px; list-style-type: square;">
+                        @if (report.totalPolesCount > 0) {
+                          <li>Колья: <strong>{{ report.totalPolesCount }}</strong> шт.</li>
+                        }
+                        @if (report.totalMetalKg > 0) {
+                          <li>Металл/СПС: <strong>{{ report.totalMetalKg }}</strong> кг</li>
+                        }
+                        @for (m of report.machinerySummary; track m.type) {
+                          <li>{{ m.type }}: <strong>{{ m.hours }}</strong> маш.-ч</li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                  
+                  <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+                    <h4 style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 0 0 8px 0; letter-spacing: 0.5px;">Состав сооружений</h4>
+                    <ul style="font-size: 11px; margin: 0; padding-left: 16px; color: #1e293b; display: flex; flex-direction: column; gap: 4px; list-style-type: square;">
+                      @for (el of report.elementsList; track el.name) {
+                        <li>{{ el.name }}: <strong>{{ el.count }}</strong> шт.</li>
+                      }
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Детальный перечень -->
+                <div class="fort-details-section" style="margin-top: 8px;">
+                  <div class="fort-details-title">Спецификация размещенных сооружений</div>
+                  <div class="fort-table-wrapper">
+                    <table class="fort-details-table">
+                      <thead>
+                        <tr>
+                          <th>Элемент</th>
+                          <th>Название</th>
+                          <th>Характеристики и конфигурация</th>
+                          <th style="text-align: right; white-space: nowrap;">Земля</th>
+                          <th style="text-align: right; white-space: nowrap;">Время</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (item of report.items; track item.name) {
+                          <tr>
+                            <td style="font-weight: 600; white-space: nowrap;">{{ item.type }}</td>
+                            <td style="color: #64748b; font-style: italic; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ item.name || '—' }}</td>
+                            <td style="color: #475569; font-size: 11px;">{{ item.notes || '—' }}</td>
+                            <td style="text-align: right; font-weight: 700; color: #2563eb; white-space: nowrap;">{{ item.earth }} м³</td>
+                            <td style="text-align: right; font-weight: 700; color: #10b981; white-space: nowrap;">{{ item.labor }} ч</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div class="fort-report-footer">
+              <button class="fort-btn secondary" (click)="vm.toggleAreaReport()">Закрыть</button>
+              @if (vm.placedFortificationsCount() > 0) {
+                <button class="fort-btn primary" (click)="vm.copyAreaReportToClipboard()">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px; display: inline-block; vertical-align: middle;">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  Скопировать сводку
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
     </div>
   </div>
 

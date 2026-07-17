@@ -62,4 +62,14 @@ export class SymbolPropertiesComponent {
   onOrientToTerrain() {
     this.vm.orientSelectedPlacedSymbolToTerrain();
   }
+
+  onPlacedProfileChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    this.vm.updatePlacedSymbolProperty('fortProfile', select.value);
+  }
+
+  onPlacedRevetmentChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    this.vm.updatePlacedSymbolProperty('fortRevetment', select.value);
+  }
 }
