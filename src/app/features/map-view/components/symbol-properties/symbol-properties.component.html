@@ -19,7 +19,7 @@
       <div class="vs-header-banner active-banner drawing-banner">
         <div class="vs-banner-text">
           <span class="vs-banner-title">Прокладка линии</span>
-          <span class="vs-banner-sub">{{ vm.activeLineMode() === 'trench' ? 'Траншея (МО СССР)' : 'Проволока (МЗП)' }}</span>
+          <span class="vs-banner-sub">{{ vm.activeLineModeDisplayName() }}</span>
         </div>
       </div>
 
@@ -28,6 +28,19 @@
           <span class="vs-grid-label">Узлов на карте</span>
           <div class="vs-grid-value vs-readonly">
             <strong>{{ vm.activeLineCoords().length }}</strong> шт.
+          </div>
+        </div>
+        <div class="vs-grid-row">
+          <span class="vs-grid-label">Сглаживание</span>
+          <div class="vs-grid-value">
+            <input 
+              type="checkbox" 
+              [checked]="vm.isLineSmooth()" 
+              (change)="vm.toggleLineSmooth()"
+              id="draw-smooth-check"
+              style="cursor: pointer; accent-color: var(--color-primary);"
+            />
+            <label for="draw-smooth-check" style="font-size: 11px; margin-left: 6px; cursor: pointer; color: var(--color-text-main); font-weight: 600;">Плавная кривая</label>
           </div>
         </div>
       </div>
@@ -109,6 +122,20 @@
                 (input)="onPlacedColorChange($event)" 
                 title="Произвольный цвет"
               />
+            </div>
+          </div>
+
+          <div class="vs-grid-row">
+            <span class="vs-grid-label">Сглаживание</span>
+            <div class="vs-grid-value">
+              <input 
+                type="checkbox" 
+                [checked]="placed.properties['isSmooth']" 
+                (change)="onPlacedSmoothChange($event)"
+                id="prop-smooth-check"
+                style="cursor: pointer; accent-color: var(--color-primary);"
+              />
+              <label for="prop-smooth-check" style="font-size: 11px; margin-left: 6px; cursor: pointer; color: var(--color-text-main); font-weight: 600;">Плавная кривая</label>
             </div>
           </div>
 
@@ -211,6 +238,9 @@
         </div>
 
         <div class="vs-actions-footer">
+          <button class="vs-btn-action secondary" (click)="onOrientToTerrain()" title="Автоматически повернуть знак по направлению склона рельефа">
+            ⛰ Ориентировать по рельефу
+          </button>
           <button class="vs-delete-btn" (click)="vm.deletePlacedSymbol()">
             Удалить объект с карты
           </button>

@@ -2,6 +2,7 @@ import { Injectable, signal, effect, inject } from '@angular/core';
 import maplibregl from 'maplibre-gl';
 import { TacticalSymbol } from '../consts/tactical-symbols.const';
 import { TrenchGeometryService } from './trench-geometry.service';
+import { TerrainService } from './terrain.service';
 
 type SymbolLoadCallback = () => void;
 
@@ -9,7 +10,8 @@ type SymbolLoadCallback = () => void;
   providedIn: 'root'
 })
 export class TacticalMapService {
-  private trenchGeometryService = inject(TrenchGeometryService);
+  public trenchGeometryService = inject(TrenchGeometryService);
+  public terrainService = inject(TerrainService);
   readonly placedSymbols = signal<any[]>(this.loadFromStorage());
 
   constructor() {
@@ -42,6 +44,7 @@ export class TacticalMapService {
   readonly templateCustomName = signal<string>('');
   readonly templateCustomSize = signal<number>(0.08);
   readonly templateCustomAngle = signal<number>(0);
+  readonly isTerrainOrientationEnabled = signal<boolean>(true);
 
   updateTemplateName(name: string) {
     this.templateCustomName.set(name);
@@ -219,6 +222,21 @@ export class TacticalMapService {
           this.placedSymbols.update(prev => [...prev, newSymbol]);
           this.updateTacticalSymbolsSource();
           this.selectedPlacedSymbol.set(newSymbol);
+
+          if (this.isTerrainOrientationEnabled() && template.symbol.startsWith('fort_')) {
+            this.terrainService.getSlopeBearing(coords[0], coords[1]).then(bearing => {
+              if (bearing !== null) {
+                this.placedSymbols.update(prev => 
+                  prev.map(s => s.properties['id'] === newSymbol.properties.id ? {
+                    ...s,
+                    properties: { ...s.properties, angle: bearing }
+                  } : s)
+                );
+                this.syncSelectedPlacedSymbol();
+                this.updateTacticalSymbolsSource();
+              }
+            });
+          }
         };
 
         if (color) {
@@ -539,15 +557,14 @@ export class TacticalMapService {
     }
   }
 
-  placeLinearSymbol(coords: [number, number][], lineType: 'trench' | 'comm_open' | 'comm_covered' | 'wire' | string, name: string, flipSide: boolean = false) {
+  placeLinearSymbol(coords: [number, number][], lineType: 'trench' | 'comm_open' | 'comm_covered' | 'wire' | string, name: string, flipSide: boolean = false, isSmooth: boolean = false) {
     if (!coords || coords.length < 2) return;
-    const geom = this.trenchGeometryService.generateLinearGeometry(coords, lineType, flipSide);
+    const geom = this.trenchGeometryService.generateLinearGeometry(coords, lineType, flipSide, isSmooth);
     
     let color = this.templateCustomColor();
     if (!color) {
-      if (lineType === 'wire') color = '#475569';
-      else if (lineType === 'comm_covered') color = '#78350f';
-      else color = '#854d0e';
+      if (lineType === 'wire') color = '#000000';
+      else color = '#ef4444';
     }
 
     let symbolId = 'wire_line';
@@ -567,7 +584,8 @@ export class TacticalMapService {
         isLinear: true,
         lineType: lineType,
         origCoords: coords,
-        flipSide: flipSide
+        flipSide: flipSide,
+        isSmooth: isSmooth
       },
       geometry: geom
     };
@@ -584,7 +602,8 @@ export class TacticalMapService {
 
     const lineType = symbol.properties['lineType'];
     const flipSide = !!symbol.properties['flipSide'];
-    const geom = this.trenchGeometryService.generateLinearGeometry(newCoords, lineType, flipSide);
+    const isSmooth = !!symbol.properties['isSmooth'];
+    const geom = this.trenchGeometryService.generateLinearGeometry(newCoords, lineType, flipSide, isSmooth);
 
     this.placedSymbols.update(prev =>
       prev.map(s => s.properties['id'] === id ? {
@@ -606,7 +625,8 @@ export class TacticalMapService {
     const newFlip = !selected.properties['flipSide'];
     const origCoords = selected.properties['origCoords'] as [number, number][];
     const lineType = selected.properties['lineType'];
-    const geom = this.trenchGeometryService.generateLinearGeometry(origCoords, lineType, newFlip);
+    const isSmooth = !!selected.properties['isSmooth'];
+    const geom = this.trenchGeometryService.generateLinearGeometry(origCoords, lineType, newFlip, isSmooth);
 
     this.placedSymbols.update(prev =>
       prev.map(s => s.properties['id'] === id ? {
@@ -617,6 +637,27 @@ export class TacticalMapService {
     );
     this.syncSelectedPlacedSymbol();
     this.updateTacticalSymbolsSource();
+  }
+
+  updatePlacedLineSmooth(id: number, isSmooth: boolean) {
+    const symbol = this.placedSymbols().find(s => s.properties['id'] === id);
+    if (!symbol || !symbol.properties['isLinear']) return;
+
+    const lineType = symbol.properties['lineType'];
+    const flipSide = !!symbol.properties['flipSide'];
+    const coords = symbol.properties['origCoords'] as [number, number][];
+    const geom = this.trenchGeometryService.generateLinearGeometry(coords, lineType, flipSide, isSmooth);
+
+    this.placedSymbols.update(prev =>
+      prev.map(s => s.properties['id'] === id ? {
+        ...s,
+        properties: { ...s.properties, isSmooth: isSmooth },
+        geometry: geom
+      } : s)
+    );
+    this.syncSelectedPlacedSymbol();
+    this.updateTacticalSymbolsSource();
+    this.updateLinearVerticesSource();
   }
 
   private syncSelectedPlacedSymbol() {
@@ -784,6 +825,23 @@ export class TacticalMapService {
               geometry: { ...s.geometry, coordinates: [lng, lat] }
             } : s)
           );
+
+          const symbolType = this.dragFeature.properties['symbol'] || '';
+          if (this.isTerrainOrientationEnabled() && symbolType.startsWith('fort_')) {
+            this.terrainService.getSlopeBearing(lng, lat).then(bearing => {
+              if (bearing !== null) {
+                this.placedSymbols.update(prev => 
+                  prev.map(s => s.properties['id'] === symbolId ? {
+                    ...s,
+                    properties: { ...s.properties, angle: bearing }
+                  } : s)
+                );
+                this.syncSelectedPlacedSymbol();
+                this.updateTacticalSymbolsSource();
+              }
+            });
+          }
+
           this.syncSelectedPlacedSymbol();
           this.updateTacticalSymbolsSource();
         }
@@ -807,7 +865,7 @@ export class TacticalMapService {
     });
   }
 
-  private updateTacticalSymbolsSource() {
+  public updateTacticalSymbolsSource() {
     if (!this.mapInstance) return;
     const source = this.mapInstance.getSource('tactical-symbols') as maplibregl.GeoJSONSource;
     if (source) {

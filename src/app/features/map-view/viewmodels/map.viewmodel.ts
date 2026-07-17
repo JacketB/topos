@@ -2,6 +2,7 @@ import { Injectable, signal, inject, computed } from '@angular/core';
 import maplibregl from 'maplibre-gl';
 import { TacticalSymbolsService } from '../services/tactical-symbols.service';
 import { TacticalMapService } from '../services/tactical-map.service';
+import { TerrainService } from '../services/terrain.service';
 import { MapScaleService } from '../services/map-scale.service';
 import { MapMeasurementService } from '../services/map-measurement.service';
 import { MapLayersService } from '../services/map-layers.service';
@@ -13,6 +14,7 @@ import { SCALE_PRESETS, ScalePreset } from '../consts/map-scale.const';
 export class MapViewModel {
   readonly symbolsService = inject(TacticalSymbolsService);
   readonly tacticalMapService = inject(TacticalMapService);
+  readonly terrainService = inject(TerrainService);
   readonly mapScaleService = inject(MapScaleService);
   readonly mapMeasurementService = inject(MapMeasurementService);
   readonly mapLayersService = inject(MapLayersService);
@@ -27,6 +29,15 @@ export class MapViewModel {
   readonly isScaleMenuOpen = signal<boolean>(false);
   readonly isQuickLayersMenuOpen = signal<boolean>(false);
   readonly isToogleMapMenuOpen = signal<boolean>(false);
+  readonly activeMapId = signal<'map1' | 'map2'>('map1');
+  readonly isLineSmooth = signal<boolean>(false);
+  readonly isTerrainOrientationEnabled = this.tacticalMapService.isTerrainOrientationEnabled;
+  readonly zoomLevel = signal<number>(10);
+  readonly zoomPercentText = computed(() => {
+    const zoom = this.zoomLevel();
+    const percent = Math.round(100 * Math.pow(2, zoom - 13.2));
+    return `${percent}%`;
+  });
   readonly manuallyOpenedCategories = signal<Record<string, boolean>>({});
 
   readonly isMeasuring = this.mapMeasurementService.isMeasuring;
@@ -49,6 +60,15 @@ export class MapViewModel {
 
   toggleQuickLayersMenu() {
     this.isQuickLayersMenuOpen.update(v => !v);
+  }
+
+  toggleLineSmooth() {
+    this.isLineSmooth.update(v => !v);
+    this.updateDrawingPreview();
+  }
+
+  toggleTerrainOrientation() {
+    this.isTerrainOrientationEnabled.update(v => !v);
   }
 
   onQuickLayerToggle(groupId: string) {
@@ -123,6 +143,17 @@ export class MapViewModel {
     this.tacticalMapService.updatePlacedSymbolAngle(angle);
   }
 
+  async orientSelectedPlacedSymbolToTerrain() {
+    const selected = this.selectedPlacedSymbol();
+    if (selected && !selected.properties['isLinear']) {
+      const coords = selected.geometry.coordinates;
+      const bearing = await this.terrainService.getSlopeBearing(coords[0], coords[1]);
+      if (bearing !== null) {
+        this.updatePlacedSymbolAngle(bearing);
+      }
+    }
+  }
+
   updatePlacedSymbolName(name: string) {
     this.tacticalMapService.updatePlacedSymbolName(name);
   }
@@ -155,6 +186,16 @@ export class MapViewModel {
   readonly activeLineCoords = signal<[number, number][]>([]);
   readonly activeLineFlipSide = signal<boolean>(false);
 
+  readonly activeLineModeDisplayName = computed(() => {
+    const mode = this.activeLineMode();
+    if (mode === 'trench') return 'Траншея';
+    if (mode === 'comm_open') return 'Открытый ход сообщения';
+    if (mode === 'comm_covered') return 'Крытый ход сообщения';
+    if (mode === 'wire') return 'Колючая проволока (МЗП)';
+    if (mode === 'point') return 'Точка (ориентир)';
+    return 'Линия';
+  });
+
   selectSymbol(symbol: any) {
     if (symbol.id === 'trench_line' || symbol.id === 'wire_line' || symbol.id === 'comm_open_line' || symbol.id === 'comm_covered_line') {
       this.tacticalMapService.clearSymbolSelection();
@@ -178,8 +219,42 @@ export class MapViewModel {
     }
   }
 
+  placePointIcon(coords: [number, number]) {
+    const color = '#ef4444'; // Изначально все заграждения и точки красного цвета
+    const iconId = `tochka_c_${color.replace('#', '')}`;
+    const newSymbol = {
+      type: 'Feature',
+      properties: {
+        id: Date.now(),
+        symbol: 'tochka',
+        iconId: iconId,
+        color: color,
+        name: 'Точка',
+        size: 0.08,
+        angle: 0
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: coords
+      }
+    };
+
+    const onReady = () => {
+      this.tacticalMapService.placedSymbols.update(prev => [...prev, newSymbol]);
+      this.tacticalMapService.updateTacticalSymbolsSource();
+      this.tacticalMapService.selectPlacedSymbol(newSymbol);
+    };
+
+    this.tacticalMapService.ensureSymbolColorImageLoaded('tochka', color, onReady);
+    this.cancelDrawingLine();
+  }
+
   addDrawingPoint(coord: [number, number]) {
     if (this.activeLineMode() === 'none') return;
+    if (this.activeLineMode() === 'point') {
+      this.placePointIcon(coord);
+      return;
+    }
     this.activeLineCoords.update(prev => [...prev, coord]);
     this.updateDrawingPreview();
   }
@@ -192,7 +267,7 @@ export class MapViewModel {
       if (mode === 'trench') name = 'Траншея (МО СССР)';
       else if (mode === 'comm_open') name = 'Открытый ход сообщения';
       else if (mode === 'comm_covered') name = 'Крытый ход сообщения (перекрытая щель)';
-      this.tacticalMapService.placeLinearSymbol(coords, mode, name, this.activeLineFlipSide());
+      this.tacticalMapService.placeLinearSymbol(coords, mode, name, this.activeLineFlipSide(), this.isLineSmooth());
     }
     this.cancelDrawingLine();
   }
@@ -239,9 +314,11 @@ export class MapViewModel {
       const origCoords = selected.properties['origCoords'] as [number, number][];
       const lineType = selected.properties['lineType'];
       const flipSide = !!selected.properties['flipSide'];
+      const isSmooth = !!selected.properties['isSmooth'];
       if (origCoords && origCoords.length >= 2) {
         this.tacticalMapService.deleteSelectedPlacedSymbol();
         this.activeLineFlipSide.set(flipSide);
+        this.isLineSmooth.set(isSmooth);
         this.activeLineMode.set(lineType);
         this.activeLineCoords.set([...origCoords]);
         if (this.mapInstance) {
@@ -263,6 +340,9 @@ export class MapViewModel {
     const coords = this.activeLineCoords();
     if (coords.length < 1) return;
 
+    const mode = this.activeLineMode();
+    const previewColor = mode === 'wire' ? '#000000' : '#ef4444';
+
     if (!this.mapInstance.getSource('drawing-preview')) {
       this.mapInstance.addSource('drawing-preview', {
         type: 'geojson',
@@ -274,7 +354,7 @@ export class MapViewModel {
         source: 'drawing-preview',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': '#e11d48',
+          'line-color': previewColor,
           'line-width': 3.5,
           'line-dasharray': [2, 2]
         }
@@ -283,14 +363,22 @@ export class MapViewModel {
 
     const source = this.mapInstance.getSource('drawing-preview') as maplibregl.GeoJSONSource;
     if (source && coords.length >= 2) {
+      let previewCoords = coords;
+      if (this.isLineSmooth() && coords.length >= 3) {
+        previewCoords = this.tacticalMapService.trenchGeometryService.interpolateCatmullRom(coords, 12);
+      }
       source.setData({
         type: 'FeatureCollection',
         features: [{
           type: 'Feature',
           properties: {},
-          geometry: { type: 'LineString', coordinates: coords }
+          geometry: { type: 'LineString', coordinates: previewCoords }
         }]
       });
+    }
+
+    if (this.mapInstance.getLayer('drawing-preview-layer')) {
+      this.mapInstance.setPaintProperty('drawing-preview-layer', 'line-color', previewColor);
     }
   }
 
@@ -300,5 +388,63 @@ export class MapViewModel {
 
   toggleQuickLayer(groupId: string) {
     this.onQuickLayerToggle(groupId);
+  }
+
+  onZoomPercentInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let val = input.value.replace(/[^0-9%]/g, '');
+    if (val.includes('%')) {
+      val = val.replace(/%/g, '') + '%';
+    }
+    input.value = val;
+  }
+
+  onZoomPercentKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      const input = event.target as HTMLInputElement;
+      this.applyPercentText(input.value, input);
+      input.blur();
+    }
+  }
+
+  onZoomPercentBlur(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.applyPercentText(input.value, input);
+  }
+
+  private applyPercentText(text: string, inputElement: HTMLInputElement) {
+    const digitsOnly = text.replace(/[^0-9]/g, '');
+    if (!digitsOnly) {
+      const zoom = this.zoomLevel();
+      const percent = Math.round(100 * Math.pow(2, zoom - 13.2));
+      inputElement.value = `${percent}%`;
+      return;
+    }
+    
+    let percent = parseInt(digitsOnly, 10);
+    percent = Math.max(1, Math.min(2800, percent));
+    this.applyZoomPercent(percent);
+  }
+
+  applyZoomPercent(percent: number) {
+    const zoom = 13.2 + Math.log2(percent / 100);
+    const clampedZoom = Math.max(6.48, Math.min(18, zoom));
+    
+    if (this.mapInstance) {
+      this.mapInstance.zoomTo(clampedZoom, { duration: 300 });
+    }
+  }
+
+  adjustZoomPercent(delta: number) {
+    const zoom = this.zoomLevel();
+    const currentPercent = Math.round(100 * Math.pow(2, zoom - 13.2));
+    let newPercent;
+    if (delta > 0) {
+      newPercent = Math.ceil((currentPercent + 0.1) / 10) * 10;
+    } else {
+      newPercent = Math.floor((currentPercent - 0.1) / 10) * 10;
+    }
+    newPercent = Math.max(1, Math.min(2800, newPercent));
+    this.applyZoomPercent(newPercent);
   }
 }

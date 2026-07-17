@@ -1,5 +1,92 @@
-.tooggle-map {
-    position: absolute;
-    left: 30px;
-    top: 30px;
+.transform-box {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.transform-outline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 1.5px dashed var(--color-primary, #466bf7);
+  box-sizing: border-box;
+  background-color: rgba(70, 107, 247, 0.04);
+  border-radius: 4px;
+}
+
+/* Rotation stick */
+.transform-rotate-line {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 1.5px;
+  height: 20px;
+  background-color: var(--color-primary, #466bf7);
+  transform: translateX(-50%);
+}
+
+/* Base style for all handles */
+.transform-handle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background-color: #ffffff;
+  border: 1.5px solid var(--color-primary, #466bf7);
+  border-radius: 50%;
+  pointer-events: auto; /* Enable mouse clicks/drags */
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+.transform-handle:hover {
+  background-color: var(--color-primary, #466bf7);
+  transform: scale(1.3);
+}
+
+/* Rotate handle placement */
+.transform-handle.rotate {
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 20px; /* Aligns with rotate stick end */
+  transform: translateX(-50%);
+  width: 11px;
+  height: 11px;
+  background-color: var(--color-primary, #466bf7);
+  border-color: #ffffff;
+  cursor: grab;
+}
+
+.transform-handle.rotate:active {
+  cursor: grabbing;
+}
+
+/* Resize corner handle placements */
+.transform-handle.nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.transform-handle.ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.transform-handle.sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+.transform-handle.se {
+  bottom: -5px;
+  right: -5px;
+  cursor: nwse-resize;
 }

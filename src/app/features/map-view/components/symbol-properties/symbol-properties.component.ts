@@ -49,4 +49,17 @@ export class SymbolPropertiesComponent {
     const color = typeof event === 'string' ? event : (event.target as HTMLInputElement).value;
     this.vm.updatePlacedSymbolColor(color);
   }
+
+  onPlacedSmoothChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const isSmooth = input.checked;
+    const selected = this.vm.selectedPlacedSymbol();
+    if (selected && selected.properties['isLinear']) {
+      this.vm.tacticalMapService.updatePlacedLineSmooth(selected.properties['id'], isSmooth);
+    }
+  }
+
+  onOrientToTerrain() {
+    this.vm.orientSelectedPlacedSymbolToTerrain();
+  }
 }

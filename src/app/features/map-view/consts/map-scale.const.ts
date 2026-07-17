@@ -18,5 +18,8 @@ export const SCALE_PRESETS: ScalePreset[] = [
   { label: '1 : 50 000 (в 1 см - 500 м)', scale: 50000, zoom: 13.2 },
   { label: '1 : 100 000 (в 1 см - 1 км)', scale: 100000, zoom: 12.2 },
   { label: '1 : 200 000 (в 1 см - 2 км)', scale: 200000, zoom: 11.2 },
-  { label: '1 : 500 000 (в 1 см - 5 км)', scale: 500000, zoom: 9.8 }
+  { label: '1 : 500 000 (в 1 см - 5 км)', scale: 500000, zoom: 9.8 },
+  { label: '1 : 1 000 000 (в 1 см - 10 км)', scale: 1000000, zoom: 8.8 },
+  { label: '1 : 2 000 000 (в 1 см - 20 км)', scale: 2000000, zoom: 7.8 },
+  { label: '1 : 5 000 000 (в 1 см - 50 км)', scale: 5000000, zoom: 6.48 }
 ];

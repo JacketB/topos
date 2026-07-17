@@ -1,4 +1,5 @@
-import { Component, AfterViewInit, OnDestroy, viewChild, ElementRef, inject } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, viewChild, ElementRef, inject, effect, computed, signal, HostListener } from '@angular/core';
+import { NgStyle } from '@angular/common';
 import maplibregl from 'maplibre-gl';
 import { PMTiles, Protocol } from 'pmtiles';
 import { MapViewModel } from '../../viewmodels/map.viewmodel';
@@ -13,6 +14,7 @@ import { mapsUrls } from '../../../../consts/map-urls';
 @Component({
   selector: 'app-map-canvas',
   standalone: true,
+  imports: [NgStyle],
   templateUrl: './map-canvas.component.html',
   styleUrl: './map-canvas.component.css',
 })
@@ -22,8 +24,42 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   public mapsUrls = mapsUrls;
   private map: maplibregl.Map | null = null;
 
+  readonly selectedIconFeature = computed(() => {
+    const selected = this.vm.selectedPlacedSymbol();
+    if (selected && !selected.properties?.['isLinear'] && selected.geometry?.type === 'Point') {
+      return selected;
+    }
+    return null;
+  });
+
+  transformBoxStyle = signal<any>(null);
+
+  constructor() {
+    effect(() => {
+      const activeId = this.vm.activeMapId();
+      const container = this.mapContainer();
+      if (container) {
+        const targetMap = this.mapsUrls[activeId];
+        this.renderMap(targetMap.url, targetMap.type);
+      }
+    });
+
+    // Реактивно отслеживаем изменения выбранного знака для перерисовки рамки
+    effect(() => {
+      const feature = this.selectedIconFeature();
+      if (feature) {
+        // Чтение свойств для триггера эффекта при их обновлении
+        const size = feature.properties?.['size'];
+        const angle = feature.properties?.['angle'];
+        setTimeout(() => this.updateTransformBoxPosition(), 0);
+      } else {
+        this.transformBoxStyle.set(null);
+      }
+    });
+  }
+
   ngAfterViewInit() {
-    this.renderMap('http://topos.localhost/belarus.pmtiles', 'vector');
+    // Handled by effect upon container resolution
   }
 
   renderMap(url: string, type: string) {
@@ -48,6 +84,16 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
           'belarus-data': {
             type: type as any,
             url: `pmtiles://${pmtilesUrl}`,
+            ...(type === 'raster'
+              ? {
+                  minzoom: 8,
+                  maxzoom: 13,
+                  tileSize: 256
+                }
+              : {
+                  minzoom: 0,
+                  maxzoom: 14
+                })
           },
           'contours-source': {
             type: 'geojson',
@@ -64,13 +110,15 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       },
       center: [27.56, 53.9],
       zoom: 10,
+      minZoom: 6.48,
       fadeDuration: 0,
     });
-    console.log(this.map);
     this.vm.setMapInstance(this.map);
 
+    this.map.on('move', () => this.updateTransformBoxPosition());
     this.map.on('rotate', () => {
       this.vm.bearing.set(this.map ? this.map.getBearing() : 0);
+      this.updateTransformBoxPosition();
     });
 
     this.map.on('styleimagemissing', (e) => {
@@ -91,6 +139,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
 
     this.map.on('zoom', () => {
       if (this.map) {
+        this.vm.zoomLevel.set(this.map.getZoom());
         this.vm.currentScale.set(this.vm.mapScaleService.getCurrentScale(this.map.getZoom()));
         this.vm.mapScaleService.updateScaleInfo(
           this.map,
@@ -100,7 +149,10 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
           this.vm.isScaleMenuOpen.set(false);
         }
       }
+      this.updateTransformBoxPosition();
     });
+
+    this.map.on('pitch', () => this.updateTransformBoxPosition());
 
     this.map.on('click', (e) => {
       if (this.vm.isScaleMenuOpen()) {
@@ -149,6 +201,121 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  updateTransformBoxPosition() {
+    const feature = this.selectedIconFeature();
+    if (!feature || !this.map) {
+      this.transformBoxStyle.set(null);
+      return;
+    }
+
+    const coords = feature.geometry.coordinates as [number, number];
+    try {
+      const pos = this.map.project(coords);
+      const size = feature.properties['size'] || 0.08;
+      const angle = feature.properties['angle'] || 0;
+      
+      // Базовый размер иконки на экране (в пикселях)
+      const boxSize = 512 * size;
+
+      this.transformBoxStyle.set({
+        left: `${pos.x}px`,
+        top: `${pos.y}px`,
+        width: `${boxSize}px`,
+        height: `${boxSize}px`,
+        transform: `translate(-50%, -50%) rotate(${angle}deg)`
+      });
+    } catch (e) {
+      this.transformBoxStyle.set(null);
+    }
+  }
+
+  onResizeStart(event: MouseEvent, corner: string) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const feature = this.selectedIconFeature();
+    if (!feature || !this.map) return;
+
+    const coords = feature.geometry.coordinates as [number, number];
+    const centerPos = this.map.project(coords);
+    const rect = this.mapContainer().nativeElement.getBoundingClientRect();
+    const iconCenterX = centerPos.x + rect.left;
+    const iconCenterY = centerPos.y + rect.top;
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startSize = feature.properties['size'] || 0.08;
+
+    const startDist = Math.sqrt(
+      Math.pow(startX - iconCenterX, 2) + Math.pow(startY - iconCenterY, 2)
+    );
+
+    if (startDist === 0) return;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const currentDist = Math.sqrt(
+        Math.pow(moveEvent.clientX - iconCenterX, 2) + Math.pow(moveEvent.clientY - iconCenterY, 2)
+      );
+      
+      let newSize = startSize * (currentDist / startDist);
+      newSize = Math.max(0.03, Math.min(0.25, newSize));
+      newSize = Math.round(newSize * 1000) / 1000;
+
+      this.vm.tacticalMapService.updatePlacedSymbolSize(newSize);
+      this.updateTransformBoxPosition();
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }
+
+  onRotateStart(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const feature = this.selectedIconFeature();
+    if (!feature || !this.map) return;
+
+    const coords = feature.geometry.coordinates as [number, number];
+    const centerPos = this.map.project(coords);
+    const rect = this.mapContainer().nativeElement.getBoundingClientRect();
+    const iconCenterX = centerPos.x + rect.left;
+    const iconCenterY = centerPos.y + rect.top;
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startAngle = feature.properties['angle'] || 0;
+
+    const startAngleRad = Math.atan2(startY - iconCenterY, startX - iconCenterX);
+    const startAngleDeg = startAngleRad * (180 / Math.PI);
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const currentAngleRad = Math.atan2(moveEvent.clientY - iconCenterY, moveEvent.clientX - iconCenterX);
+      const currentAngleDeg = currentAngleRad * (180 / Math.PI);
+
+      const deltaAngle = currentAngleDeg - startAngleDeg;
+      let newAngle = startAngle + deltaAngle;
+
+      newAngle = (Math.round(newAngle) % 360 + 360) % 360;
+
+      this.vm.tacticalMapService.updatePlacedSymbolAngle(newAngle);
+      this.updateTransformBoxPosition();
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }
+
   private getLayersForType(type: string) {
     if (type === 'raster') {
       return [
@@ -156,7 +323,10 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         id: 'raster-layer',
         type: 'raster',
         source: 'belarus-data',
-        paint: { 'raster-opacity': 1 }
+        paint: {
+          'raster-opacity': 1,
+          'raster-resampling': 'nearest'
+        }
       },
       ...MILITARY_LAYERS
     ];
@@ -167,6 +337,19 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       ...MILITARY_LAYERS,
       ...mapLayers.filter((l) => l.id === 'place_labels'),
     ];
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Delete' || event.key === 'Del') {
+      const target = event.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      if (this.vm.selectedPlacedSymbol()) {
+        this.vm.deletePlacedSymbol();
+      }
+    }
   }
 
   ngOnDestroy() {

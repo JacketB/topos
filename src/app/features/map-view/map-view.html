@@ -22,6 +22,31 @@
             <path d="M4 12h16M7 8l2 8M15 8l2 8M8 12c0-2 2-4 4-4s4 2 4 4" />
           </svg>
         </button>
+        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'point'" (click)="vm.activeLineMode() === 'point' ? vm.cancelDrawingLine() : vm.startDrawingLine('point')" title="Нанести точку (ориентир)">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4" fill="currentColor" />
+            <circle cx="12" cy="12" r="9" />
+          </svg>
+        </button>
+        <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
+        <button class="tool-btn" [class.active]="vm.isLineSmooth()" (click)="vm.toggleLineSmooth()" title="Сглаживание углов (Плавная кривая)">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12c4-6 8-6 12 0s6 6 6 0" />
+          </svg>
+        </button>
+        <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
+        <div style="display: inline-flex; align-items: center; gap: 6px; user-select: none; vertical-align: middle; height: 28px;">
+          <input 
+            type="checkbox" 
+            [checked]="vm.isTerrainOrientationEnabled()" 
+            (change)="vm.toggleTerrainOrientation()" 
+            id="terrain-orient-check"
+            style="cursor: pointer; width: 13px; height: 13px; accent-color: #3b82f6; margin: 0; vertical-align: middle;"
+          />
+          <label for="terrain-orient-check" style="font-size: 11px; font-weight: 600; color: #475569; cursor: pointer; vertical-align: middle;">
+            Авто-рельеф
+          </label>
+        </div>
       </div>
     </div>
   </header>
@@ -35,6 +60,7 @@
       
       <div class="map-controls">
         <app-scale-ruler style="display: contents;" />
+        <app-toogle-map style="display: contents;" />
         <app-quick-layers-menu style="display: contents;" />
       </div>
     </div>
@@ -63,6 +89,28 @@
             }
           </div>
         }
+      </div>
+
+      <div class="zoom-percent-container" style="margin-left: 8px;">
+        <button class="zoom-arrow-btn" (click)="vm.adjustZoomPercent(-10)" title="Уменьшить зум">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <input 
+          type="text" 
+          class="zoom-percent-input" 
+          [value]="vm.zoomPercentText()" 
+          (keydown)="vm.onZoomPercentKeydown($event)"
+          (blur)="vm.onZoomPercentBlur($event)"
+          (input)="vm.onZoomPercentInput($event)"
+          title="Процент увеличения (зум карты)"
+        />
+        <button class="zoom-arrow-btn" (click)="vm.adjustZoomPercent(10)" title="Увеличить зум">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
       </div>
     </div>
 

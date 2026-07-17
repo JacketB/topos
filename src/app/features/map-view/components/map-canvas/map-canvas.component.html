@@ -2,15 +2,25 @@
   
   <div #mapContainer class="map-container"></div>
 
-  <div class="tooggle-map">
-    <button (click)="renderMap(mapsUrls.map1.url, mapsUrls.map1.type)">
-      {{mapsUrls.map1.name}}
-    </button>
+  <!-- Bounding box overlay for transformation -->
+  @if (transformBoxStyle()) {
+    <div class="transform-box" [ngStyle]="transformBoxStyle()">
+      <!-- Border outline -->
+      <div class="transform-outline"></div>
 
-    <button (click)="renderMap(mapsUrls.map2.url, mapsUrls.map2.type)">
-      {{mapsUrls.map2.name}}
-    </button>
-  </div>
+      <!-- Rotate stick and handle -->
+      <div class="transform-rotate-line"></div>
+      <div class="transform-handle rotate" (mousedown)="onRotateStart($event)" title="Повернуть"></div>
+
+      <!-- 4 resize corners -->
+      <div class="transform-handle nw" (mousedown)="onResizeStart($event, 'nw')" title="Изменить размер"></div>
+      <div class="transform-handle ne" (mousedown)="onResizeStart($event, 'ne')" title="Изменить размер"></div>
+      <div class="transform-handle sw" (mousedown)="onResizeStart($event, 'sw')" title="Изменить размер"></div>
+      <div class="transform-handle se" (mousedown)="onResizeStart($event, 'se')" title="Изменить размер"></div>
+    </div>
+  }
+
+
 
   @if (!vm.isAppReady()) {
     <div class="map-overlay">

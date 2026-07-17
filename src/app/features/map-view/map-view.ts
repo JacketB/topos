@@ -4,6 +4,7 @@ import { MapCanvasComponent } from './components/map-canvas/map-canvas.component
 import { MapSidebarComponent } from './components/map-sidebar/map-sidebar.component';
 import { QuickLayersMenuComponent } from './components/quick-layers-menu/quick-layers-menu.component';
 import { ScaleRulerComponent } from './components/scale-ruler/scale-ruler.component';
+import { ToogleMap } from './components/toogle-map/toogle-map';
 
 @Component({
   selector: 'app-map-view',
@@ -12,7 +13,8 @@ import { ScaleRulerComponent } from './components/scale-ruler/scale-ruler.compon
     MapCanvasComponent,
     MapSidebarComponent,
     QuickLayersMenuComponent,
-    ScaleRulerComponent
+    ScaleRulerComponent,
+    ToogleMap
   ],
   templateUrl: './map-view.html',
   styleUrl: './map-view.css',

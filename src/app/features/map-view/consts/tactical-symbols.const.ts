@@ -18,7 +18,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
     symbols: [
       {
         id: "tank_svoy_1",
-        name: "Танк (свой)",
+        name: "Танк",
         symbol: "tank_svoy_1",
         size: 0.08
       },
@@ -30,13 +30,13 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "bmp_svoy1",
-        name: "БМП (свой)",
+        name: "БМП",
         symbol: "bmp_svoy1",
         size: 0.08
       },
       {
         id: "btr_svoy1",
-        name: "БТР (свой)",
+        name: "БТР",
         symbol: "btr_svoy1",
         size: 0.08
       },
@@ -80,7 +80,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
   },
   {
     id: "fortification_ussr",
-    name: "Инженерная фортификация (МО СССР)",
+    name: "Инженерная фортификация",
     symbols: [
       {
         id: "fort_trench_shelter",
@@ -426,7 +426,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
     symbols: [
       {
         id: "utes_svoy1",
-        name: "Пулемет «Утёс» (свой)",
+        name: "Пулемет «Утёс»",
         symbol: "utes_svoy1",
         size: 0.08
       },
@@ -438,25 +438,25 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "pk_svoy1",
-        name: "ПК (свой)",
+        name: "ПК",
         symbol: "pk_svoy1",
         size: 0.08
       },
       {
         id: "spg_svoy1",
-        name: "СПГ-9 (свой)",
+        name: "СПГ-9",
         symbol: "spg_svoy1",
         size: 0.08
       },
       {
         id: "ptur_svoy1",
-        name: "ПТУР (свой)",
+        name: "ПТУР",
         symbol: "ptur_svoy1",
         size: 0.08
       },
       {
         id: "rpg_nash1",
-        name: "РПГ-7 (свой)",
+        name: "РПГ-7",
         symbol: "rpg_nash1",
         size: 0.08
       },
