@@ -13,11 +13,15 @@ export class ToogleMap {
   readonly mapsUrls = mapsUrls;
 
   toggleMenu() {
-    this.vm.isToogleMapMenuOpen.update(v => !v);
+    this.vm.toggleToogleMapMenu();
   }
 
-  selectMap(mapId: 'map1' | 'map2') {
+  selectMap(mapId: string) {
     this.vm.activeMapId.set(mapId);
     this.vm.isToogleMapMenuOpen.set(false);
+  }
+
+  getMapKeys(): string[] {
+    return Object.keys(this.mapsUrls);
   }
 }

@@ -25,11 +25,14 @@ export class MapViewModel {
   readonly sidebarWidth = signal<number>(340);
   readonly bearing = signal<number>(0);
   readonly cursorCoords = signal<string>('53.9000 С.Ш., 27.5600 В.Д.');
+  readonly centerCoords = signal<string>('53.9000 С.Ш., 27.5600 В.Д.');
   readonly currentScale = signal<number>(50000);
   readonly isScaleMenuOpen = signal<boolean>(false);
   readonly isQuickLayersMenuOpen = signal<boolean>(false);
   readonly isToogleMapMenuOpen = signal<boolean>(false);
-  readonly activeMapId = signal<'map1' | 'map2'>('map1');
+  readonly activeMapId = signal<string>('map1');
+  readonly isCrosshairVisible = signal<boolean>(false);
+  readonly isEditingCoords = signal<boolean>(false);
   readonly isLineSmooth = signal<boolean>(false);
   readonly isTerrainOrientationEnabled = this.tacticalMapService.isTerrainOrientationEnabled;
   readonly zoomLevel = signal<number>(10);
@@ -59,7 +62,21 @@ export class MapViewModel {
   }
 
   toggleQuickLayersMenu() {
-    this.isQuickLayersMenuOpen.update(v => !v);
+    const nextVal = !this.isQuickLayersMenuOpen();
+    if (nextVal) {
+      this.isScaleMenuOpen.set(false);
+      this.isToogleMapMenuOpen.set(false);
+    }
+    this.isQuickLayersMenuOpen.set(nextVal);
+  }
+
+  toggleToogleMapMenu() {
+    const nextVal = !this.isToogleMapMenuOpen();
+    if (nextVal) {
+      this.isScaleMenuOpen.set(false);
+      this.isQuickLayersMenuOpen.set(false);
+    }
+    this.isToogleMapMenuOpen.set(nextVal);
   }
 
   toggleLineSmooth() {
@@ -88,7 +105,96 @@ export class MapViewModel {
 
   toggleScaleMenu(event?: Event) {
     if (event) event.stopPropagation();
-    this.isScaleMenuOpen.update(v => !v);
+    const nextVal = !this.isScaleMenuOpen();
+    if (nextVal) {
+      this.isQuickLayersMenuOpen.set(false);
+      this.isToogleMapMenuOpen.set(false);
+    }
+    this.isScaleMenuOpen.set(nextVal);
+  }
+
+  toggleCrosshair() {
+    this.isCrosshairVisible.update(v => !v);
+  }
+
+  onCoordsFocus() {
+    this.isEditingCoords.set(true);
+  }
+
+  onCoordsBlur(event: Event) {
+    this.isEditingCoords.set(false);
+    const map = this.getMapInstance();
+    if (map) {
+      const center = map.getCenter();
+      const lat = center.lat;
+      const lng = center.lng;
+      const latDir = lat >= 0 ? 'С.Ш.' : 'Ю.Ш.';
+      const lngDir = lng >= 0 ? 'В.Д.' : 'З.Д.';
+      this.cursorCoords.set(
+        `${Math.abs(lat).toFixed(4)} ${latDir}, ${Math.abs(lng).toFixed(4)} ${lngDir}`
+      );
+    }
+  }
+
+  onCoordsKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      const input = event.target as HTMLInputElement;
+      const parsed = this.parseCoordinates(input.value);
+      if (parsed) {
+        this.moveToCoordinates(parsed[0], parsed[1]);
+        input.blur();
+      } else {
+        input.classList.add('coords-error');
+        setTimeout(() => input.classList.remove('coords-error'), 1000);
+      }
+    } else if (event.key === 'Escape') {
+      const input = event.target as HTMLInputElement;
+      input.blur();
+    }
+  }
+
+  moveToCoordinates(lat: number, lng: number) {
+    const map = this.getMapInstance();
+    if (map) {
+      map.flyTo({
+        center: [lng, lat],
+        zoom: Math.max(map.getZoom(), 13),
+        duration: 1000
+      });
+    }
+  }
+
+  parseCoordinates(input: string): [number, number] | null {
+    if (!input) return null;
+    const matches = input.match(/[-+]?[0-9]*\.?[0-9]+/g);
+    if (!matches || matches.length < 2) return null;
+    
+    let lat = parseFloat(matches[0]);
+    let lng = parseFloat(matches[1]);
+    const upperInput = input.toUpperCase();
+    
+    if (upperInput.includes('В.Д.') || upperInput.includes('З.Д.') || upperInput.includes('E') || upperInput.includes('W')) {
+      const latIndex = Math.max(upperInput.indexOf('С.Ш.'), upperInput.indexOf('Ю.Ш.'), upperInput.indexOf('N'), upperInput.indexOf('S'));
+      const lngIndex = Math.max(upperInput.indexOf('В.Д.'), upperInput.indexOf('З.Д.'), upperInput.indexOf('E'), upperInput.indexOf('W'));
+      if (latIndex !== -1 && lngIndex !== -1) {
+        if (lngIndex < latIndex) {
+          lat = parseFloat(matches[1]);
+          lng = parseFloat(matches[0]);
+        }
+      }
+    }
+    
+    if (upperInput.includes('Ю.Ш.') || upperInput.includes('S')) {
+      lat = -Math.abs(lat);
+    }
+    if (upperInput.includes('З.Д.') || upperInput.includes('W')) {
+      lng = -Math.abs(lng);
+    }
+    
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return null;
+    }
+    return [lat, lng];
   }
 
   selectPresetScale(preset: ScalePreset, event?: Event) {
@@ -193,16 +299,20 @@ export class MapViewModel {
     if (mode === 'comm_covered') return 'Крытый ход сообщения';
     if (mode === 'wire') return 'Колючая проволока (МЗП)';
     if (mode === 'point') return 'Точка (ориентир)';
+    if (mode === 'arrow_attack') return 'Стрелка гл. удара';
+    if (mode === 'arrow_supporting') return 'Стрелка вспом. удара';
+    if (mode === 'arrow_retreat') return 'Стрелка отхода';
     return 'Линия';
   });
 
   selectSymbol(symbol: any) {
-    if (symbol.id === 'trench_line' || symbol.id === 'wire_line' || symbol.id === 'comm_open_line' || symbol.id === 'comm_covered_line') {
+    if (symbol.id === 'trench_line' || symbol.id === 'wire_line' || symbol.id === 'comm_open_line' || symbol.id === 'comm_covered_line' || (symbol.id && symbol.id.startsWith('arrow_'))) {
       this.tacticalMapService.clearSymbolSelection();
       let mode = 'wire';
       if (symbol.id === 'trench_line') mode = 'trench';
       else if (symbol.id === 'comm_open_line') mode = 'comm_open';
       else if (symbol.id === 'comm_covered_line') mode = 'comm_covered';
+      else if (symbol.id && symbol.id.startsWith('arrow_')) mode = symbol.id;
       this.startDrawingLine(mode);
     } else {
       this.cancelDrawingLine();
@@ -267,6 +377,9 @@ export class MapViewModel {
       if (mode === 'trench') name = 'Траншея (МО СССР)';
       else if (mode === 'comm_open') name = 'Открытый ход сообщения';
       else if (mode === 'comm_covered') name = 'Крытый ход сообщения (перекрытая щель)';
+      else if (mode === 'arrow_attack') name = 'Стрелка главного удара';
+      else if (mode === 'arrow_supporting') name = 'Стрелка вспомогательного удара';
+      else if (mode === 'arrow_retreat') name = 'Стрелка отхода';
       this.tacticalMapService.placeLinearSymbol(coords, mode, name, this.activeLineFlipSide(), this.isLineSmooth());
     }
     this.cancelDrawingLine();

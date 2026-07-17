@@ -940,14 +940,76 @@ details[open] > .tree-summary {
   color: var(--color-text-muted);
 }
 
-.coords-value {
+.coords-input {
   color: var(--color-text-main);
   font-family: 'Consolas', 'JetBrains Mono', 'Courier New', monospace;
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 0.3px;
   background-color: #e2e8f0;
+  border: 1px solid transparent;
   padding: 2px 6px;
   border-radius: 4px;
+  width: 210px;
+  text-align: center;
+  outline: none;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.coords-input:hover {
+  background-color: #cbd5e1;
+  border-color: #94a3b8;
+}
+
+.coords-input:focus {
+  background-color: #ffffff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.coords-input.coords-error {
+  background-color: #fef2f2 !important;
+  border-color: var(--color-danger) !important;
+  color: var(--color-danger) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15) !important;
+  animation: coordsShake 0.4s ease;
+}
+
+@keyframes coordsShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.map-center-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 8;
+  color: #ef4444; /* тактический красный цвет прицела */
+  opacity: 0.8;
+  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.4));
+}
+
+.crosshair-coords {
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(15, 23, 42, 0.75); /* темный тактический фон */
+  color: #ffffff;
+  font-family: 'Consolas', 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
 
 .scale-label {

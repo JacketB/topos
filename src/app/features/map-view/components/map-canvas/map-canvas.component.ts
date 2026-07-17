@@ -63,59 +63,86 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   renderMap(url: string, type: string) {
+    let prevCenter: [number, number] = [27.56, 53.9];
+    let prevZoom: number = 10;
+    let prevBearing: number = 0;
+    let prevPitch: number = 0;
+
     if (this.map) {
+      const center = this.map.getCenter();
+      prevCenter = [center.lng, center.lat];
+      prevZoom = this.map.getZoom();
+      prevBearing = this.map.getBearing();
+      prevPitch = this.map.getPitch();
+
       this.map.remove();
       this.map = null;
       this.vm.setMapInstance(null as any);
     }
 
-    const protocol = new Protocol();
-    maplibregl.addProtocol('pmtiles', protocol.tile);
+    const sourcesSpec: any = {
+      [MILITARY_SOURCE_ID]: MILITARY_SOURCE_SPEC,
+    };
 
-    const pmtilesUrl = url;
-    const pmtiles = new PMTiles(pmtilesUrl);
-    protocol.add(pmtiles);
+    if (type === 'xyz') {
+      sourcesSpec['belarus-data'] = {
+        type: 'raster',
+        tiles: [url],
+        tileSize: 256,
+        minzoom: 0,
+        maxzoom: 20
+      };
+    } else {
+      const protocol = new Protocol();
+      maplibregl.addProtocol('pmtiles', protocol.tile);
+
+      const pmtiles = new PMTiles(url);
+      protocol.add(pmtiles);
+
+      sourcesSpec['belarus-data'] = {
+        type: type as any,
+        url: `pmtiles://${url}`,
+        ...(type === 'raster'
+          ? {
+              minzoom: 8,
+              maxzoom: 13,
+              tileSize: 256
+            }
+          : {
+              minzoom: 0,
+              maxzoom: 14
+            })
+      };
+
+      if (type === 'vector') {
+        sourcesSpec['contours-source'] = {
+          type: 'geojson',
+          data: 'contours.geojson'
+        };
+      }
+    }
 
     this.map = new maplibregl.Map({
       container: this.mapContainer().nativeElement,
       style: {
         version: 8,
-        sources: {
-          'belarus-data': {
-            type: type as any,
-            url: `pmtiles://${pmtilesUrl}`,
-            ...(type === 'raster'
-              ? {
-                  minzoom: 8,
-                  maxzoom: 13,
-                  tileSize: 256
-                }
-              : {
-                  minzoom: 0,
-                  maxzoom: 14
-                })
-          },
-          'contours-source': {
-            type: 'geojson',
-            data: 'contours.geojson',
-          },
-          ...(type === 'vector'
-            ? {
-                'contours-source': { type: 'geojson', data: 'contours.geojson' },
-              }
-            : {}),
-          [MILITARY_SOURCE_ID]: MILITARY_SOURCE_SPEC,
-        },
+        sources: sourcesSpec,
         layers: this.getLayersForType(type) as any,
       },
-      center: [27.56, 53.9],
-      zoom: 10,
+      center: prevCenter,
+      zoom: prevZoom,
+      bearing: prevBearing,
+      pitch: prevPitch,
       minZoom: 6.48,
       fadeDuration: 0,
     });
     this.vm.setMapInstance(this.map);
+    this.updateCenterCoords();
 
-    this.map.on('move', () => this.updateTransformBoxPosition());
+    this.map.on('move', () => {
+      this.updateTransformBoxPosition();
+      this.updateCenterCoords();
+    });
     this.map.on('rotate', () => {
       this.vm.bearing.set(this.map ? this.map.getBearing() : 0);
       this.updateTransformBoxPosition();
@@ -128,6 +155,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     this.vm.tacticalMapService.init(this.map);
 
     this.map.on('mousemove', (e) => {
+      if (this.vm.isEditingCoords()) return;
       const lat = e.lngLat.lat;
       const lng = e.lngLat.lng;
       const latDir = lat >= 0 ? 'С.Ш.' : 'Ю.Ш.';
@@ -150,14 +178,16 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         }
       }
       this.updateTransformBoxPosition();
+      this.updateCenterCoords();
     });
 
     this.map.on('pitch', () => this.updateTransformBoxPosition());
 
     this.map.on('click', (e) => {
-      if (this.vm.isScaleMenuOpen()) {
-        this.vm.isScaleMenuOpen.set(false);
-      }
+      if (this.vm.isScaleMenuOpen()) this.vm.isScaleMenuOpen.set(false);
+      if (this.vm.isQuickLayersMenuOpen()) this.vm.isQuickLayersMenuOpen.set(false);
+      if (this.vm.isToogleMapMenuOpen()) this.vm.isToogleMapMenuOpen.set(false);
+
       if (this.vm.activeLineMode() !== 'none') {
         this.vm.addDrawingPoint([e.lngLat.lng, e.lngLat.lat]);
         return;
@@ -317,7 +347,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   private getLayersForType(type: string) {
-    if (type === 'raster') {
+    if (type === 'raster' || type === 'xyz') {
       return [
       {
         id: 'raster-layer',
@@ -350,6 +380,18 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         this.vm.deletePlacedSymbol();
       }
     }
+  }
+
+  updateCenterCoords() {
+    if (!this.map) return;
+    const center = this.map.getCenter();
+    const lat = center.lat;
+    const lng = center.lng;
+    const latDir = lat >= 0 ? 'С.Ш.' : 'Ю.Ш.';
+    const lngDir = lng >= 0 ? 'В.Д.' : 'З.Д.';
+    this.vm.centerCoords.set(
+      `${Math.abs(lat).toFixed(4)} ${latDir}, ${Math.abs(lng).toFixed(4)} ${lngDir}`
+    );
   }
 
   ngOnDestroy() {

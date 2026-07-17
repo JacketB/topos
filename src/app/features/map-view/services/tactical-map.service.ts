@@ -106,6 +106,37 @@ export class TacticalMapService {
       });
     }
 
+    if (!map.getLayer('tactical_polygons_fill_layer')) {
+      map.addLayer({
+        id: 'tactical_polygons_fill_layer',
+        type: 'fill',
+        source: 'tactical-symbols',
+        filter: ['==', '$type', 'Polygon'],
+        paint: {
+          'fill-color': ['coalesce', ['get', 'color'], '#ef4444'],
+          'fill-opacity': ['coalesce', ['get', 'fillOpacity'], 0.4]
+        }
+      });
+    }
+
+    if (!map.getLayer('tactical_polygons_outline_layer')) {
+      map.addLayer({
+        id: 'tactical_polygons_outline_layer',
+        type: 'line',
+        source: 'tactical-symbols',
+        filter: ['==', '$type', 'Polygon'],
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': ['coalesce', ['get', 'color'], '#ef4444'],
+          'line-width': 2.5,
+          'line-dasharray': ['coalesce', ['get', 'lineDashArray'], ['literal', [1, 0]]]
+        }
+      });
+    }
+
     if (!map.getLayer('tactical_lines_layer')) {
       map.addLayer({
         id: 'tactical_lines_layer',
@@ -254,7 +285,12 @@ export class TacticalMapService {
         [e.point.x + 6, e.point.y + 6]
       ];
       const features = map.queryRenderedFeatures(bbox, {
-        layers: ['tactical_symbols_layer', 'tactical_lines_layer']
+        layers: [
+          'tactical_symbols_layer',
+          'tactical_lines_layer',
+          'tactical_polygons_fill_layer',
+          'tactical_polygons_outline_layer'
+        ]
       });
 
       if (features.length > 0) {
@@ -414,18 +450,47 @@ export class TacticalMapService {
     const selected = this.selectedPlacedSymbol();
     if (selected) {
       const isLin = selected.properties?.['isLinear'];
+      const id = selected.properties['id'];
+      
       this.placedSymbols.update(prev => 
-        prev.map(s => s.properties['id'] === selected.properties['id'] ? {
-          ...s,
-          properties: { 
-            ...s.properties, 
-            size,
-            lineWidth: isLin ? Math.max(1, size * 40) : s.properties['lineWidth']
+        prev.map(s => {
+          if (s.properties['id'] === id) {
+            const nextLineWidth = isLin ? size : s.properties['lineWidth'];
+            let nextGeom = s.geometry;
+            
+            if (isLin) {
+              const origCoords = s.properties['origCoords'];
+              const lineType = s.properties['lineType'];
+              const flipSide = !!s.properties['flipSide'];
+              const isSmooth = !!s.properties['isSmooth'];
+              
+              nextGeom = this.trenchGeometryService.generateLinearGeometry(
+                origCoords, 
+                lineType, 
+                flipSide, 
+                isSmooth, 
+                nextLineWidth
+              );
+            }
+            
+            return {
+              ...s,
+              properties: { 
+                ...s.properties, 
+                size,
+                lineWidth: nextLineWidth
+              },
+              geometry: nextGeom
+            };
           }
-        } : s)
+          return s;
+        })
       );
       this.syncSelectedPlacedSymbol();
       this.updateTacticalSymbolsSource();
+      if (isLin) {
+        this.updateLinearVerticesSource();
+      }
     }
   }
 
@@ -571,6 +636,11 @@ export class TacticalMapService {
     if (lineType === 'trench') symbolId = 'trench_line';
     else if (lineType === 'comm_open') symbolId = 'comm_open_line';
     else if (lineType === 'comm_covered') symbolId = 'comm_covered_line';
+    else if (lineType.startsWith('arrow_')) symbolId = lineType;
+
+    const isArrow = lineType.startsWith('arrow_');
+    const fillOpacity = isArrow ? (lineType === 'arrow_retreat' ? 0.25 : (lineType === 'arrow_attack' ? 0.45 : 0.40)) : 0;
+    const lineDashArray = (lineType === 'arrow_retreat') ? [3, 3] : [1, 0];
 
     const newFeature = {
       type: 'Feature',
@@ -580,12 +650,14 @@ export class TacticalMapService {
         iconId: symbolId,
         color: color,
         name: name,
-        lineWidth: (lineType === 'wire' || lineType === 'comm_open') ? 3 : 4,
+        lineWidth: isArrow ? 3 : ((lineType === 'wire' || lineType === 'comm_open') ? 3 : 4),
         isLinear: true,
         lineType: lineType,
         origCoords: coords,
         flipSide: flipSide,
-        isSmooth: isSmooth
+        isSmooth: isSmooth,
+        fillOpacity: fillOpacity,
+        lineDashArray: lineDashArray
       },
       geometry: geom
     };
@@ -603,7 +675,8 @@ export class TacticalMapService {
     const lineType = symbol.properties['lineType'];
     const flipSide = !!symbol.properties['flipSide'];
     const isSmooth = !!symbol.properties['isSmooth'];
-    const geom = this.trenchGeometryService.generateLinearGeometry(newCoords, lineType, flipSide, isSmooth);
+    const lineWidth = symbol.properties['lineWidth'] || 3;
+    const geom = this.trenchGeometryService.generateLinearGeometry(newCoords, lineType, flipSide, isSmooth, lineWidth);
 
     this.placedSymbols.update(prev =>
       prev.map(s => s.properties['id'] === id ? {
@@ -626,7 +699,8 @@ export class TacticalMapService {
     const origCoords = selected.properties['origCoords'] as [number, number][];
     const lineType = selected.properties['lineType'];
     const isSmooth = !!selected.properties['isSmooth'];
-    const geom = this.trenchGeometryService.generateLinearGeometry(origCoords, lineType, newFlip, isSmooth);
+    const lineWidth = selected.properties['lineWidth'] || 3;
+    const geom = this.trenchGeometryService.generateLinearGeometry(origCoords, lineType, newFlip, isSmooth, lineWidth);
 
     this.placedSymbols.update(prev =>
       prev.map(s => s.properties['id'] === id ? {
@@ -646,7 +720,8 @@ export class TacticalMapService {
     const lineType = symbol.properties['lineType'];
     const flipSide = !!symbol.properties['flipSide'];
     const coords = symbol.properties['origCoords'] as [number, number][];
-    const geom = this.trenchGeometryService.generateLinearGeometry(coords, lineType, flipSide, isSmooth);
+    const lineWidth = symbol.properties['lineWidth'] || 3;
+    const geom = this.trenchGeometryService.generateLinearGeometry(coords, lineType, flipSide, isSmooth, lineWidth);
 
     this.placedSymbols.update(prev =>
       prev.map(s => s.properties['id'] === id ? {
@@ -862,6 +937,20 @@ export class TacticalMapService {
       if (!this.selectedSymbol()) {
         map.getCanvas().style.cursor = '';
       }
+    });
+
+    const lineAndPolygonLayers = ['tactical_lines_layer', 'tactical_polygons_fill_layer', 'tactical_polygons_outline_layer'];
+    lineAndPolygonLayers.forEach(layer => {
+      map.on('mouseenter', layer, () => {
+        if (!this.selectedSymbol() && !this.isDraggingVertex) {
+          map.getCanvas().style.cursor = 'pointer';
+        }
+      });
+      map.on('mouseleave', layer, () => {
+        if (!this.selectedSymbol() && !this.isDraggingVertex) {
+          map.getCanvas().style.cursor = '';
+        }
+      });
     });
   }
 
