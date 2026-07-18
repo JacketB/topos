@@ -62,6 +62,7 @@ export class MapViewModel {
   readonly objectGroups = this.tacticalMapService.objectGroups;
   readonly activeCalculationGroupId = this.tacticalMapService.activeCalculationGroupId;
   readonly isLayersPanelOpen = signal<boolean>(false);
+  readonly isSelectionModeActive = computed(() => this.tacticalMapService.interactionMode() === 'select');
   readonly placedSymbols = this.tacticalMapService.placedSymbols;
   readonly layerGroups = this.mapLayersService.groups;
 
@@ -141,6 +142,21 @@ export class MapViewModel {
       this.selectedPlacedSymbol();
       this.activeLineMode();
       this.playbackService.reset();
+    });
+
+    // Автоматическое открытие панели слоев и районов при выделении объектов
+    effect(() => {
+      const selected = this.selectedPlacedSymbols();
+      if (selected.length > 0) {
+        this.isLayersPanelOpen.set(true);
+      }
+    });
+
+    // Сброс режима выделения при начале размещения символов или рисовании линий
+    effect(() => {
+      if (this.selectedSymbol() || this.activeLineMode() !== 'none') {
+        this.tacticalMapService.interactionMode.set('edit');
+      }
     });
 
     // Синхронизируем вершины waypoints при рисовании маршрута
@@ -489,6 +505,7 @@ export class MapViewModel {
   }
 
   toggleMeasurement() {
+    this.tacticalMapService.interactionMode.set('edit');
     this.mapMeasurementService.toggleMeasurement(this.mapInstance);
   }
 
@@ -646,12 +663,10 @@ export class MapViewModel {
   }
 
   startDrawingLine(mode: 'trench' | 'comm_open' | 'comm_covered' | 'wire' | string) {
+    this.tacticalMapService.interactionMode.set('edit');
     this.activeLineMode.set(mode);
     this.activeLineCoords.set([]);
     this.activeLineFlipSide.set(false);
-    if (this.mapInstance) {
-      this.mapInstance.getCanvas().style.cursor = 'crosshair';
-    }
   }
 
   placePointIcon(coords: [number, number]) {
@@ -720,9 +735,19 @@ export class MapViewModel {
       if (source) {
         source.setData({ type: 'FeatureCollection', features: [] });
       }
-      if (!this.selectedSymbol()) {
-        this.mapInstance.getCanvas().style.cursor = '';
+    }
+  }
+
+  toggleSelectionMode() {
+    const mode = this.tacticalMapService.interactionMode();
+    if (mode !== 'select') {
+      this.cancelDrawingLine();
+      if (this.isMeasuring() && this.mapInstance) {
+        this.mapMeasurementService.cancelMeasurement(this.mapInstance);
       }
+      this.tacticalMapService.interactionMode.set('select');
+    } else {
+      this.tacticalMapService.interactionMode.set('edit');
     }
   }
 
@@ -760,9 +785,6 @@ export class MapViewModel {
         this.isLineSmooth.set(isSmooth);
         this.activeLineMode.set(lineType);
         this.activeLineCoords.set([...origCoords]);
-        if (this.mapInstance) {
-          this.mapInstance.getCanvas().style.cursor = 'crosshair';
-        }
         this.updateDrawingPreview();
       }
     }

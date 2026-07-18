@@ -87,6 +87,8 @@ export class MapLayersPanelComponent {
       // Сбрасываем выбор на карте
       this.vm.tacticalMapService.selectedPlacedSymbols.set([]);
       this.vm.tacticalMapService.selectedPlacedSymbol.set(null);
+      // Сбрасываем выбранный ID группы в селекте
+      this.selectedTargetGroupId.set('');
     }
   }
 
@@ -136,5 +138,90 @@ export class MapLayersPanelComponent {
       return 'Линейный объект';
     }
     return 'Точечный объект';
+  }
+
+  zoomToElement(element: any, event: MouseEvent) {
+    event.stopPropagation();
+    const map = this.vm.getMapInstance() || (this.vm as any).mapInstance || (this.vm.tacticalMapService as any).mapInstance;
+    if (!map) return;
+
+    if (element.geometry) {
+      if (element.geometry.type === 'Point') {
+        map.flyTo({ 
+          center: element.geometry.coordinates, 
+          zoom: Math.max(map.getZoom(), 14), 
+          duration: 800 
+        });
+      } else {
+        const bounds = this.getBoundsForCoords(element.geometry.coordinates);
+        if (bounds) {
+          map.fitBounds(bounds, { padding: 80, duration: 800 });
+        }
+      }
+    }
+  }
+
+  zoomToGroup(groupId: string, event: MouseEvent) {
+    event.stopPropagation();
+    const group = this.vm.objectGroups().find((g: any) => g.id === groupId);
+    if (!group || group.elementIds.length === 0) return;
+
+    const map = this.vm.getMapInstance() || (this.vm as any).mapInstance || (this.vm.tacticalMapService as any).mapInstance;
+    if (!map) return;
+
+    const allCoords: any[] = [];
+    group.elementIds.forEach((id: number) => {
+      const item = this.findElementById(id);
+      if (item && item.geometry) {
+        allCoords.push(item.geometry.coordinates);
+      }
+    });
+
+    if (allCoords.length === 0) return;
+
+    const bounds = this.getBoundsForCoords(allCoords);
+    if (bounds) {
+      if (bounds[0][0] === bounds[1][0] && bounds[0][1] === bounds[1][1]) {
+        map.flyTo({ 
+          center: bounds[0], 
+          zoom: Math.max(map.getZoom(), 14), 
+          duration: 800 
+        });
+      } else {
+        map.fitBounds(bounds, { padding: 80, duration: 800 });
+      }
+    }
+  }
+
+  private getBoundsForCoords(coords: any[]): [[number, number], [number, number]] | null {
+    if (!coords || coords.length === 0) return null;
+    
+    const flat: [number, number][] = [];
+    const flatten = (arr: any) => {
+      if (Array.isArray(arr[0])) {
+        arr.forEach(flatten);
+      } else {
+        flat.push(arr as [number, number]);
+      }
+    };
+    flatten(coords);
+
+    if (flat.length === 0) return null;
+
+    let minLng = flat[0][0];
+    let maxLng = flat[0][0];
+    let minLat = flat[0][1];
+    let maxLat = flat[0][1];
+
+    for (let i = 1; i < flat.length; i++) {
+      const lng = flat[i][0];
+      const lat = flat[i][1];
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    }
+
+    return [[minLng, minLat], [maxLng, maxLat]];
   }
 }

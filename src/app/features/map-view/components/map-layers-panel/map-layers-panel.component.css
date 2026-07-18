@@ -399,3 +399,19 @@
 .bulk-add-btn:hover {
   background-color: #15803d;
 }
+
+.zoom-to-element-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.1s;
+}
+
+.zoom-to-element-btn:hover {
+  color: #2563eb;
+}

@@ -23,6 +23,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   readonly vm = inject(MapViewModel);
   public mapsUrls = mapsUrls;
   private map: maplibregl.Map | null = null;
+  private savePosInterval: any = null;
 
   readonly selectedIconFeature = computed(() => {
     const selected = this.vm.selectedPlacedSymbol();
@@ -85,6 +86,26 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         }
       });
     });
+
+    // Реактивно меняем курсор карты при смене режима взаимодействия
+    effect(() => {
+      const mode = this.vm.tacticalMapService.interactionMode();
+      const lineMode = this.vm.activeLineMode();
+      const isMeasuring = this.vm.isMeasuring();
+
+      if (this.map) {
+        const canvas = this.map.getCanvas();
+        if (isMeasuring || lineMode !== 'none') {
+          canvas.style.cursor = 'crosshair';
+        } else if (mode === 'select') {
+          canvas.style.cursor = 'cell';
+        } else if (mode === 'pan') {
+          canvas.style.cursor = 'grab';
+        } else {
+          canvas.style.cursor = '';
+        }
+      }
+    });
   }
 
   ngAfterViewInit() {
@@ -102,7 +123,28 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     let prevBearing: number = 0;
     let prevPitch: number = 0;
 
-    if (this.map) {
+    if (!this.map) {
+      try {
+        const savedPosition = localStorage.getItem('topos_map_position');
+        if (savedPosition) {
+          const parsed = JSON.parse(savedPosition);
+          if (parsed.center && Array.isArray(parsed.center) && parsed.center.length === 2) {
+            prevCenter = parsed.center;
+          }
+          if (typeof parsed.zoom === 'number') {
+            prevZoom = parsed.zoom;
+          }
+          if (typeof parsed.bearing === 'number') {
+            prevBearing = parsed.bearing;
+          }
+          if (typeof parsed.pitch === 'number') {
+            prevPitch = parsed.pitch;
+          }
+        }
+      } catch (e) {
+        console.error('Ошибка загрузки положения карты из localStorage:', e);
+      }
+    } else {
       const center = this.map.getCenter();
       prevCenter = [center.lng, center.lat];
       prevZoom = this.map.getZoom();
@@ -172,6 +214,26 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     });
     this.vm.setMapInstance(this.map);
     this.updateCenterCoords();
+
+    if (this.savePosInterval) {
+      clearInterval(this.savePosInterval);
+    }
+    this.savePosInterval = setInterval(() => {
+      if (this.map) {
+        try {
+          const center = this.map.getCenter();
+          const position = {
+            center: [center.lng, center.lat],
+            zoom: this.map.getZoom(),
+            bearing: this.map.getBearing(),
+            pitch: this.map.getPitch()
+          };
+          localStorage.setItem('topos_map_position', JSON.stringify(position));
+        } catch (e) {
+          console.error('Ошибка сохранения положения карты в localStorage:', e);
+        }
+      }
+    }, 10000);
 
     this.map.on('move', () => {
       this.updateTransformBoxPosition();
@@ -430,6 +492,10 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.savePosInterval) {
+      clearInterval(this.savePosInterval);
+      this.savePosInterval = null;
+    }
     if (this.map) {
       this.map.remove();
       this.map = null;
