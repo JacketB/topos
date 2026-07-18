@@ -1,10 +1,12 @@
-import { Injectable, signal, effect, inject } from '@angular/core';
+import { Injectable, signal, effect, inject, untracked } from '@angular/core';
 import maplibregl from 'maplibre-gl';
 import { TacticalSymbol } from '../consts/tactical-symbols.const';
 import { TrenchGeometryService } from './trench-geometry.service';
 import { TerrainService } from './terrain.service';
 
 type SymbolLoadCallback = () => void;
+
+export type MapInteractionMode = 'pan' | 'edit' | 'select';
 
 export interface ObjectGroup {
   id: string;
@@ -45,6 +47,14 @@ export class TacticalMapService {
       this.placedSymbols();
       this.updateLinearVerticesSource();
       this.updateMarchWaypointsSource();
+      this.updateHighlightLayers();
+    });
+
+    effect(() => {
+      const mode = this.interactionMode();
+      untracked(() => {
+        this.isSelectionModeActive.set(mode === 'select');
+      });
     });
 
   }
@@ -78,6 +88,9 @@ export class TacticalMapService {
   readonly selectedPlacedSymbols = signal<any[]>([]);
   readonly objectGroups = signal<ObjectGroup[]>(this.loadGroupsFromStorage());
   readonly activeCalculationGroupId = signal<string>('all');
+  readonly isSelectionModeActive = signal<boolean>(false);
+  readonly interactionMode = signal<MapInteractionMode>('edit');
+  private justSelectedBox = false;
 
   selectPlacedSymbol(symbol: any | null) {
     this.selectedPlacedSymbol.set(symbol);
@@ -186,6 +199,37 @@ export class TacticalMapService {
       }
     }
     source.setData({ type: 'FeatureCollection', features: [] });
+  }
+
+  updateHighlightLayers() {
+    if (!this.mapInstance) return;
+    
+    const selected = this.selectedPlacedSymbols();
+    const symbolLayer = this.mapInstance.getLayer('tactical_symbols_highlight_layer');
+    const lineLayer = this.mapInstance.getLayer('tactical_lines_highlight_layer');
+    const polyLayer = this.mapInstance.getLayer('tactical_polygons_highlight_layer');
+
+    if (selected.length === 0) {
+      const emptyFilter = ['==', 'id', ''] as any;
+      if (symbolLayer) this.mapInstance.setFilter('tactical_symbols_highlight_layer', emptyFilter);
+      if (lineLayer) this.mapInstance.setFilter('tactical_lines_highlight_layer', emptyFilter);
+      if (polyLayer) this.mapInstance.setFilter('tactical_polygons_highlight_layer', emptyFilter);
+    } else {
+      const idValues: (string | number)[] = [];
+      selected.forEach(s => {
+        const val = s.properties?.['id'];
+        if (val !== undefined && val !== null) {
+          idValues.push(Number(val));
+          idValues.push(String(val));
+        }
+      });
+
+      const idFilter = ['in', 'id', ...idValues];
+      
+      if (symbolLayer) this.mapInstance.setFilter('tactical_symbols_highlight_layer', ['all', ['==', '$type', 'Point'], idFilter] as any);
+      if (lineLayer) this.mapInstance.setFilter('tactical_lines_highlight_layer', ['all', ['==', '$type', 'LineString'], idFilter] as any);
+      if (polyLayer) this.mapInstance.setFilter('tactical_polygons_highlight_layer', ['all', ['==', '$type', 'Polygon'], idFilter] as any);
+    }
   }
 
   updateMarchWaypointsSource(activeCoords?: [number, number][]) {
@@ -303,6 +347,25 @@ export class TacticalMapService {
       });
     }
 
+    if (!map.getLayer('tactical_polygons_highlight_layer')) {
+      map.addLayer({
+        id: 'tactical_polygons_highlight_layer',
+        type: 'line',
+        source: 'tactical-symbols',
+        filter: ['==', 'id', ''],
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#2563eb',
+          'line-width': 4.5,
+          'line-opacity': 0.7,
+          'line-dasharray': [2, 2]
+        }
+      }, 'tactical_polygons_outline_layer');
+    }
+
     if (!map.getLayer('tactical_lines_layer')) {
       map.addLayer({
         id: 'tactical_lines_layer',
@@ -319,6 +382,24 @@ export class TacticalMapService {
           'line-opacity': 0.95
         }
       });
+    }
+
+    if (!map.getLayer('tactical_lines_highlight_layer')) {
+      map.addLayer({
+        id: 'tactical_lines_highlight_layer',
+        type: 'line',
+        source: 'tactical-symbols',
+        filter: ['==', 'id', ''],
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#2563eb',
+          'line-width': 7,
+          'line-opacity': 0.4
+        }
+      }, 'tactical_lines_layer');
     }
 
     if (!map.getLayer('tactical_symbols_layer')) {
@@ -350,6 +431,21 @@ export class TacticalMapService {
           'text-opacity-transition': { duration: 0 }
         }
       });
+    }
+
+    if (!map.getLayer('tactical_symbols_highlight_layer')) {
+      map.addLayer({
+        id: 'tactical_symbols_highlight_layer',
+        type: 'circle',
+        source: 'tactical-symbols',
+        filter: ['==', 'id', ''],
+        paint: {
+          'circle-radius': 18,
+          'circle-color': 'rgba(37, 99, 235, 0.25)',
+          'circle-stroke-color': '#2563eb',
+          'circle-stroke-width': 2
+        }
+      }, 'tactical_symbols_layer');
     }
 
     if (!map.getSource('linear-vertices')) {
@@ -456,6 +552,13 @@ export class TacticalMapService {
     this.setupBoxSelection(map);
 
     map.on('click', (e) => {
+      if (this.justSelectedBox) {
+        this.justSelectedBox = false;
+        return;
+      }
+      if (this.interactionMode() !== 'edit') {
+        return;
+      }
       const canvas = map.getCanvas();
       if (canvas.style.cursor === 'crosshair') return;
 
@@ -529,11 +632,11 @@ export class TacticalMapService {
         const feat = features[0];
         const found = this.placedSymbols().find(s => s.properties['id'] === feat.properties?.['id']);
         if (found) {
-          this.selectedPlacedSymbol.set(found);
+          this.selectPlacedSymbol(found);
           return;
         }
       } else {
-        this.selectedPlacedSymbol.set(null);
+        this.selectPlacedSymbol(null);
       }
     });
   }
@@ -665,6 +768,7 @@ export class TacticalMapService {
       this.selectedSymbol.set(null);
       if (this.mapInstance) this.mapInstance.getCanvas().style.cursor = '';
     } else {
+      this.interactionMode.set('edit');
       this.selectedSymbol.set(symbol);
       this.templateCustomName.set(symbol.name);
       this.templateCustomSize.set(0.08);
@@ -1012,6 +1116,7 @@ export class TacticalMapService {
 
   private setupSymbolDragging(map: maplibregl.Map) {
     map.on('mousedown', 'linear_vertices_layer', (e: any) => {
+      if (this.interactionMode() !== 'edit') return;
       if (e.originalEvent && e.originalEvent.shiftKey) return;
       if (e.features && e.features.length > 0) {
         if (e.originalEvent && e.originalEvent.button === 2) {
@@ -1046,18 +1151,21 @@ export class TacticalMapService {
     });
 
     map.on('mouseenter', 'linear_vertices_layer', () => {
+      if (this.interactionMode() !== 'edit') return;
       if (!this.isDraggingVertex) {
         map.getCanvas().style.cursor = 'grab';
       }
     });
 
     map.on('mouseleave', 'linear_vertices_layer', () => {
+      if (this.interactionMode() !== 'edit') return;
       if (!this.isDraggingVertex && !this.selectedSymbol()) {
         map.getCanvas().style.cursor = '';
       }
     });
 
     map.on('mousedown', 'tactical_symbols_layer', (e: any) => {
+      if (this.interactionMode() !== 'edit') return;
       if (e.originalEvent && e.originalEvent.button === 2) return;
       if (e.originalEvent && e.originalEvent.shiftKey) return;
       if (e.features && e.features.length > 0 && !this.selectedSymbol() && !this.isDraggingVertex) {
@@ -1178,12 +1286,14 @@ export class TacticalMapService {
     });
 
     map.on('mouseenter', 'tactical_symbols_layer', () => {
+      if (this.interactionMode() !== 'edit') return;
       if (!this.selectedSymbol()) {
         map.getCanvas().style.cursor = 'move';
       }
     });
 
     map.on('mouseleave', 'tactical_symbols_layer', () => {
+      if (this.interactionMode() !== 'edit') return;
       if (!this.selectedSymbol()) {
         map.getCanvas().style.cursor = '';
       }
@@ -1192,11 +1302,13 @@ export class TacticalMapService {
     const lineAndPolygonLayers = ['tactical_lines_layer', 'tactical_polygons_fill_layer', 'tactical_polygons_outline_layer'];
     lineAndPolygonLayers.forEach(layer => {
       map.on('mouseenter', layer, () => {
+        if (this.interactionMode() !== 'edit') return;
         if (!this.selectedSymbol() && !this.isDraggingVertex) {
           map.getCanvas().style.cursor = 'pointer';
         }
       });
       map.on('mouseleave', layer, () => {
+        if (this.interactionMode() !== 'edit') return;
         if (!this.selectedSymbol() && !this.isDraggingVertex) {
           map.getCanvas().style.cursor = '';
         }
@@ -1219,15 +1331,22 @@ export class TacticalMapService {
     map.boxZoom.disable();
 
     let startPoint: { x: number; y: number } | null = null;
+    let lastMouseMovePoint: { x: number; y: number } | null = null;
     let boxElement: HTMLDivElement | null = null;
     let isSelecting = false;
 
     map.on('mousedown', (e: any) => {
-      if (e.originalEvent && e.originalEvent.shiftKey && e.originalEvent.button === 0) {
+      this.justSelectedBox = false; // Всегда сбрасываем при новом клике
+      const isSelectMode = this.interactionMode() === 'select';
+      const isShiftDrag = e.originalEvent && e.originalEvent.shiftKey && e.originalEvent.button === 0;
+      const isNormalSelectDrag = isSelectMode && e.originalEvent && e.originalEvent.button === 0;
+
+      if (isShiftDrag || isNormalSelectDrag) {
         e.preventDefault();
         map.dragPan.disable();
 
         startPoint = { x: e.point.x, y: e.point.y };
+        lastMouseMovePoint = { x: e.point.x, y: e.point.y };
         isSelecting = true;
 
         const container = map.getContainer();
@@ -1248,6 +1367,7 @@ export class TacticalMapService {
     map.on('mousemove', (e: any) => {
       if (isSelecting && startPoint && boxElement) {
         const currentPoint = e.point;
+        lastMouseMovePoint = { x: currentPoint.x, y: currentPoint.y };
         const minX = Math.min(startPoint.x, currentPoint.x);
         const maxX = Math.max(startPoint.x, currentPoint.x);
         const minY = Math.min(startPoint.y, currentPoint.y);
@@ -1271,16 +1391,24 @@ export class TacticalMapService {
         }
 
         if (startPoint) {
-          const endPoint = e.point || startPoint;
+          const endPoint = e.point || lastMouseMovePoint || startPoint;
           const minX = Math.min(startPoint.x, endPoint.x);
           const maxX = Math.max(startPoint.x, endPoint.x);
           const minY = Math.min(startPoint.y, endPoint.y);
           const maxY = Math.max(startPoint.y, endPoint.y);
 
           if (maxX - minX > 4 || maxY - minY > 4) {
+            this.justSelectedBox = true; // Указываем, что только что выделили рамкой
             const features = map.queryRenderedFeatures(
               [[minX, minY], [maxX, maxY]],
-              { layers: ['tactical_symbols_layer', 'tactical_lines_layer'] }
+              {
+                layers: [
+                  'tactical_symbols_layer',
+                  'tactical_lines_layer',
+                  'tactical_polygons_fill_layer',
+                  'tactical_polygons_outline_layer'
+                ]
+              }
             );
 
             if (features && features.length > 0) {
@@ -1289,8 +1417,8 @@ export class TacticalMapService {
 
               features.forEach((f: any) => {
                 const id = f.properties?.['id'];
-                const found = placed.find(s => s.properties?.['id'] === id);
-                if (found && !selected.some(s => s.properties?.['id'] === id)) {
+                const found = placed.find(s => String(s.properties?.['id']) === String(id));
+                if (found && !selected.some(s => String(s.properties?.['id']) === String(id))) {
                   selected.push(found);
                 }
               });
@@ -1304,6 +1432,7 @@ export class TacticalMapService {
             this.updateLinearVerticesSource();
           }
           startPoint = null;
+          lastMouseMovePoint = null;
         }
       }
     };
