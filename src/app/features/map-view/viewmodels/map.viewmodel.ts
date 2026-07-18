@@ -172,17 +172,32 @@ export class MapViewModel {
   }
 
   toggleAreaReport() {
+    if (!this.isAreaReportOpen()) {
+      this.isMarchOrderOpen.set(false);
+      this.isFortPlannerOpen.set(false);
+    }
     this.isAreaReportOpen.update(v => !v);
   }
 
   readonly isMarchOrderOpen = signal<boolean>(false);
 
   toggleMarchOrder() {
-    // Взаимное закрытие: при открытии походного порядка закрываем ведомость района
+    // Взаимное закрытие: при открытии походного порядка закрываем ведомость района и планировщик
     if (!this.isMarchOrderOpen()) {
       this.isAreaReportOpen.set(false);
+      this.isFortPlannerOpen.set(false);
     }
     this.isMarchOrderOpen.update(v => !v);
+  }
+
+  readonly isFortPlannerOpen = signal<boolean>(false);
+
+  toggleFortPlanner() {
+    if (!this.isFortPlannerOpen()) {
+      this.isAreaReportOpen.set(false);
+      this.isMarchOrderOpen.set(false);
+    }
+    this.isFortPlannerOpen.update(v => !v);
   }
 
   readonly marchOrderElements = this.marchOrderService.elements;

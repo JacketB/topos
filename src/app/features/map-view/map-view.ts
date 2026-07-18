@@ -8,6 +8,7 @@ import { ScaleRulerComponent } from './components/scale-ruler/scale-ruler.compon
 import { ToogleMap } from './components/toogle-map/toogle-map';
 
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { FortificationPlannerComponent } from './components/fortification-planner/fortification-planner.component';
 
 @Component({
   selector: 'app-map-view',
@@ -19,7 +20,8 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
     ScaleRulerComponent,
     ToogleMap,
     DecimalPipe,
-    DragDropModule
+    DragDropModule,
+    FortificationPlannerComponent
   ],
   templateUrl: './map-view.html',
   styleUrl: './map-view.css',

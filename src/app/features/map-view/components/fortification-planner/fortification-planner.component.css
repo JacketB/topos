@@ -1,0 +1,299 @@
+/* Light Theme Styling for Fortification Planner */
+
+/* range-input styling */
+.range-input {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #e2e8f0;
+  outline: none;
+}
+
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #466bf7;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  transition: 0.15s ease;
+}
+
+.range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  background: #6384ff;
+}
+
+/* checkbox styling */
+.checkbox-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  user-select: none;
+  transition: 0.15s ease;
+  color: #475569;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.checkbox-btn input {
+  display: none;
+}
+
+.checkbox-btn .custom-check {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.15s ease;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.checkbox-btn input:checked + .custom-check {
+  background: #466bf7;
+  border-color: #466bf7;
+}
+
+.checkbox-btn input:checked + .custom-check::after {
+  content: '✓';
+  font-size: 9px;
+  color: #fff;
+  font-weight: bold;
+}
+
+.checkbox-btn.checked {
+  background: rgba(70, 107, 247, 0.06);
+  border-color: rgba(70, 107, 247, 0.3);
+  color: #466bf7;
+}
+
+/* quantity control */
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qty-btn {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: 0.15s ease;
+}
+
+.qty-btn:hover {
+  background: #466bf7;
+  border-color: #466bf7;
+  color: #fff;
+}
+
+.qty-val {
+  font-size: 13px;
+  font-weight: 600;
+  width: 32px;
+  text-align: center;
+  color: #0f172a;
+}
+
+.code-tag {
+  font-family: monospace;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #0284c7;
+}
+
+/* Buttons */
+.btn {
+  background: #466bf7;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 2px rgba(70, 107, 247, 0.15);
+}
+
+.btn:hover {
+  background: #6384ff;
+}
+
+.btn.secondary {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.btn.secondary:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.btn.danger {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  box-shadow: none;
+}
+
+.btn.danger:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* Excel-like Table Styling */
+.excel-table th {
+  border: 1px solid #cbd5e1;
+  text-transform: none;
+  font-size: 11.5px;
+  height: 32px;
+}
+
+.excel-table tbody tr {
+  height: 42px;
+}
+
+.excel-table td {
+  border: 1px solid #e2e8f0;
+  height: 42px;
+  vertical-align: middle;
+}
+
+.excel-table tr:hover {
+  background-color: rgba(70, 107, 247, 0.02);
+}
+
+/* Gantt Cells */
+.gantt-cell {
+  height: 42px !important;
+  min-width: 32px;
+  max-width: 32px;
+  padding: 0 !important;
+  vertical-align: middle;
+  line-height: 42px;
+}
+
+.gantt-cell.cell-mach {
+  background-color: #e0f2fe !important;
+  color: #0284c7 !important;
+  border-color: #93c5fd !important;
+}
+
+.gantt-cell.cell-man {
+  background-color: #dcfce7 !important;
+  color: #16a34a !important;
+  border-color: #86efac !important;
+}
+
+.gantt-cell.cell-both {
+  background: repeating-linear-gradient(
+    45deg,
+    #e0f2fe,
+    #e0f2fe 4px,
+    #dcfce7 4px,
+    #dcfce7 8px
+  ) !important;
+  color: #1e293b !important;
+  border-color: #93c5fd !important;
+}
+
+.gantt-cell.cell-empty {
+  background-color: #ffffff;
+  color: transparent;
+}
+
+.dashboard-card {
+  flex-shrink: 0 !important;
+}
+
+.charts-grid {
+  flex-shrink: 0 !important;
+}
+
+/* Gantt Arrows Styling */
+.gantt-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: auto;
+  cursor: help;
+  transition: all 0.2s ease;
+}
+
+.gantt-arrow:hover {
+  filter: brightness(0.9);
+  height: 6px !important;
+}
+
+/* Пунктирная стрелка для техники */
+.gantt-arrow.tech {
+  top: 30%;
+  height: 0;
+  border-top: 2px dashed #0284c7;
+  border-bottom: none;
+  border-left: none;
+  border-right: none;
+}
+
+.gantt-arrow.tech::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: -4px;
+  width: 0;
+  height: 0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-left: 5px solid #0284c7;
+}
+
+/* Сплошная стрелка для личного состава */
+.gantt-arrow.man {
+  top: 70%;
+  height: 3px;
+  background-color: #22c55e;
+}
+
+.gantt-arrow.man::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: -2.5px;
+  width: 0;
+  height: 0;
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  border-left: 5px solid #22c55e;
+}
+

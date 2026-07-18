@@ -1,0 +1,502 @@
+<div class="fort-area-report-overlay" (click)="vm.toggleFortPlanner()" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10001; display: flex;">
+  <div class="fort-area-report-modal" style="width: 100%; height: 100%; max-width: 100%; max-height: 100%; display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.98); border: none; box-shadow: none; border-radius: 0;" (click)="$event.stopPropagation()">
+    
+    <!-- Header -->
+    <div class="fort-report-header" style="flex-shrink: 0; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 14px 20px;">
+      <span class="fort-report-title" style="color: #0f172a; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #466bf7; display: inline-block; vertical-align: middle;">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Календарный график выполнения земляных работ при оборудовании инженерных сооружений
+      </span>
+      <button class="fort-report-close-btn" (click)="vm.toggleFortPlanner()" title="Закрыть планировщик">✕</button>
+    </div>
+
+    <!-- Scrollable Body -->
+    <div class="fort-report-body" style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 20px; background: #ffffff;">
+      
+      <!-- Top Grid: Controls + KPIs -->
+      <div style="display: grid; grid-template-columns: 320px 1fr; gap: 20px;">
+        
+        <!-- Controls Panel -->
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; border-left: 3px solid #466bf7; padding-left: 8px; margin-bottom: 4px;">
+            Параметры расчета
+          </div>
+
+          <!-- Manpower -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <div class="form-label" style="display: flex; justify-content: space-between; font-size: 12px; color: #475569;">
+              <span>Личный состав (л/с):</span>
+              <span style="color: #466bf7; font-weight: 600;">{{ manpower() }} чел.</span>
+            </div>
+            <input type="range" class="range-input" min="5" max="100" [value]="manpower()" (input)="manpower.set(+$any($event.target).value)">
+          </div>
+
+          <!-- Shifts -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <div class="form-label" style="display: flex; justify-content: space-between; font-size: 12px; color: #475569;">
+              <span>Режим работы:</span>
+              <span style="color: #466bf7; font-weight: 600;">{{ shifts() }} смен{{ shifts() > 1 ? 'ы' : 'а' }}</span>
+            </div>
+            <input type="range" class="range-input" min="1" max="3" [value]="shifts()" (input)="shifts.set(+$any($event.target).value)">
+          </div>
+
+          <!-- Work Hours per Day -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <div class="form-label" style="display: flex; justify-content: space-between; font-size: 12px; color: #475569;">
+              <span>Рабочих часов в день:</span>
+              <span style="color: #466bf7; font-weight: 600;">{{ workHoursPerDay() }} ч</span>
+            </div>
+            <input type="range" class="range-input" min="4" max="24" step="1" [value]="workHoursPerDay()" (input)="workHoursPerDay.set(+$any($event.target).value)">
+          </div>
+
+          <!-- Soil -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 12px; color: #475569; margin-bottom: 4px; display: block;">Категория грунта:</label>
+            <select class="select-input" [value]="soilType()" (change)="soilType.set(+$any($event.target).value)" style="background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; padding: 8px 10px; border-radius: 6px; width: 100%; font-size: 13px; outline: none;">
+              <option [value]="0.8">Песчаный / легкий (x0.8)</option>
+              <option [value]="1.0">Суглинок / средний (x1.0)</option>
+              <option [value]="1.35">Глина / тяжелый (x1.35)</option>
+              <option [value]="2.2">Гравийно-галечный (x2.2)</option>
+              <option [value]="3.5">Скальный / мерзлый (x3.5)</option>
+            </select>
+          </div>
+
+          <!-- Factors -->
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 12px; color: #475569; margin-bottom: 4px; display: block;">Условия работы:</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <label class="checkbox-btn" [class.checked]="factorNight()" style="padding: 8px; font-size: 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd5e1;">
+                <input type="checkbox" [checked]="factorNight()" (change)="factorNight.set($any($event.target).checked)">
+                <span class="custom-check" style="width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid #cbd5e1;"></span>
+                Ночь (x1.3)
+              </label>
+              <label class="checkbox-btn" [class.checked]="factorWinter()" style="padding: 8px; font-size: 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd5e1;">
+                <input type="checkbox" [checked]="factorWinter()" (change)="factorWinter.set($any($event.target).checked)">
+                <span class="custom-check" style="width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid #cbd5e1;"></span>
+                Зима (x1.5)
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPIs Panel -->
+        <div class="kpi-container" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-content: start;">
+          
+          <div class="kpi-card" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; position: relative;">
+            <span class="kpi-label" style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Объем грунта</span>
+            <div class="kpi-value" style="font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px;">
+              {{ vopCalculations().totalEarth | number:'1.0-0' }} <span class="unit" style="font-size: 13px; color: #475569; font-weight: 600;">м³</span>
+            </div>
+            <span class="kpi-subtext" style="font-size: 11px; color: #64748b; display: block; margin-top: 6px;">
+              Суммарные земляные работы
+            </span>
+          </div>
+
+          <div class="kpi-card success" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; position: relative;">
+            <span class="kpi-label" style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Расход леса</span>
+            <div class="kpi-value" style="font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px;">
+              {{ vopCalculations().totalWood | number:'1.1-1' }} <span class="unit" style="font-size: 13px; color: #475569; font-weight: 600;">м³</span>
+            </div>
+            <span class="kpi-subtext" style="font-size: 11px; color: #64748b; display: block; margin-top: 6px;">
+              Материалы под укрытия
+            </span>
+          </div>
+
+          <div class="kpi-card warning" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; position: relative;">
+            <span class="kpi-label" style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Трудозатраты л/с</span>
+            <div class="kpi-value" style="font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px;">
+              {{ vopCalculations().totalLaborHrs | number:'1.0-0' }} <span class="unit" style="font-size: 13px; color: #475569; font-weight: 600;">чел.-ч</span>
+            </div>
+            <span class="kpi-subtext" style="font-size: 11px; color: #64748b; display: block; margin-top: 6px;">
+              Для доработки вручную
+            </span>
+          </div>
+
+          <div class="kpi-card info" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; position: relative;">
+            <span class="kpi-label" style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Календарное время</span>
+            <div class="kpi-value" style="font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px;">
+              {{ vopCalculations().totalDurationCal | number:'1.1-1' }} <span class="unit" style="font-size: 13px; color: #475569; font-weight: 600;">ч.</span>
+            </div>
+            <span class="kpi-subtext" style="font-size: 11px; color: #64748b; display: block; margin-top: 6px;">
+              Всего с учетом КТГ техники
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Excel-like Calendar & Tasks Table -->
+      <div class="dashboard-card" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow-x: auto; flex-shrink: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: #0f172a; margin: 0;">
+            Календарный план фортификационного оборудования опорного пункта (очереди работ)
+          </h4>
+          <span style="font-size: 12px; color: #64748b; font-weight: 600;">Пунктирная стрелка — техника | Сплошная стрелка — личный состав</span>
+        </div>
+
+        <table style="border-collapse: collapse; font-size: 12px;" class="excel-table">
+          <thead>
+            <tr style="background: #f8fafc;">
+              <th rowspan="2" style="width: 35px; min-width: 35px; max-width: 35px; text-align: center; border: 1px solid #cbd5e1; padding: 6px;">№</th>
+              <th rowspan="2" style="width: 240px; min-width: 240px; max-width: 240px; text-align: left; border: 1px solid #cbd5e1; padding: 6px;">Наименование работ</th>
+              <th rowspan="2" style="width: 110px; min-width: 110px; max-width: 110px; text-align: left; border: 1px solid #cbd5e1; padding: 6px;">Объект работ</th>
+              <th rowspan="2" style="width: 60px; min-width: 60px; max-width: 60px; text-align: center; border: 1px solid #cbd5e1; padding: 6px;">Ед. изм.</th>
+              <th rowspan="2" style="width: 110px; min-width: 110px; max-width: 110px; text-align: center; border: 1px solid #cbd5e1; padding: 6px;">Объем</th>
+              <th rowspan="2" style="width: 120px; min-width: 120px; max-width: 120px; text-align: left; border: 1px solid #cbd5e1; padding: 6px;">Техника</th>
+              <th colspan="2" style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">Нормы / ед.</th>
+              <th colspan="2" style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">Всего</th>
+              @for (day of dayIndices(); track day) {
+                <th colspan="6" style="text-align: center; border: 1px solid #cbd5e1; padding: 6px; background: rgba(70, 107, 247, 0.05); font-weight: 700; color: #0f172a;">{{ day + 1 }} сутки</th>
+              }
+              <th rowspan="2" style="width: 40px; min-width: 40px; max-width: 40px; text-align: center; border: 1px solid #cbd5e1; padding: 6px;"></th>
+            </tr>
+            <tr style="background: #f8fafc;">
+              <th style="width: 60px; min-width: 60px; max-width: 60px; text-align: center; border: 1px solid #cbd5e1; padding: 4px;">маш.-ч</th>
+              <th style="width: 60px; min-width: 60px; max-width: 60px; text-align: center; border: 1px solid #cbd5e1; padding: 4px;">чел.-ч</th>
+              <th style="width: 55px; min-width: 55px; max-width: 55px; text-align: center; border: 1px solid #cbd5e1; padding: 4px;">м.-ч</th>
+              <th style="width: 55px; min-width: 55px; max-width: 55px; text-align: center; border: 1px solid #cbd5e1; padding: 4px;">ч.-ч</th>
+              @for (day of dayIndices(); track day) {
+                @for (shift of [1,2,3,4,5,6]; track shift) {
+                  <th style="width: 32px; min-width: 32px; max-width: 32px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; font-size: 9px; font-weight: 700; color: #466bf7;">{{ shift }}</th>
+                }
+              }
+            </tr>
+          </thead>
+          <tbody>
+            
+            <!-- I ОЧЕРЕДЬ -->
+            <tr style="background: #f1f5f9; font-weight: 700; color: #334155;">
+              <td [attr.colspan]="11 + dayIndices().length * 6" style="border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">I Очередь работ</td>
+            </tr>
+            @for (row of vopCalculations().rows; track row.id; let idx = $index) {
+              @if (row.phase === 1) {
+                <tr>
+                  <td style="width: 35px; min-width: 35px; max-width: 35px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; font-weight: 600;">{{ row.id }}</td>
+                  <td style="width: 240px; min-width: 240px; max-width: 240px; border: 1px solid #cbd5e1; padding: 4px;">
+                    <input type="text" [value]="row.name" (input)="updateTaskField(row.id, 'name', $event)" style="width: 100%; border: 1px solid transparent; background: transparent; font-weight: 600; padding: 4px; outline: none; border-radius: 4px; color: #0f172a;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                  </td>
+                  <td style="width: 110px; min-width: 110px; max-width: 110px; border: 1px solid #cbd5e1; padding: 4px;">
+                    <input type="text" [value]="row.objectName" (input)="updateTaskField(row.id, 'objectName', $event)" style="width: 100%; border: 1px solid transparent; background: transparent; padding: 4px; outline: none; border-radius: 4px; color: #475569;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                  </td>
+                  <td style="width: 60px; min-width: 60px; max-width: 60px; text-align: center; border: 1px solid #cbd5e1; padding: 4px;">
+                    <select [value]="row.unit" (change)="updateTaskField(row.id, 'unit', $event)" style="border: none; background: transparent; padding: 4px; outline: none; cursor: pointer; color: #64748b; font-weight: 600;">
+                      <option value="шт.">шт.</option>
+                      <option value="м">м</option>
+                    </select>
+                  </td>
+                  <td style="width: 110px; min-width: 110px; max-width: 110px; text-align: center; border: 1px solid #cbd5e1; padding: 4px;">
+                    <div class="quantity-control" style="justify-content: center; transform: scale(0.95);">
+                      <button class="qty-btn" (click)="changeQty(idx, -1)">-</button>
+                      <span class="qty-val" style="min-width: 30px; font-family: monospace; font-size: 11px;">{{ row.qty }}</span>
+                      <button class="qty-btn" (click)="changeQty(idx, 1)">+</button>
+                    </div>
+                  </td>
+                  <td style="width: 120px; min-width: 120px; max-width: 120px; border: 1px solid #cbd5e1; padding: 4px;">
+                    <select [value]="row.machType" (change)="updateTaskField(row.id, 'machType', $event)" style="width: 100%; border: none; background: transparent; padding: 4px; font-weight: 600; color: #1e293b; outline: none; cursor: pointer;">
+                      @for (dev of machDevices(); track dev.id) {
+                        <option [value]="dev.id">{{ dev.name }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td style="width: 60px; min-width: 60px; max-width: 60px; border: 1px solid #cbd5e1; padding: 4px; text-align: center;">
+                    <input type="number" step="0.001" [value]="row.machNorm" (input)="updateTaskField(row.id, 'machNorm', $event)" style="width: 50px; border: 1px solid transparent; background: transparent; padding: 2px; text-align: center; font-family: monospace; font-size: 11px; outline: none;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                  </td>
+                  <td style="width: 60px; min-width: 60px; max-width: 60px; border: 1px solid #cbd5e1; padding: 4px; text-align: center;">
+                    <input type="number" step="0.1" [value]="row.laborNorm" (input)="updateTaskField(row.id, 'laborNorm', $event)" style="width: 45px; border: 1px solid transparent; background: transparent; padding: 2px; text-align: center; font-family: monospace; font-size: 11px; outline: none;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                  </td>
+                  <td style="width: 55px; min-width: 55px; max-width: 55px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; font-family: monospace; font-weight: 600; color: #334155;">{{ row.machTotal | number:'1.1-1' }}</td>
+                  <td style="width: 55px; min-width: 55px; max-width: 55px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; font-family: monospace; font-weight: 600; color: #334155;">{{ row.laborTotal | number:'1.0-0' }}</td>
+                  
+                  <!-- Объединенная колонка Ганта со стрелками -->
+                  <td [attr.colspan]="dayIndices().length * 6" [style.min-width.px]="dayIndices().length * 192" style="padding: 0; position: relative; height: 42px; border: 1px solid #cbd5e1; background-color: #ffffff; vertical-align: middle; overflow: hidden;">
+                    <!-- Фоновые разделители периодов -->
+                    <div style="position: absolute; inset: 0; display: flex; pointer-events: none;">
+                      @for (p of periodIndices(); track p) {
+                        <div style="flex: 1; border-right: 1px solid rgba(226, 232, 240, 0.65); height: 100%;"></div>
+                      }
+                    </div>
+
+                    <!-- Пунктирные стрелки работы техники (разделенные по рабочим дням) -->
+                    @for (seg of row.machSegments; track $index) {
+                      <div class="gantt-arrow tech"
+                           [style.left.%]="(seg.startCal / vopCalculations().maxCalendarTime) * 100"
+                           [style.width.%]="(seg.duration / vopCalculations().maxCalendarTime) * 100"
+                           [title]="'Техника: с ' + (seg.startCal | number:'1.0-1') + ' по ' + (seg.endCal | number:'1.0-1') + ' ч'">
+                      </div>
+                    }
+
+                    <!-- Сплошные стрелки работы людей (разделенные по рабочим дням) -->
+                    @for (seg of row.manSegments; track $index) {
+                      <div class="gantt-arrow man"
+                           [style.left.%]="(seg.startCal / vopCalculations().maxCalendarTime) * 100"
+                           [style.width.%]="(seg.duration / vopCalculations().maxCalendarTime) * 100"
+                           [title]="'Личный состав: с ' + (seg.startCal | number:'1.0-1') + ' по ' + (seg.endCal | number:'1.0-1') + ' ч'">
+                      </div>
+                    }
+                  </td>
+                  
+                  <!-- Удаление задачи -->
+                  <td style="width: 40px; min-width: 40px; max-width: 40px; text-align: center; border: 1px solid #cbd5e1; padding: 4px;">
+                    <button class="btn danger" style="padding: 4px 6px; font-size: 11px; border-radius: 4px; border: none;" (click)="removeTask(row.id)" title="Удалить задачу">✕</button>
+                  </td>
+                </tr>
+              }
+            }
+            <tr>
+              <td [attr.colspan]="11 + dayIndices().length * 6" style="text-align: left; padding: 8px 12px; border: 1px solid #cbd5e1; background: #ffffff;">
+                <button class="btn secondary" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; border: 1px solid #466bf7; color: #466bf7; font-weight: 600;" (click)="addTask(1)">
+                  + Добавить сооружение в I очередь
+                </button>
+              </td>
+            </tr>
+
+            <!-- II ОЧЕРЕДЬ -->
+            <tr style="background: #f1f5f9; font-weight: 700; color: #334155;">
+              <td [attr.colspan]="11 + dayIndices().length * 6" style="border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">II Очередь работ</td>
+            </tr>
+            @for (row of vopCalculations().rows; track row.id; let idx = $index) {
+              @if (row.phase === 2) {
+                <tr>
+                  <td style="width: 35px; min-width: 35px; max-width: 35px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; font-weight: 600;">{{ row.id }}</td>
+                  <td style="width: 240px; min-width: 240px; max-width: 240px; border: 1px solid #cbd5e1; padding: 4px;">
+                    <input type="text" [value]="row.name" (input)="updateTaskField(row.id, 'name', $event)" style="width: 100%; border: 1px solid transparent; background: transparent; font-weight: 600; padding: 4px; outline: none; border-radius: 4px; color: #0f172a;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                  </td>
+                  <td style="width: 110px; min-width: 110px; max-width: 110px; border: 1px solid #cbd5e1; padding: 4px;">
+                    <input type="text" [value]="row.objectName" (input)="updateTaskField(row.id, 'objectName', $event)" style="width: 100%; border: 1px solid transparent; background: transparent; padding: 4px; outline: none; border-radius: 4px; color: #475569;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                  </td>
+                  <td style="width: 60px; min-width: 60px; max-width: 60px; text-align: center; border: 1px solid #cbd5e1; padding: 4px;">
+                    <select [value]="row.unit" (change)="updateTaskField(row.id, 'unit', $event)" style="border: none; background: transparent; padding: 4px; outline: none; cursor: pointer; color: #64748b; font-weight: 600;">
+                      <option value="шт.">шт.</option>
+                      <option value="м">м</option>
+                    </select>
+                  </td>
+                  <td style="width: 110px; min-width: 110px; max-width: 110px; text-align: center; border: 1px solid #cbd5e1; padding: 4px;">
+                    <div class="quantity-control" style="justify-content: center; transform: scale(0.95);">
+                      <button class="qty-btn" (click)="changeQty(idx, -1)">-</button>
+                      <span class="qty-val" style="min-width: 30px; font-family: monospace; font-size: 11px;">{{ row.qty }}</span>
+                      <button class="qty-btn" (click)="changeQty(idx, 1)">+</button>
+                    </div>
+                  </td>
+                  <td style="width: 120px; min-width: 120px; max-width: 120px; border: 1px solid #cbd5e1; padding: 4px;">
+                    <select [value]="row.machType" (change)="updateTaskField(row.id, 'machType', $event)" style="width: 100%; border: none; background: transparent; padding: 4px; font-weight: 600; color: #1e293b; outline: none; cursor: pointer;">
+                      @for (dev of machDevices(); track dev.id) {
+                        <option [value]="dev.id">{{ dev.name }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td style="width: 60px; min-width: 60px; max-width: 60px; border: 1px solid #cbd5e1; padding: 4px; text-align: center;">
+                    <input type="number" step="0.001" [value]="row.machNorm" (input)="updateTaskField(row.id, 'machNorm', $event)" style="width: 50px; border: 1px solid transparent; background: transparent; padding: 2px; text-align: center; font-family: monospace; font-size: 11px; outline: none;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                  </td>
+                  <td style="width: 60px; min-width: 60px; max-width: 60px; border: 1px solid #cbd5e1; padding: 4px; text-align: center;">
+                    <input type="number" step="0.1" [value]="row.laborNorm" (input)="updateTaskField(row.id, 'laborNorm', $event)" style="width: 45px; border: 1px solid transparent; background: transparent; padding: 2px; text-align: center; font-family: monospace; font-size: 11px; outline: none;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                  </td>
+                  <td style="width: 55px; min-width: 55px; max-width: 55px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; font-family: monospace; font-weight: 600; color: #334155;">{{ row.machTotal | number:'1.1-1' }}</td>
+                  <td style="width: 55px; min-width: 55px; max-width: 55px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; font-family: monospace; font-weight: 600; color: #334155;">{{ row.laborTotal | number:'1.0-0' }}</td>
+                  
+                  <!-- Объединенная колонка Ганта со стрелками -->
+                  <td [attr.colspan]="dayIndices().length * 6" [style.min-width.px]="dayIndices().length * 192" style="padding: 0; position: relative; height: 42px; border: 1px solid #cbd5e1; background-color: #ffffff; vertical-align: middle; overflow: hidden;">
+                    <!-- Фоновые разделители периодов -->
+                    <div style="position: absolute; inset: 0; display: flex; pointer-events: none;">
+                      @for (p of periodIndices(); track p) {
+                        <div style="flex: 1; border-right: 1px solid rgba(226, 232, 240, 0.65); height: 100%;"></div>
+                      }
+                    </div>
+
+                    <!-- Пунктирные стрелки работы техники (разделенные по рабочим дням) -->
+                    @for (seg of row.machSegments; track $index) {
+                      <div class="gantt-arrow tech"
+                           [style.left.%]="(seg.startCal / vopCalculations().maxCalendarTime) * 100"
+                           [style.width.%]="(seg.duration / vopCalculations().maxCalendarTime) * 100"
+                           [title]="'Техника: с ' + (seg.startCal | number:'1.0-1') + ' по ' + (seg.endCal | number:'1.0-1') + ' ч'">
+                      </div>
+                    }
+
+                    <!-- Сплошные стрелки работы людей (разделенные по рабочим дням) -->
+                    @for (seg of row.manSegments; track $index) {
+                      <div class="gantt-arrow man"
+                           [style.left.%]="(seg.startCal / vopCalculations().maxCalendarTime) * 100"
+                           [style.width.%]="(seg.duration / vopCalculations().maxCalendarTime) * 100"
+                           [title]="'Личный состав: с ' + (seg.startCal | number:'1.0-1') + ' по ' + (seg.endCal | number:'1.0-1') + ' ч'">
+                      </div>
+                    }
+                  </td>
+                  
+                  <!-- Удаление задачи -->
+                  <td style="width: 40px; min-width: 40px; max-width: 40px; text-align: center; border: 1px solid #cbd5e1; padding: 4px;">
+                    <button class="btn danger" style="padding: 4px 6px; font-size: 11px; border-radius: 4px; border: none;" (click)="removeTask(row.id)" title="Удалить задачу">✕</button>
+                  </td>
+                </tr>
+              }
+            }
+            <tr>
+              <td [attr.colspan]="11 + dayIndices().length * 6" style="text-align: left; padding: 8px 12px; border: 1px solid #cbd5e1; background: #ffffff;">
+                <button class="btn secondary" style="padding: 4px 10px; font-size: 12px; border-radius: 4px; border: 1px solid #466bf7; color: #466bf7; font-weight: 600;" (click)="addTask(2)">
+                  + Добавить сооружение во II очередь
+                </button>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+
+        <!-- Сноски и примечания -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0; gap: 20px;">
+          <div style="font-size: 11px; color: #64748b; line-height: 1.5; flex: 1;">
+            <div><strong>Примечания к расчету:</strong></div>
+            <div>1. Расчет времени составлен на основе Гл. XI Руководства по ВИД (1984).</div>
+            <div>2. Сетка Ганта динамически масштабируется по суткам в соответствии с общей длительностью работ.</div>
+            <div>3. При рабочем дне менее 24 часов стрелки прерываются на время отдыха л/с (обозначается разрывом стрелок между сутками).</div>
+            <div>4. Работы выполняются силами л/с — <strong>{{ manpower() }}</strong> чел., сменностью — <strong>{{ shifts() }}</strong> и лимитом <strong>{{ workHoursPerDay() }} ч/день</strong>.</div>
+          </div>
+
+          <div style="display: flex; gap: 10px; flex-shrink: 0;">
+            <button class="btn secondary" style="padding: 6px 14px; font-size: 13px; border-radius: 4px;" (click)="loadFromMap()">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px; display: inline-block; vertical-align: middle;"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+              Импортировать с карты ГИС
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ведомость парка инженерной техники -->
+      <div class="dashboard-card" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: #0f172a; margin: 0;">
+            Парк инженерной техники и КТГ (коэффициент технической готовности)
+          </h4>
+          <span style="font-size: 11px; color: #64748b; font-weight: 600;">Редактируйте параметры производительности и исправности для учета поломок и КТГ</span>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;" class="excel-table">
+          <thead>
+            <tr style="background: #f8fafc;">
+              <th style="width: 250px; text-align: left; border: 1px solid #cbd5e1; padding: 6px;">Наименование техники</th>
+              <th style="width: 130px; text-align: center; border: 1px solid #cbd5e1; padding: 6px;">Базовый тип</th>
+              <th style="width: 120px; text-align: center; border: 1px solid #cbd5e1; padding: 6px;">Базовая произв. (м³/ч)</th>
+              <th style="width: 120px; text-align: center; border: 1px solid #cbd5e1; padding: 6px;">Реальная произв. (м³/ч)</th>
+              <th style="width: 120px; text-align: center; border: 1px solid #cbd5e1; padding: 6px;">КТГ (исправность)</th>
+              <th style="text-align: left; border: 1px solid #cbd5e1; padding: 6px;">Техническое описание / Примечание</th>
+              <th style="width: 40px; text-align: center; border: 1px solid #cbd5e1; padding: 6px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (dev of machDevices(); track dev.id) {
+              <tr>
+                <td style="border: 1px solid #cbd5e1; padding: 4px;">
+                  <input type="text" [value]="dev.name" (input)="updateDeviceField(dev.id, 'name', $event)" [disabled]="dev.id === 'none'" style="width: 100%; border: 1px solid transparent; background: transparent; font-weight: 600; padding: 4px; outline: none; border-radius: 4px; color: #0f172a;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                </td>
+                <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">
+                  <select [value]="dev.type" (change)="updateDeviceField(dev.id, 'type', $event)" [disabled]="dev.id === 'none'" style="border: none; background: transparent; padding: 4px; outline: none; cursor: pointer; color: #1e293b; font-weight: 600;">
+                    <option value="eov">ЭОВ-4421</option>
+                    <option value="pzm">ПЗМ-2</option>
+                    <option value="mdk">МДК-3</option>
+                    <option value="bu">Бульдозер</option>
+                    <option value="none">Вручную</option>
+                  </select>
+                </td>
+                <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: center; font-family: monospace; font-weight: 600; color: #64748b;">
+                  {{ dev.basePerf | number:'1.0-1' }}
+                </td>
+                <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">
+                  <input type="number" step="0.5" [value]="dev.currentPerf" (input)="updateDeviceField(dev.id, 'currentPerf', $event)" [disabled]="dev.id === 'none'" style="width: 70px; border: 1px solid transparent; background: transparent; padding: 2px; text-align: center; font-family: monospace; font-weight: 600; color: #466bf7; outline: none;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                </td>
+                <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">
+                  <input type="number" step="0.01" min="0.10" max="1.00" [value]="dev.efficiency" [disabled]="dev.id === 'none'" (input)="updateDeviceField(dev.id, 'efficiency', $event)" style="width: 60px; border: 1px solid transparent; background: transparent; padding: 2px; text-align: center; font-family: monospace; font-weight: 600; color: #16a34a; outline: none;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                </td>
+                <td style="border: 1px solid #cbd5e1; padding: 4px;">
+                  <input type="text" [value]="dev.notes" (input)="updateDeviceField(dev.id, 'notes', $event)" style="width: 100%; border: 1px solid transparent; background: transparent; padding: 4px; outline: none; border-radius: 4px; color: #475569; font-size: 11px;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                </td>
+                <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: center;">
+                  <button class="btn danger" style="padding: 4px 6px; font-size: 11px; border-radius: 4px; border: none;" [disabled]="dev.id === 'eov' || dev.id === 'pzm' || dev.id === 'mdk' || dev.id === 'bu' || dev.id === 'none'" (click)="removeDevice(dev.id)" title="Удалить технику">✕</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <div style="margin-top: 12px; text-align: left;">
+          <button class="btn secondary" style="padding: 5px 12px; font-size: 12px; border-radius: 4px; border: 1px solid #466bf7; color: #466bf7; font-weight: 600;" (click)="addDevice()">
+            + Добавить единицу техники
+          </button>
+        </div>
+      </div>
+
+      <!-- Resource Graphs Grid -->
+      <div class="charts-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        
+        <!-- Manpower load chart -->
+        <div class="dashboard-card" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div style="margin-bottom: 12px;">
+            <h5 style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 0;">Распределение личного состава (чел.)</h5>
+            <span style="font-size: 11px; color: #64748b;">Загрузка по сменам: работающие и отдыхающие смены</span>
+          </div>
+          <div style="height: 200px; display: flex; align-items: center; justify-content: center;">
+            <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="none">
+              <!-- Сетка -->
+              <line x1="0" y1="20" x2="400" y2="20" stroke="#f1f5f9" stroke-width="1"></line>
+              <line x1="0" y1="100" x2="400" y2="100" stroke="#f1f5f9" stroke-width="1"></line>
+              <line x1="0" y1="180" x2="400" y2="180" stroke="#cbd5e1" stroke-width="1.5"></line>
+
+              <!-- Области заливки -->
+              <!-- Общая численность -->
+              <polygon [attr.points]="'0,180 0,' + chartPoints().totalH + ' 400,' + chartPoints().totalH + ' 400,180'" fill="rgba(70, 107, 247, 0.05)"></polygon>
+              <!-- Работающая смена -->
+              <polygon [attr.points]="chartPoints().manpowerPts" fill="rgba(34, 197, 94, 0.15)"></polygon>
+
+              <!-- Линия лимита л/с -->
+              <line x1="0" [attr.y1]="chartPoints().totalH" x2="400" [attr.y2]="chartPoints().totalH" stroke="#466bf7" stroke-width="2" stroke-dasharray="4,4"></line>
+              <!-- Линия работающих -->
+              <path [attr.d]="'M 0 ' + chartPoints().activeWorkersH + ' L 400 ' + chartPoints().activeWorkersH" stroke="#22c55e" stroke-width="2.5"></path>
+
+              <!-- Подписи -->
+              <text x="10" [attr.y]="chartPoints().totalH - 6" fill="#466bf7" font-size="10" font-weight="700">Всего л/с: {{ manpower() }} чел.</text>
+              <text x="10" [attr.y]="chartPoints().activeWorkersH - 6" fill="#16a34a" font-size="10" font-weight="700">В смене: {{ chartPoints().activeWorkers }} чел.</text>
+              <text x="10" y="195" fill="#64748b" font-size="9">Отдыхает: {{ chartPoints().restingWorkers }} чел.</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Cumulative Excavation Earth -->
+        <div class="dashboard-card" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div style="margin-bottom: 12px;">
+            <h5 style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 0;">Объем земляных работ по времени (м³)</h5>
+            <span style="font-size: 11px; color: #64748b;">Накопительный график выполнения по очередям (в часах)</span>
+          </div>
+          <div style="height: 200px; display: flex; align-items: center; justify-content: center;">
+            <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="none">
+              <!-- Сетка -->
+              <line x1="0" y1="20" x2="400" y2="20" stroke="#f1f5f9" stroke-width="1"></line>
+              <line x1="0" y1="100" x2="400" y2="100" stroke="#f1f5f9" stroke-width="1"></line>
+              <line x1="0" y1="180" x2="400" y2="180" stroke="#cbd5e1" stroke-width="1.5"></line>
+
+              <!-- Заливка объемов -->
+              <polygon [attr.points]="chartPoints().earthPts" fill="rgba(34, 197, 94, 0.08)"></polygon>
+
+              <!-- График объема -->
+              <path [attr.d]="'M 0 180 L ' + chartPoints().p1x + ' ' + chartPoints().p1y + ' L 400 0'" fill="none" stroke="#22c55e" stroke-width="3"></path>
+
+              <!-- Вертикальный разделитель I очереди -->
+              <line [attr.x1]="chartPoints().p1x" y1="0" [attr.x2]="chartPoints().p1x" y2="180" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="3,3"></line>
+
+              <!-- Подписи объемов -->
+              <text [attr.x]="chartPoints().p1x + 6" [attr.y]="chartPoints().p1y - 6" fill="#16a34a" font-size="9" font-weight="700">Конец I очереди ({{ vopCalculations().phase1DurationCal | number:'1.0-1' }} ч)</text>
+              <text x="310" y="15" fill="#16a34a" font-size="10" font-weight="700">100% ({{ vopCalculations().totalEarth | number:'1.0-0' }} м³)</text>
+            </svg>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Warning timeline alert -->
+      @if (timelineWarning(); as msg) {
+        <div class="dashboard-card" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 16px; color: #ef4444; font-size: 13px; line-height: 1.5; flex-shrink: 0;" [innerHTML]="msg">
+        </div>
+      }
+
+    </div>
+  </div>
+</div>
