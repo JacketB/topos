@@ -75,6 +75,56 @@ export class TrenchGeometryService {
 
     const lines: [number, number][][] = [activeCoords];
 
+    // Для маршрута марша генерируем шевроны направления
+    if (lineType === 'march_route') {
+      for (let i = 0; i < activeCoords.length - 1; i++) {
+        const p1 = activeCoords[i];
+        const p2 = activeCoords[i + 1];
+
+        const dx = p2[0] - p1[0];
+        const dy = p2[1] - p1[1];
+
+        const cosLat = Math.cos((p1[1] + p2[1]) * 0.5 * (Math.PI / 180));
+        const dxM = dx * cosLat;
+        const dyM = dy;
+        const distM = Math.sqrt(dxM * dxM + dyM * dyM);
+
+        if (distM === 0) continue;
+
+        const step = 0.0008; // Шаг между шевронами
+        const numSteps = Math.max(1, Math.floor(distM / step));
+
+        const dirX = dxM / distM;
+        const dirY = dyM / distM;
+        const nx = -dirY;
+        const ny = dirX;
+
+        const cosAngle = Math.cos(30 * Math.PI / 180);
+        const sinAngle = Math.sin(30 * Math.PI / 180);
+
+        const vLeftX = -dirX * cosAngle + nx * sinAngle;
+        const vLeftY = -dirY * cosAngle + ny * sinAngle;
+
+        const vRightX = -dirX * cosAngle - nx * sinAngle;
+        const vRightY = -dirY * cosAngle - ny * sinAngle;
+
+        const toothLen = 0.00008;
+        const dLeftLng = (vLeftX * toothLen) / cosLat;
+        const dLeftLat = vLeftY * toothLen;
+        const dRightLng = (vRightX * toothLen) / cosLat;
+        const dRightLat = vRightY * toothLen;
+
+        for (let s = 1; s <= numSteps; s++) {
+          const t = s / (numSteps + 1);
+          const cx = p1[0] + dx * t;
+          const cy = p1[1] + dy * t;
+
+          lines.push([[cx, cy], [cx + dLeftLng, cy + dLeftLat]]);
+          lines.push([[cx, cy], [cx + dRightLng, cy + dRightLat]]);
+        }
+      }
+    }
+
     // Добавляем две перпендикулярные полоски по середине для крытого хода сообщения (comm_covered)
     if (lineType === 'comm_covered') {
       const segments: { p1: [number, number]; p2: [number, number]; len: number }[] = [];

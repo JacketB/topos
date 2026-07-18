@@ -1,4 +1,4 @@
-import { Injectable, signal, inject, computed } from '@angular/core';
+import { Injectable, signal, inject, computed, effect } from '@angular/core';
 import maplibregl from 'maplibre-gl';
 import { TacticalSymbolsService } from '../services/tactical-symbols.service';
 import { TacticalMapService } from '../services/tactical-map.service';
@@ -8,6 +8,9 @@ import { MapMeasurementService } from '../services/map-measurement.service';
 import { MapLayersService } from '../services/map-layers.service';
 import { SCALE_PRESETS, ScalePreset } from '../consts/map-scale.const';
 import { FortificationCalculationService } from '../services/fortification-calculation.service';
+import { MarchRouteService, ColumnType, MarchRoute } from '../services/march-route.service';
+import { PlaybackService } from '../services/playback.service';
+import { MarchOrderService, MarchOrderElement } from '../services/march-order.service';
 
 @Injectable({
   providedIn: 'root'
@@ -20,6 +23,9 @@ export class MapViewModel {
   readonly mapMeasurementService = inject(MapMeasurementService);
   readonly mapLayersService = inject(MapLayersService);
   readonly fortificationService = inject(FortificationCalculationService);
+  readonly marchRouteService = inject(MarchRouteService);
+  readonly playbackService = inject(PlaybackService);
+  readonly marchOrderService = inject(MarchOrderService);
 
   readonly scalePresets = SCALE_PRESETS;
 
@@ -80,9 +86,151 @@ export class MapViewModel {
     return this.fortificationService.calculateTotalNorms(fortList);
   });
 
+  readonly marchColumnType = signal<ColumnType>('wheel');
+  readonly marchIsNight = signal<boolean>(false);
+  readonly selectedMarchRouteStats = signal<MarchRoute | null>(null);
+
+  readonly playbackSpeed = this.playbackService.speedMultiplier;
+  readonly isPlayingPlayback = this.playbackService.isPlaying;
+  readonly playbackTime = this.playbackService.currentTimeHrs;
+
+  readonly playbackPosition = computed(() => {
+    const stats = this.selectedMarchRouteStats();
+    const time = this.playbackTime();
+    if (!stats) return null;
+    return this.playbackService.getPositionAtTime(stats, time);
+  });
+
+  readonly playbackRoadType = computed(() => {
+    const pos = this.playbackPosition();
+    return pos ? pos.currentRoadType : '';
+  });
+
+  readonly playbackCurrentSpeed = computed(() => {
+    const pos = this.playbackPosition();
+    return pos ? pos.currentSpeed : 0;
+  });
+
+  constructor() {
+    // Обновление положения маркера симуляции на карте
+    effect(() => {
+      const pos = this.playbackPosition();
+      if (pos) {
+        this.tacticalMapService.updatePlaybackMarker(pos.coords, pos.bearing);
+      } else {
+        this.tacticalMapService.updatePlaybackMarker(null);
+      }
+    });
+
+    // Сброс симуляции при смене выбранного символа или режима рисования
+    effect(() => {
+      this.selectedPlacedSymbol();
+      this.activeLineMode();
+      this.playbackService.reset();
+    });
+
+    // Синхронизируем вершины waypoints при рисовании маршрута
+    effect(() => {
+      const mode = this.activeLineMode();
+      const coords = this.activeLineCoords();
+      if (mode === 'march_route') {
+        this.tacticalMapService.updateMarchWaypointsSource(coords);
+      } else {
+        this.tacticalMapService.updateMarchWaypointsSource(undefined);
+      }
+    });
+
+    // Реактивно пересчитываем характеристики маршрута
+    effect(async () => {
+      const selected = this.selectedPlacedSymbol();
+      const mode = this.activeLineMode();
+      const activeCoords = this.activeLineCoords();
+      const columnType = this.marchColumnType();
+      const isNight = this.marchIsNight();
+      const map = this.mapInstance;
+
+      if (!map) {
+        this.selectedMarchRouteStats.set(null);
+        return;
+      }
+
+      if (mode === 'march_route' && activeCoords && activeCoords.length >= 2) {
+        const stats = await this.marchRouteService.calculateRouteStats(map, activeCoords, columnType, isNight);
+        this.selectedMarchRouteStats.set(stats);
+      } else if (selected && selected.properties?.['lineType'] === 'march_route') {
+        const origCoords = selected.properties['origCoords'] as [number, number][];
+        if (origCoords && origCoords.length >= 2) {
+          const stats = await this.marchRouteService.calculateRouteStats(map, origCoords, columnType, isNight);
+          this.selectedMarchRouteStats.set(stats);
+        } else {
+          this.selectedMarchRouteStats.set(null);
+        }
+      } else {
+        this.selectedMarchRouteStats.set(null);
+      }
+    });
+  }
+
   toggleAreaReport() {
     this.isAreaReportOpen.update(v => !v);
   }
+
+  readonly isMarchOrderOpen = signal<boolean>(false);
+
+  toggleMarchOrder() {
+    // Взаимное закрытие: при открытии походного порядка закрываем ведомость района
+    if (!this.isMarchOrderOpen()) {
+      this.isAreaReportOpen.set(false);
+    }
+    this.isMarchOrderOpen.update(v => !v);
+  }
+
+  readonly marchOrderElements = this.marchOrderService.elements;
+
+  addMarchOrderElement(
+    name: string, 
+    icon: string, 
+    composition: string, 
+    vehicleCount: number = 5,
+    vehicleLength: number = 7.5,
+    vehicleDistance: number = 50,
+    vehicleDistanceUnit: 'm' | 'km' = 'm',
+    distanceToNext: number = 100, 
+    distanceUnit: 'm' | 'km' = 'm'
+  ) {
+    this.marchOrderService.addElement({ 
+      name, 
+      icon, 
+      composition, 
+      vehicleCount, 
+      vehicleLength,
+      vehicleDistance, 
+      vehicleDistanceUnit, 
+      distanceToNext, 
+      distanceUnit 
+    });
+  }
+
+  removeMarchOrderElement(id: string) {
+    this.marchOrderService.removeElement(id);
+  }
+
+  updateMarchOrderElement(id: string, updates: Partial<Omit<MarchOrderElement, 'id'>>) {
+    this.marchOrderService.updateElement(id, updates);
+  }
+
+  moveMarchOrderElement(index: number, direction: 'up' | 'down') {
+    this.marchOrderService.moveElement(index, direction);
+  }
+
+  getMarchOrderTotalLengthKm(): number {
+    return this.marchOrderService.calculateTotalLengthKm();
+  }
+
+  getMarchOrderUnitLengthKm(el: MarchOrderElement): number {
+    return this.marchOrderService.getUnitLengthKm(el);
+  }
+
 
   copyAreaReportToClipboard() {
     const norms = this.totalAreaNorms();
@@ -367,8 +515,43 @@ export class MapViewModel {
     this.tacticalMapService.updateTemplateColor(color);
   }
 
+  formatDuration(hours: number): string {
+    if (!hours || isNaN(hours)) return '—';
+    const totalMinutes = Math.round(hours * 60);
+    const hrs = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    
+    if (hrs > 0) {
+      return `${hrs} ч ${mins} мин`;
+    }
+    return `${mins} мин`;
+  }
+
   formatScale(scale: number): string {
     return scale.toLocaleString('ru-RU');
+  }
+
+  startPlayback() {
+    const stats = this.selectedMarchRouteStats();
+    if (stats) {
+      this.playbackService.start(stats.totalDurationHrs);
+    }
+  }
+
+  pausePlayback() {
+    this.playbackService.pause();
+  }
+
+  resetPlayback() {
+    this.playbackService.reset();
+  }
+
+  setPlaybackTime(timeHrs: number) {
+    this.playbackService.currentTimeHrs.set(timeHrs);
+  }
+
+  setPlaybackSpeed(speed: number) {
+    this.playbackService.speedMultiplier.set(speed);
   }
 
   readonly activeLineMode = signal<'none' | 'trench' | 'comm_open' | 'comm_covered' | 'wire' | string>('none');
@@ -385,16 +568,18 @@ export class MapViewModel {
     if (mode === 'arrow_attack') return 'Стрелка гл. удара';
     if (mode === 'arrow_supporting') return 'Стрелка вспом. удара';
     if (mode === 'arrow_retreat') return 'Стрелка отхода';
+    if (mode === 'march_route') return 'Маршрут марша';
     return 'Линия';
   });
 
   selectSymbol(symbol: any) {
-    if (symbol.id === 'trench_line' || symbol.id === 'wire_line' || symbol.id === 'comm_open_line' || symbol.id === 'comm_covered_line' || (symbol.id && symbol.id.startsWith('arrow_'))) {
+    if (symbol.id === 'trench_line' || symbol.id === 'wire_line' || symbol.id === 'comm_open_line' || symbol.id === 'comm_covered_line' || symbol.id === 'march_route' || (symbol.id && symbol.id.startsWith('arrow_'))) {
       this.tacticalMapService.clearSymbolSelection();
       let mode = 'wire';
       if (symbol.id === 'trench_line') mode = 'trench';
       else if (symbol.id === 'comm_open_line') mode = 'comm_open';
       else if (symbol.id === 'comm_covered_line') mode = 'comm_covered';
+      else if (symbol.id === 'march_route') mode = 'march_route';
       else if (symbol.id && symbol.id.startsWith('arrow_')) mode = symbol.id;
       this.startDrawingLine(mode);
     } else {
@@ -463,6 +648,7 @@ export class MapViewModel {
       else if (mode === 'arrow_attack') name = 'Стрелка главного удара';
       else if (mode === 'arrow_supporting') name = 'Стрелка вспомогательного удара';
       else if (mode === 'arrow_retreat') name = 'Стрелка отхода';
+      else if (mode === 'march_route') name = 'Маршрут марша';
       this.tacticalMapService.placeLinearSymbol(coords, mode, name, this.activeLineFlipSide(), this.isLineSmooth());
     }
     this.cancelDrawingLine();

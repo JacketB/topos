@@ -173,6 +173,22 @@
             </div>
           }
 
+          @if (placed.properties['lineType'] === 'march_route') {
+            @if (vm.selectedMarchRouteStats(); as stats) {
+              <div class="vs-property-section-title" style="margin-top: 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 700; border-top: 1px solid #e2e8f0; padding-top: 8px; padding-left: 8px;">
+                Расчет параметров марша
+              </div>
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Дистанция</span>
+                <div class="vs-grid-value vs-readonly"><strong>{{ stats.totalDistanceKm | number:'1.1-2' }}</strong> км</div>
+              </div>
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Время в пути</span>
+                <div class="vs-grid-value vs-readonly" style="color: #2563eb;"><strong>{{ vm.formatDuration(stats.totalDurationHrs) }}</strong></div>
+              </div>
+            }
+          }
+
           @if (vm.selectedPlacedSymbolNorms(); as norms) {
             <div class="vs-property-section-title" style="margin-top: 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 700; border-top: 1px solid #e2e8f0; padding-top: 8px; padding-left: 8px;">
               Фортификационный расчет (1984)

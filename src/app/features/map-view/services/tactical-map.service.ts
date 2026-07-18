@@ -28,6 +28,7 @@ export class TacticalMapService {
       this.selectedPlacedSymbol();
       this.placedSymbols();
       this.updateLinearVerticesSource();
+      this.updateMarchWaypointsSource();
     });
   }
 
@@ -97,6 +98,82 @@ export class TacticalMapService {
     }
     source.setData({ type: 'FeatureCollection', features: [] });
   }
+
+  updateMarchWaypointsSource(activeCoords?: [number, number][]) {
+    if (!this.mapInstance) return;
+    const source = this.mapInstance.getSource('march-waypoints') as maplibregl.GeoJSONSource;
+    if (!source) return;
+
+    const features: any[] = [];
+
+    // 1. Сначала добавляем точки из всех сохраненных на карте маршрутов
+    this.placedSymbols().forEach(s => {
+      if (s.properties && s.properties['lineType'] === 'march_route') {
+        const origCoords = s.properties['origCoords'] as [number, number][];
+        if (origCoords) {
+          origCoords.forEach((coord, idx) => {
+            features.push({
+              type: 'Feature',
+              properties: {
+                label: String(idx + 1),
+                routeId: s.properties['id']
+              },
+              geometry: {
+                type: 'Point',
+                coordinates: coord
+              }
+            });
+          });
+        }
+      }
+    });
+
+    // 2. Если сейчас интерактивно рисуется/редактируется маршрут, добавляем его точки
+    if (activeCoords && activeCoords.length > 0) {
+      activeCoords.forEach((coord, idx) => {
+        features.push({
+          type: 'Feature',
+          properties: {
+            label: String(idx + 1),
+            routeId: 'active'
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: coord
+          }
+        });
+      });
+    }
+
+    source.setData({
+      type: 'FeatureCollection',
+      features
+    });
+  }
+
+  updatePlaybackMarker(coords: [number, number] | null, angle: number = 0) {
+    if (!this.mapInstance) return;
+    const source = this.mapInstance.getSource('playback-source') as maplibregl.GeoJSONSource;
+    if (!source) return;
+
+    if (!coords) {
+      source.setData({ type: 'FeatureCollection', features: [] });
+      return;
+    }
+
+    source.setData({
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        properties: { bearing: angle },
+        geometry: {
+          type: 'Point',
+          coordinates: coords
+        }
+      }]
+    });
+  }
+
 
   initLayers(map: maplibregl.Map) {
     if (!map.getSource('tactical-symbols')) {
@@ -206,6 +283,71 @@ export class TacticalMapService {
         }
       });
     }
+
+    if (!map.getSource('march-waypoints')) {
+      map.addSource('march-waypoints', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+    }
+
+    if (!map.getLayer('march_waypoints_circles')) {
+      map.addLayer({
+        id: 'march_waypoints_circles',
+        type: 'circle',
+        source: 'march-waypoints',
+        paint: {
+          'circle-radius': 9,
+          'circle-color': '#2563eb',
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 1.5
+        }
+      });
+    }
+
+    if (!map.getLayer('march_waypoints_labels')) {
+      map.addLayer({
+        id: 'march_waypoints_labels',
+        type: 'symbol',
+        source: 'march-waypoints',
+        layout: {
+          'text-field': ['get', 'label'],
+          'text-size': 10,
+          'text-allow-overlap': true,
+          'text-ignore-placement': true
+        },
+        paint: {
+          'text-color': '#ffffff'
+        }
+      });
+    }
+
+
+    if (!map.getSource('playback-source')) {
+      map.addSource('playback-source', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+    }
+
+    if (!map.getLayer('playback_marker_layer')) {
+      map.addLayer({
+        id: 'playback_marker_layer',
+        type: 'symbol',
+        source: 'playback-source',
+        layout: {
+          'icon-image': 'avto1_c_ef4444',
+          'icon-size': 0.12,
+          'icon-rotate': ['get', 'bearing'],
+          'icon-rotation-alignment': 'map',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true
+        }
+      });
+    }
+
+    // Предзагрузка красного автомобиля для плеера симуляции
+    this.ensureSymbolColorImageLoadedForId('avto1', '#ef4444', 'avto1_c_ef4444', () => {});
 
     this.placedSymbols().forEach(s => {
       const symbolId = s.properties['symbol'];
@@ -508,6 +650,20 @@ export class TacticalMapService {
     }
   }
 
+  updatePlacedSymbolProperty(key: string, value: any) {
+    const selected = this.selectedPlacedSymbol();
+    if (selected) {
+      this.placedSymbols.update(prev => 
+        prev.map(s => s.properties['id'] === selected.properties['id'] ? {
+          ...s,
+          properties: { ...s.properties, [key]: value }
+        } : s)
+      );
+      this.syncSelectedPlacedSymbol();
+      this.updateTacticalSymbolsSource();
+    }
+  }
+
   updatePlacedSymbolName(name: string) {
     const selected = this.selectedPlacedSymbol();
     if (selected) {
@@ -629,6 +785,7 @@ export class TacticalMapService {
     let color = this.templateCustomColor();
     if (!color) {
       if (lineType === 'wire') color = '#000000';
+      else if (lineType === 'march_route') color = '#2563eb';
       else color = '#ef4444';
     }
 
@@ -636,6 +793,7 @@ export class TacticalMapService {
     if (lineType === 'trench') symbolId = 'trench_line';
     else if (lineType === 'comm_open') symbolId = 'comm_open_line';
     else if (lineType === 'comm_covered') symbolId = 'comm_covered_line';
+    else if (lineType === 'march_route') symbolId = 'march_route';
     else if (lineType.startsWith('arrow_')) symbolId = lineType;
 
     const isArrow = lineType.startsWith('arrow_');

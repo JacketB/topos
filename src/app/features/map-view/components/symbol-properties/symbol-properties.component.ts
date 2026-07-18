@@ -1,9 +1,11 @@
 import { Component, inject } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { MapViewModel } from '../../viewmodels/map.viewmodel';
 
 @Component({
   selector: 'app-symbol-properties',
   standalone: true,
+  imports: [DecimalPipe],
   templateUrl: './symbol-properties.component.html',
   styleUrl: './symbol-properties.component.css'
 })
