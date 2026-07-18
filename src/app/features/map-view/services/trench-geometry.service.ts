@@ -184,6 +184,21 @@ export class TrenchGeometryService {
 
     // Для остальных типов с повторяющимися элементами по всей длине (trench, wire)
     if (lineType === 'trench' || lineType === 'wire') {
+      // Шаг вдоль линии (в градусах, где 0.00009 градусов ≈ 10 метров)
+      let step = 0.00018; // ~20 метров для колючей проволоки
+      if (lineType === 'trench') step = 0.00009; // ровно 10 метров по ТЗ (одна ресничка на 10 м)
+
+      // Длина штриха/зубца
+      let toothLen = 0.00009;
+      if (lineType === 'trench') toothLen = 0.000035;
+      else if (lineType === 'wire') toothLen = 0.000028;
+
+      const sideMult = flipSide ? -1 : 1;
+      
+      // Накопленное расстояние от последней поставленной реснички (в градусах Меркатора)
+      // Инициализируем значением step, чтобы первая ресничка гарантированно рисовалась в самом начале линии
+      let distanceSinceLastTooth = step;
+
       for (let i = 0; i < activeCoords.length - 1; i++) {
         const p1 = activeCoords[i];
         const p2 = activeCoords[i + 1];
@@ -194,49 +209,53 @@ export class TrenchGeometryService {
         const cosLat = Math.cos((p1[1] + p2[1]) * 0.5 * (Math.PI / 180));
         const dxM = dx * cosLat;
         const dyM = dy;
-        const distM = Math.sqrt(dxM * dxM + dyM * dyM);
+        const segmentDist = Math.sqrt(dxM * dxM + dyM * dyM);
 
-        if (distM === 0) continue;
+        if (segmentDist === 0) continue;
 
-        // Шаг вдоль линии
-        let step = 0.00018;
-        if (lineType === 'trench') step = 0.000055;
-
-        const numSteps = Math.max(1, Math.floor(distM / step));
-
-        const sideMult = flipSide ? -1 : 1;
-        const nxM = (-dyM / distM) * sideMult;
-        const nyM = (dxM / distM) * sideMult;
-
-        // Длина штриха/зубца
-        let toothLen = 0.00009;
-        if (lineType === 'trench') toothLen = 0.000035;
-        else if (lineType === 'wire') toothLen = 0.000028; // Меньший размер перпендикулярных линий для колючей проволоки
-
+        const nxM = (-dyM / segmentDist) * sideMult;
+        const nyM = (dxM / segmentDist) * sideMult;
         const dLng = (nxM * toothLen) / (cosLat || 1);
         const dLat = nyM * toothLen;
 
-        for (let s = 1; s <= numSteps; s++) {
-          const t = s / (numSteps + 1);
-          const cx = p1[0] + dx * t;
-          const cy = p1[1] + dy * t;
+        let currentT = 0; // Локальный параметр интерполяции на сегменте (от 0 до 1)
 
-          if (lineType === 'trench') {
-            const tipX = cx + dLng;
-            const tipY = cy + dLat;
-            lines.push([[cx, cy], [tipX, tipY]]);
-          } else if (lineType === 'wire') {
-            // Крестик МЗП (колючая проволока) меньшего размера
-            const halfLng = dLng * 0.75;
-            const halfLat = dLat * 0.75;
-            lines.push([
-              [cx - halfLng + dLng, cy - halfLat + dLat],
-              [cx + halfLng - dLng, cy + halfLat - dLat]
-            ]);
-            lines.push([
-              [cx - halfLng - dLng, cy - halfLat - dLat],
-              [cx + halfLng + dLng, cy + halfLat + dLat]
-            ]);
+        while (currentT < 1) {
+          const neededDist = step - distanceSinceLastTooth;
+          const remainingSegmentDist = segmentDist * (1 - currentT);
+
+          if (remainingSegmentDist >= neededDist) {
+            // Точка расстановки находится внутри текущего сегмента
+            if (segmentDist > 0) {
+              currentT += neededDist / segmentDist;
+            } else {
+              currentT = 1;
+            }
+            distanceSinceLastTooth = 0; // Сбрасываем накопленный шаг
+
+            const cx = p1[0] + dx * currentT;
+            const cy = p1[1] + dy * currentT;
+
+            if (lineType === 'trench') {
+              const tipX = cx + dLng;
+              const tipY = cy + dLat;
+              lines.push([[cx, cy], [tipX, tipY]]);
+            } else if (lineType === 'wire') {
+              const halfLng = dLng * 0.75;
+              const halfLat = dLat * 0.75;
+              lines.push([
+                [cx - halfLng + dLng, cy - halfLat + dLat],
+                [cx + halfLng - dLng, cy + halfLat - dLat]
+              ]);
+              lines.push([
+                [cx - halfLng - dLng, cy - halfLat - dLat],
+                [cx + halfLng + dLng, cy + halfLat + dLat]
+              ]);
+            }
+          } else {
+            // Текущий сегмент заканчивается раньше, чем накопится необходимый шаг
+            distanceSinceLastTooth += remainingSegmentDist;
+            currentT = 1.0; // Переходим к следующему сегменту
           }
         }
       }
