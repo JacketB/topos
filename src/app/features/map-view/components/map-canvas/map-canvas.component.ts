@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnDestroy, viewChild, ElementRef, inject, effect, computed, signal, HostListener } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, viewChild, ElementRef, inject, effect, computed, signal, HostListener, untracked } from '@angular/core';
 import { NgStyle } from '@angular/common';
 import maplibregl from 'maplibre-gl';
 import { PMTiles, Protocol } from 'pmtiles';
@@ -37,11 +37,13 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   constructor() {
     effect(() => {
       const activeId = this.vm.activeMapId();
-      const container = this.mapContainer();
-      if (container) {
-        const targetMap = this.mapsUrls[activeId];
-        this.renderMap(targetMap.url, targetMap.type);
-      }
+      untracked(() => {
+        const container = this.mapContainer();
+        if (container) {
+          const targetMap = this.mapsUrls[activeId];
+          this.renderMap(targetMap.url, targetMap.type);
+        }
+      });
     });
 
     // Реактивно отслеживаем изменения выбранного знака для перерисовки рамки
@@ -56,10 +58,42 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         this.transformBoxStyle.set(null);
       }
     });
+
+    // Реактивно ресайзим карту при изменении размеров или видимости сайдбаров
+    effect(() => {
+      this.vm.sidebarWidth();
+      this.vm.tacticalMapService.selectedPlacedSymbol();
+      this.vm.selectedSymbol();
+      this.vm.isLayersPanelOpen();
+      
+      untracked(() => {
+        if (this.map) {
+          // Вызываем resize дважды: в начале анимации сдвига (50мс) и по ее завершению (350мс)
+          setTimeout(() => {
+            if (this.map) {
+              this.map.resize();
+              this.updateTransformBoxPosition();
+            }
+          }, 50);
+
+          setTimeout(() => {
+            if (this.map) {
+              this.map.resize();
+              this.updateTransformBoxPosition();
+            }
+          }, 350);
+        }
+      });
+    });
   }
 
   ngAfterViewInit() {
-    // Handled by effect upon container resolution
+    // Гарантируем первоначальный рендеринг карты при разрешении viewChild
+    const container = this.mapContainer();
+    if (container && !this.map) {
+      const targetMap = this.mapsUrls[this.vm.activeMapId()];
+      this.renderMap(targetMap.url, targetMap.type);
+    }
   }
 
   renderMap(url: string, type: string) {
@@ -187,6 +221,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       if (this.vm.isScaleMenuOpen()) this.vm.isScaleMenuOpen.set(false);
       if (this.vm.isQuickLayersMenuOpen()) this.vm.isQuickLayersMenuOpen.set(false);
       if (this.vm.isToogleMapMenuOpen()) this.vm.isToogleMapMenuOpen.set(false);
+      if (this.vm.activeCategoryDropdown()) this.vm.activeCategoryDropdown.set(null);
 
       if (this.vm.activeLineMode() !== 'none') {
         this.vm.addDrawingPoint([e.lngLat.lng, e.lngLat.lat]);

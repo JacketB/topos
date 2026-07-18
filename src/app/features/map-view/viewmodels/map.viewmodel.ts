@@ -11,11 +11,13 @@ import { FortificationCalculationService } from '../services/fortification-calcu
 import { MarchRouteService, ColumnType, MarchRoute } from '../services/march-route.service';
 import { PlaybackService } from '../services/playback.service';
 import { MarchOrderService, MarchOrderElement } from '../services/march-order.service';
+import { ImageOverlayService, MapImageOverlay } from '../services/image-overlay.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MapViewModel {
+  readonly imageOverlayService = inject(ImageOverlayService);
   readonly symbolsService = inject(TacticalSymbolsService);
   readonly tacticalMapService = inject(TacticalMapService);
   readonly terrainService = inject(TerrainService);
@@ -56,6 +58,10 @@ export class MapViewModel {
   readonly symbolSearchQuery = this.symbolsService.symbolSearchQuery;
   readonly selectedSymbol = this.tacticalMapService.selectedSymbol;
   readonly selectedPlacedSymbol = this.tacticalMapService.selectedPlacedSymbol;
+  readonly selectedPlacedSymbols = this.tacticalMapService.selectedPlacedSymbols;
+  readonly objectGroups = this.tacticalMapService.objectGroups;
+  readonly activeCalculationGroupId = this.tacticalMapService.activeCalculationGroupId;
+  readonly isLayersPanelOpen = signal<boolean>(false);
   readonly placedSymbols = this.tacticalMapService.placedSymbols;
   readonly layerGroups = this.mapLayersService.groups;
 
@@ -69,7 +75,15 @@ export class MapViewModel {
 
   readonly placedFortifications = computed(() => {
     const placed = this.placedSymbols();
-    return placed.filter(f => {
+    const activeGroupId = this.activeCalculationGroupId();
+    let filtered = placed;
+    if (activeGroupId && activeGroupId !== 'all') {
+      const group = this.objectGroups().find((g: any) => g.id === activeGroupId);
+      if (group) {
+        filtered = placed.filter(f => group.elementIds.includes(f.properties?.id));
+      }
+    }
+    return filtered.filter(f => {
       if (f.properties?.isLinear) {
         return ['trench', 'comm_open', 'comm_covered', 'wire'].includes(f.properties.lineType);
       }
@@ -175,6 +189,7 @@ export class MapViewModel {
     if (!this.isAreaReportOpen()) {
       this.isMarchOrderOpen.set(false);
       this.isFortPlannerOpen.set(false);
+      this.isImageOverlayPanelOpen.set(false);
     }
     this.isAreaReportOpen.update(v => !v);
   }
@@ -182,10 +197,11 @@ export class MapViewModel {
   readonly isMarchOrderOpen = signal<boolean>(false);
 
   toggleMarchOrder() {
-    // Взаимное закрытие: при открытии походного порядка закрываем ведомость района и планировщик
+    // Взаимное закрытие: при открытии походного порядка закрываем ведомость района, планировщик и оверлеи изображений
     if (!this.isMarchOrderOpen()) {
       this.isAreaReportOpen.set(false);
       this.isFortPlannerOpen.set(false);
+      this.isImageOverlayPanelOpen.set(false);
     }
     this.isMarchOrderOpen.update(v => !v);
   }
@@ -196,9 +212,32 @@ export class MapViewModel {
     if (!this.isFortPlannerOpen()) {
       this.isAreaReportOpen.set(false);
       this.isMarchOrderOpen.set(false);
+      this.isImageOverlayPanelOpen.set(false);
     }
     this.isFortPlannerOpen.update(v => !v);
   }
+
+  readonly isImageOverlayPanelOpen = signal<boolean>(false);
+
+  toggleImageOverlayPanel() {
+    if (!this.isImageOverlayPanelOpen()) {
+      this.isAreaReportOpen.set(false);
+      this.isMarchOrderOpen.set(false);
+      this.isFortPlannerOpen.set(false);
+    }
+    this.isImageOverlayPanelOpen.update(v => !v);
+  }
+
+  readonly activeCategoryDropdown = signal<string | null>(null);
+
+  toggleCategoryDropdown(categoryId: string | null) {
+    if (this.activeCategoryDropdown() === categoryId) {
+      this.activeCategoryDropdown.set(null);
+    } else {
+      this.activeCategoryDropdown.set(categoryId);
+    }
+  }
+
 
   readonly marchOrderElements = this.marchOrderService.elements;
 
@@ -297,6 +336,9 @@ export class MapViewModel {
 
   setMapInstance(map: maplibregl.Map) {
     this.mapInstance = map;
+    if (map) {
+      this.imageOverlayService.init(map);
+    }
   }
 
   getMapInstance(): maplibregl.Map | null {

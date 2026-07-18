@@ -67,11 +67,34 @@ export class SymbolPropertiesComponent {
 
   onPlacedProfileChange(event: Event) {
     const select = event.target as HTMLSelectElement;
-    this.vm.updatePlacedSymbolProperty('fortProfile', select.value);
+    const profile = select.value;
+    this.vm.updatePlacedSymbolProperty('fortProfile', profile);
+    
+    // Автоматически синхронизируем ширину и глубину при смене профиля
+    const depth = profile === 'full' ? 150 : 110;
+    const width = profile === 'full' ? 110 : 90;
+    this.vm.updatePlacedSymbolProperty('fortDepth', depth);
+    this.vm.updatePlacedSymbolProperty('fortWidth', width);
   }
 
   onPlacedRevetmentChange(event: Event) {
     const select = event.target as HTMLSelectElement;
     this.vm.updatePlacedSymbolProperty('fortRevetment', select.value);
+  }
+
+  onPlacedDepthChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const depth = parseInt(input.value, 10);
+    if (!isNaN(depth)) {
+      this.vm.updatePlacedSymbolProperty('fortDepth', depth);
+    }
+  }
+
+  onPlacedWidthChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const width = parseInt(input.value, 10);
+    if (!isNaN(width)) {
+      this.vm.updatePlacedSymbolProperty('fortWidth', width);
+    }
   }
 }

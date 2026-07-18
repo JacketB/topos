@@ -6,6 +6,12 @@ import { TerrainService } from './terrain.service';
 
 type SymbolLoadCallback = () => void;
 
+export interface ObjectGroup {
+  id: string;
+  name: string;
+  elementIds: number[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -25,11 +31,22 @@ export class TacticalMapService {
     });
 
     effect(() => {
+      const groups = this.objectGroups();
+      try {
+        localStorage.setItem('topos_object_groups', JSON.stringify(groups));
+      } catch (e) {
+        console.error('Ошибка сохранения групп в localStorage:', e);
+      }
+    });
+
+    effect(() => {
       this.selectedPlacedSymbol();
+      this.selectedPlacedSymbols();
       this.placedSymbols();
       this.updateLinearVerticesSource();
       this.updateMarchWaypointsSource();
     });
+
   }
 
   private loadFromStorage(): any[] {
@@ -58,10 +75,82 @@ export class TacticalMapService {
   }
 
   readonly selectedPlacedSymbol = signal<any | null>(null);
+  readonly selectedPlacedSymbols = signal<any[]>([]);
+  readonly objectGroups = signal<ObjectGroup[]>(this.loadGroupsFromStorage());
+  readonly activeCalculationGroupId = signal<string>('all');
 
   selectPlacedSymbol(symbol: any | null) {
     this.selectedPlacedSymbol.set(symbol);
+    if (symbol) {
+      const current = this.selectedPlacedSymbols();
+      if (!current.some(s => s.properties?.id === symbol.properties?.id)) {
+        this.selectedPlacedSymbols.set([symbol]);
+      }
+    } else {
+      this.selectedPlacedSymbols.set([]);
+    }
     this.updateLinearVerticesSource();
+  }
+
+  createGroup(name: string) {
+    const newGroup: ObjectGroup = {
+      id: `group_${Date.now()}`,
+      name: name,
+      elementIds: []
+    };
+    this.objectGroups.update(prev => [...prev, newGroup]);
+    return newGroup;
+  }
+
+  deleteGroup(groupId: string) {
+    this.objectGroups.update(prev => prev.filter(g => g.id !== groupId));
+    if (this.activeCalculationGroupId() === groupId) {
+      this.activeCalculationGroupId.set('all');
+    }
+  }
+
+  renameGroup(groupId: string, newName: string) {
+    this.objectGroups.update(prev => prev.map(g => g.id === groupId ? { ...g, name: newName } : g));
+  }
+
+  addElementsToGroup(groupId: string, elementIds: number[]) {
+    this.objectGroups.update(groups => {
+      return groups.map(g => {
+        if (g.id !== groupId) {
+          return {
+            ...g,
+            elementIds: g.elementIds.filter(id => !elementIds.includes(id))
+          };
+        }
+        const currentIds = g.elementIds;
+        const newIds = [...currentIds, ...elementIds.filter(id => !currentIds.includes(id))];
+        return { ...g, elementIds: newIds };
+      });
+    });
+  }
+
+  removeElementsFromGroup(groupId: string, elementIds: number[]) {
+    this.objectGroups.update(groups => {
+      return groups.map(g => {
+        if (g.id === groupId) {
+          return {
+            ...g,
+            elementIds: g.elementIds.filter(id => !elementIds.includes(id))
+          };
+        }
+        return g;
+      });
+    });
+  }
+
+  private loadGroupsFromStorage(): ObjectGroup[] {
+    try {
+      const data = localStorage.getItem('topos_object_groups');
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error('Ошибка загрузки групп из localStorage:', e);
+      return [];
+    }
   }
 
   private mapInstance: maplibregl.Map | null = null;
@@ -364,6 +453,7 @@ export class TacticalMapService {
   init(map: maplibregl.Map) {
     this.mapInstance = map;
     this.setupSymbolDragging(map);
+    this.setupBoxSelection(map);
 
     map.on('click', (e) => {
       const canvas = map.getCanvas();
@@ -922,6 +1012,7 @@ export class TacticalMapService {
 
   private setupSymbolDragging(map: maplibregl.Map) {
     map.on('mousedown', 'linear_vertices_layer', (e: any) => {
+      if (e.originalEvent && e.originalEvent.shiftKey) return;
       if (e.features && e.features.length > 0) {
         if (e.originalEvent && e.originalEvent.button === 2) {
           e.preventDefault();
@@ -968,6 +1059,7 @@ export class TacticalMapService {
 
     map.on('mousedown', 'tactical_symbols_layer', (e: any) => {
       if (e.originalEvent && e.originalEvent.button === 2) return;
+      if (e.originalEvent && e.originalEvent.shiftKey) return;
       if (e.features && e.features.length > 0 && !this.selectedSymbol() && !this.isDraggingVertex) {
         e.preventDefault();
         this.isDragging = true;
@@ -1121,5 +1213,101 @@ export class TacticalMapService {
         features: this.placedSymbols()
       });
     }
+  }
+
+  private setupBoxSelection(map: maplibregl.Map) {
+    map.boxZoom.disable();
+
+    let startPoint: { x: number; y: number } | null = null;
+    let boxElement: HTMLDivElement | null = null;
+    let isSelecting = false;
+
+    map.on('mousedown', (e: any) => {
+      if (e.originalEvent && e.originalEvent.shiftKey && e.originalEvent.button === 0) {
+        e.preventDefault();
+        map.dragPan.disable();
+
+        startPoint = { x: e.point.x, y: e.point.y };
+        isSelecting = true;
+
+        const container = map.getContainer();
+        boxElement = document.createElement('div');
+        boxElement.style.position = 'absolute';
+        boxElement.style.border = '1.5px dashed #2563eb';
+        boxElement.style.backgroundColor = 'rgba(37, 99, 235, 0.15)';
+        boxElement.style.pointerEvents = 'none';
+        boxElement.style.zIndex = '1000';
+        boxElement.style.left = `${e.point.x}px`;
+        boxElement.style.top = `${e.point.y}px`;
+        boxElement.style.width = '0px';
+        boxElement.style.height = '0px';
+        container.appendChild(boxElement);
+      }
+    });
+
+    map.on('mousemove', (e: any) => {
+      if (isSelecting && startPoint && boxElement) {
+        const currentPoint = e.point;
+        const minX = Math.min(startPoint.x, currentPoint.x);
+        const maxX = Math.max(startPoint.x, currentPoint.x);
+        const minY = Math.min(startPoint.y, currentPoint.y);
+        const maxY = Math.max(startPoint.y, currentPoint.y);
+
+        boxElement.style.left = `${minX}px`;
+        boxElement.style.top = `${minY}px`;
+        boxElement.style.width = `${maxX - minX}px`;
+        boxElement.style.height = `${maxY - minY}px`;
+      }
+    });
+
+    const finishSelection = (e: any) => {
+      if (isSelecting) {
+        isSelecting = false;
+        map.dragPan.enable();
+
+        if (boxElement) {
+          boxElement.remove();
+          boxElement = null;
+        }
+
+        if (startPoint) {
+          const endPoint = e.point || startPoint;
+          const minX = Math.min(startPoint.x, endPoint.x);
+          const maxX = Math.max(startPoint.x, endPoint.x);
+          const minY = Math.min(startPoint.y, endPoint.y);
+          const maxY = Math.max(startPoint.y, endPoint.y);
+
+          if (maxX - minX > 4 || maxY - minY > 4) {
+            const features = map.queryRenderedFeatures(
+              [[minX, minY], [maxX, maxY]],
+              { layers: ['tactical_symbols_layer', 'tactical_lines_layer'] }
+            );
+
+            if (features && features.length > 0) {
+              const selected: any[] = [];
+              const placed = this.placedSymbols();
+
+              features.forEach((f: any) => {
+                const id = f.properties?.['id'];
+                const found = placed.find(s => s.properties?.['id'] === id);
+                if (found && !selected.some(s => s.properties?.['id'] === id)) {
+                  selected.push(found);
+                }
+              });
+
+              this.selectedPlacedSymbols.set(selected);
+              this.selectedPlacedSymbol.set(selected.length > 0 ? selected[selected.length - 1] : null);
+            } else {
+              this.selectedPlacedSymbols.set([]);
+              this.selectedPlacedSymbol.set(null);
+            }
+            this.updateLinearVerticesSource();
+          }
+          startPoint = null;
+        }
+      }
+    };
+
+    map.on('mouseup', finishSelection);
   }
 }

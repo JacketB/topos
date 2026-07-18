@@ -1,5 +1,6 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MapViewModel } from '../../viewmodels/map.viewmodel';
 import { FortificationCalculationService } from '../../services/fortification-calculation.service';
 
@@ -13,6 +14,8 @@ export interface VopTask {
   laborNorm: number; // чел.-ч на единицу
   machNorm: number;  // маш.-ч на единицу
   machType: string;  // ID выбранной техники из списка machDevices
+  earthNorm?: number; // объем грунта на единицу
+  woodNorm?: number;  // расход леса на единицу
 }
 
 export interface MachDevice {
@@ -34,7 +37,7 @@ export interface GanttSegment {
 @Component({
   selector: 'app-fortification-planner',
   standalone: true,
-  imports: [CommonModule, DecimalPipe],
+  imports: [CommonModule, DecimalPipe, FormsModule],
   templateUrl: './fortification-planner.component.html',
   styleUrl: './fortification-planner.component.css',
   host: {
@@ -45,25 +48,88 @@ export class FortificationPlannerComponent {
   readonly vm = inject(MapViewModel);
   readonly fortCalcService = inject(FortificationCalculationService);
 
+  // Вспомогательные методы сохранения/загрузки
+  private loadNumber(key: string, def: number): number {
+    try {
+      const val = localStorage.getItem(key);
+      return val !== null ? parseFloat(val) : def;
+    } catch {
+      return def;
+    }
+  }
+
+  private loadBool(key: string, def: boolean): boolean {
+    try {
+      const val = localStorage.getItem(key);
+      return val !== null ? val === 'true' : def;
+    } catch {
+      return def;
+    }
+  }
+
+  private loadTasks(): VopTask[] {
+    try {
+      const val = localStorage.getItem('topos_planner_tasks');
+      return val ? JSON.parse(val) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private loadDevices(): MachDevice[] {
+    try {
+      const val = localStorage.getItem('topos_planner_devices');
+      if (val) return JSON.parse(val);
+    } catch {}
+    return [
+      { id: 'eov', name: 'ЭОВ-4421 (экскаватор)', type: 'eov', basePerf: 60, currentPerf: 60, efficiency: 0.90, notes: 'Военный одноковшовый экскаватор на шасси КрАЗ-255Б.' },
+      { id: 'pzm', name: 'ПЗМ-2 (землеройная)', type: 'pzm', basePerf: 100, currentPerf: 100, efficiency: 0.85, notes: 'Полковая землеройная машина для отрывки траншей и котлованов.' },
+      { id: 'mdk', name: 'МДК-3 (котлованная)', type: 'mdk', basePerf: 120, currentPerf: 120, efficiency: 0.80, notes: 'Машина для отрывки котлованов под убежища.' },
+      { id: 'bu', name: 'Встроенное БУ (бульдозер)', type: 'bu', basePerf: 30, currentPerf: 30, efficiency: 0.95, notes: 'Встроенное бульдозерное оборудование инженерных машин.' },
+      { id: 'none', name: 'Вручную', type: 'none', basePerf: 1.5, currentPerf: 1.5, efficiency: 1.00, notes: 'Выполнение работ личным составом вручную.' }
+    ];
+  }
+
   // Параметры расчета
-  readonly manpower = signal<number>(20); // По умолчанию 20 чел
-  readonly shifts = signal<number>(2);    // По умолчанию 2 смены
-  readonly soilType = signal<number>(1.0);
-  readonly factorNight = signal<boolean>(false);
-  readonly factorWinter = signal<boolean>(false);
-  readonly workHoursPerDay = signal<number>(24); // Рабочих часов в день (по умолчанию 24)
+  readonly manpower = signal<number>(this.loadNumber('topos_planner_manpower', 20));
+  readonly shifts = signal<number>(this.loadNumber('topos_planner_shifts', 2));
+  readonly soilType = signal<number>(this.loadNumber('topos_planner_soilType', 1.0));
+  readonly factorNight = signal<boolean>(this.loadBool('topos_planner_factorNight', false));
+  readonly factorWinter = signal<boolean>(this.loadBool('topos_planner_factorWinter', false));
+  readonly workHoursPerDay = signal<number>(this.loadNumber('topos_planner_workHoursPerDay', 24));
 
-  // Изначально очереди пустые по требованию пользователя
-  readonly vopTasks = signal<VopTask[]>([]);
+  // Очереди задач
+  readonly vopTasks = signal<VopTask[]>(this.loadTasks());
 
-  // Парк доступной техники с КТГ и производительностью
-  readonly machDevices = signal<MachDevice[]>([
-    { id: 'eov', name: 'ЭОВ-4421 (экскаватор)', type: 'eov', basePerf: 60, currentPerf: 60, efficiency: 0.90, notes: 'Военный одноковшовый экскаватор на шасси КрАЗ-255Б.' },
-    { id: 'pzm', name: 'ПЗМ-2 (землеройная)', type: 'pzm', basePerf: 100, currentPerf: 100, efficiency: 0.85, notes: 'Полковая землеройная машина для отрывки траншей и котлованов.' },
-    { id: 'mdk', name: 'МДК-3 (котлованная)', type: 'mdk', basePerf: 120, currentPerf: 120, efficiency: 0.80, notes: 'Машина для отрывки котлованов под убежища.' },
-    { id: 'bu', name: 'Встроенное БУ (бульдозер)', type: 'bu', basePerf: 30, currentPerf: 30, efficiency: 0.95, notes: 'Встроенное бульдозерное оборудование инженерных машин.' },
-    { id: 'none', name: 'Вручную', type: 'none', basePerf: 1.5, currentPerf: 1.5, efficiency: 1.00, notes: 'Выполнение работ личным составом вручную.' }
-  ]);
+  // Парк доступной техники
+  readonly machDevices = signal<MachDevice[]>(this.loadDevices());
+
+  constructor() {
+    effect(() => {
+      localStorage.setItem('topos_planner_manpower', String(this.manpower()));
+    });
+    effect(() => {
+      localStorage.setItem('topos_planner_shifts', String(this.shifts()));
+    });
+    effect(() => {
+      localStorage.setItem('topos_planner_soilType', String(this.soilType()));
+    });
+    effect(() => {
+      localStorage.setItem('topos_planner_factorNight', String(this.factorNight()));
+    });
+    effect(() => {
+      localStorage.setItem('topos_planner_factorWinter', String(this.factorWinter()));
+    });
+    effect(() => {
+      localStorage.setItem('topos_planner_workHoursPerDay', String(this.workHoursPerDay()));
+    });
+    effect(() => {
+      localStorage.setItem('topos_planner_tasks', JSON.stringify(this.vopTasks()));
+    });
+    effect(() => {
+      localStorage.setItem('topos_planner_devices', JSON.stringify(this.machDevices()));
+    });
+  }
 
   // Добавление новой машины в парк
   addDevice() {
@@ -162,7 +228,9 @@ export class FortificationPlannerComponent {
       qty: 1,
       laborNorm: 5.0,
       machNorm: 1.0,
-      machType: 'eov'
+      machType: 'eov',
+      earthNorm: 15,
+      woodNorm: 1.5
     });
     this.vopTasks.set(list);
   }
@@ -198,11 +266,26 @@ export class FortificationPlannerComponent {
     }
 
     let bmpCount = 0;
+    let bmpEarth = 0;
+
     let trenchLength = 0;
+    let trenchEarth = 0;
+    let trenchWood = 0;
+
     let cellCount = 0;
+    let cellEarth = 0;
+
     let commLength = 0;
-    let blindageCount = 0;
+    let commEarth = 0;
+    let commWood = 0;
+
     let shelterCount = 0;
+    let shelterEarth = 0;
+    let shelterWood = 0;
+
+    let blindageCount = 0;
+    let blindageEarth = 0;
+    let blindageWood = 0;
 
     mapItems.forEach(item => {
       if (!item.properties) return;
@@ -210,43 +293,162 @@ export class FortificationPlannerComponent {
       const key = isLinear ? item.properties.lineType : item.properties.symbol;
       if (!key) return;
 
+      const norm = this.fortCalcService.calculateFeatureNorms(item);
+      if (!norm) return;
+
       if (isLinear) {
         const length = this.fortCalcService.calculateLineLength(item.properties.origCoords || []);
-        if (key === 'trench') trenchLength += length;
-        else if (key === 'comm_open' || key === 'comm_covered') commLength += length;
+        if (key === 'trench') {
+          trenchLength += length;
+          trenchEarth += norm.earthVolume;
+          trenchWood += norm.woodVol || 0;
+        } else if (key === 'comm_open' || key === 'comm_covered') {
+          commLength += length;
+          commEarth += norm.earthVolume;
+          commWood += norm.woodVol || 0;
+        }
       } else {
-        if (key === 'fort_bmp_trench' || key === 'fort_tank_trench') bmpCount += 1;
-        else if (key === 'fort_trench_shelter') cellCount += 1;
-        else if (key === 'fort_blindage' || key === 'blindazh' || key === 'blindazh_zhb') blindageCount += 1;
-        else if (key === 'schel_per1' || key === 'fort_knp' || key === 'fort_dzot' || key === 'fort_dot') shelterCount += 1;
+        if (key === 'fort_bmp_trench' || key === 'fort_tank_trench') {
+          bmpCount += 1;
+          bmpEarth += norm.earthVolume;
+        } else if (key === 'fort_trench_shelter') {
+          cellCount += 1;
+          cellEarth += norm.earthVolume;
+        } else if (key === 'fort_blindage' || key === 'blindazh' || key === 'blindazh_zhb') {
+          blindageCount += 1;
+          blindageEarth += norm.earthVolume;
+          blindageWood += norm.woodVol || 0;
+        } else if (key === 'schel_per1' || key === 'fort_knp' || key === 'fort_dzot' || key === 'fort_dot') {
+          shelterCount += 1;
+          shelterEarth += norm.earthVolume;
+          shelterWood += norm.woodVol || 0;
+        }
       }
     });
 
-    // Инициализируем массив 7 армейскими задачами ВОП
+    const cellTaskName = 'Устройство одиночных стрелковых ячеек';
+    // Если на карте есть траншеи, но ячейки точечно не расставлены, по умолчанию в план вставляется 100 ячеек по ТЗ
+    const finalCellCount = cellCount > 0 ? cellCount : (trenchLength > 0 ? 100 : 0);
+
+    const bmpEarthNorm = bmpCount > 0 ? (bmpEarth / bmpCount) : 35;
+    const trenchEarthNorm = trenchLength > 0 ? (trenchEarth / trenchLength) : 0.8;
+    const trenchWoodNorm = trenchLength > 0 ? (trenchWood / trenchLength) : 0.0;
+    const cellEarthNorm = cellCount > 0 ? (cellEarth / cellCount) : 1.4;
+    const commEarthNorm = commLength > 0 ? (commEarth / commLength) : 0.8;
+    const commWoodNorm = commLength > 0 ? (commWood / commLength) : 0.0;
+    const shelterEarthNorm = shelterCount > 0 ? (shelterEarth / shelterCount) : 15;
+    const shelterWoodNorm = shelterCount > 0 ? (shelterWood / shelterCount) : 3.5;
+    const blindageEarthNorm = blindageCount > 0 ? (blindageEarth / blindageCount) : 12;
+    const blindageWoodNorm = blindageCount > 0 ? (blindageWood / blindageCount) : 2.1;
+
     const tasks: VopTask[] = [
-      { id: 1, phase: 1, name: 'Отрывка основных окопов БМП (танков)', objectName: '1, 2, 3 мсо', unit: 'шт.', qty: Math.ceil(bmpCount / 2), laborNorm: 6.0, machNorm: 1.0, machType: 'eov' },
-      { id: 2, phase: 1, name: 'Отрывка траншей', objectName: '1, 2, 3 мсо', unit: 'м', qty: Math.round(trenchLength), laborNorm: 0.3, machNorm: 0.013, machType: 'eov' },
-      { id: 3, phase: 1, name: 'Устройство стрелковых ячеек в траншее', objectName: '1, 2, 3 мсо', unit: 'шт.', qty: cellCount, laborNorm: 2.5, machNorm: 0, machType: 'none' },
-      { id: 4, phase: 2, name: 'Отрыв запасных окопов БМП (танков)', objectName: '1, 2, 3 мсо', unit: 'шт.', qty: Math.floor(bmpCount / 2), laborNorm: 6.0, machNorm: 1.0, machType: 'eov' },
-      { id: 5, phase: 2, name: 'Отрыв ходов сообщения', objectName: 'мсв', unit: 'м', qty: Math.round(commLength), laborNorm: 0.3, machNorm: 0.013, machType: 'eov' },
-      { id: 6, phase: 2, name: 'Отрыв котлована под убежище на взвод', objectName: 'мсв', unit: 'шт.', qty: shelterCount, laborNorm: 12.0, machNorm: 2.0, machType: 'mdk' },
-      { id: 7, phase: 2, name: 'Отрыв котлована под блиндаж на отделение', objectName: 'мсв', unit: 'шт.', qty: blindageCount, laborNorm: 8.0, machNorm: 1.0, machType: 'eov' }
+      { 
+        id: 1, 
+        phase: 1, 
+        name: 'Отрывка основных окопов БМП (танков)', 
+        objectName: '1, 2, 3 мсо', 
+        unit: 'шт.', 
+        qty: Math.ceil(bmpCount / 2), 
+        laborNorm: parseFloat((6.0 * (bmpEarthNorm / 35)).toFixed(2)), 
+        machNorm: parseFloat((1.0 * (bmpEarthNorm / 35)).toFixed(2)), 
+        machType: 'eov',
+        earthNorm: parseFloat(bmpEarthNorm.toFixed(2)),
+        woodNorm: 0
+      },
+      { 
+        id: 2, 
+        phase: 1, 
+        name: 'Отрывка траншей', 
+        objectName: '1, 2, 3 мсо', 
+        unit: 'м', 
+        qty: Math.round(trenchLength), 
+        laborNorm: parseFloat((0.3 * (trenchEarthNorm / 0.8)).toFixed(3)), 
+        machNorm: parseFloat((0.013 * (trenchEarthNorm / 0.8)).toFixed(4)), 
+        machType: 'eov',
+        earthNorm: parseFloat(trenchEarthNorm.toFixed(3)),
+        woodNorm: parseFloat(trenchWoodNorm.toFixed(4))
+      },
+      { 
+        id: 3, 
+        phase: 1, 
+        name: cellTaskName, 
+        objectName: '1, 2, 3 мсо', 
+        unit: 'шт.', 
+        qty: finalCellCount, 
+        laborNorm: 2.5, 
+        machNorm: 0, 
+        machType: 'none',
+        earthNorm: parseFloat(cellEarthNorm.toFixed(2)),
+        woodNorm: 0
+      },
+      { 
+        id: 4, 
+        phase: 2, 
+        name: 'Отрыв запасных окопов БМП (танков)', 
+        objectName: '1, 2, 3 мсо', 
+        unit: 'шт.', 
+        qty: Math.floor(bmpCount / 2), 
+        laborNorm: parseFloat((6.0 * (bmpEarthNorm / 35)).toFixed(2)), 
+        machNorm: parseFloat((1.0 * (bmpEarthNorm / 35)).toFixed(2)), 
+        machType: 'eov',
+        earthNorm: parseFloat(bmpEarthNorm.toFixed(2)),
+        woodNorm: 0
+      },
+      { 
+        id: 5, 
+        phase: 2, 
+        name: 'Отрыв ходов сообщения', 
+        objectName: 'мсв', 
+        unit: 'м', 
+        qty: Math.round(commLength), 
+        laborNorm: parseFloat((0.3 * (commEarthNorm / 0.8)).toFixed(3)), 
+        machNorm: parseFloat((0.013 * (commEarthNorm / 0.8)).toFixed(4)), 
+        machType: 'eov',
+        earthNorm: parseFloat(commEarthNorm.toFixed(3)),
+        woodNorm: parseFloat(commWoodNorm.toFixed(4))
+      },
+      { 
+        id: 6, 
+        phase: 2, 
+        name: 'Отрыв котлована под убежище на взвод', 
+        objectName: 'мсв', 
+        unit: 'шт.', 
+        qty: shelterCount, 
+        laborNorm: parseFloat((12.0 * (shelterEarthNorm / 15)).toFixed(2)), 
+        machNorm: parseFloat((2.0 * (shelterEarthNorm / 15)).toFixed(2)), 
+        machType: 'mdk',
+        earthNorm: parseFloat(shelterEarthNorm.toFixed(2)),
+        woodNorm: parseFloat(shelterWoodNorm.toFixed(2))
+      },
+      { 
+        id: 7, 
+        phase: 2, 
+        name: 'Отрыв котлована под блиндаж на отделение', 
+        objectName: 'мсв', 
+        unit: 'шт.', 
+        qty: blindageCount, 
+        laborNorm: parseFloat((8.0 * (blindageEarthNorm / 12)).toFixed(2)), 
+        machNorm: parseFloat((1.0 * (blindageEarthNorm / 12)).toFixed(2)), 
+        machType: 'eov',
+        earthNorm: parseFloat(blindageEarthNorm.toFixed(2)),
+        woodNorm: parseFloat(blindageWoodNorm.toFixed(2))
+      }
     ];
 
-    // Импортируем только те типы сооружений, которые реально расставлены на карте (qty > 0)
     this.vopTasks.set(tasks.filter(t => t.qty > 0));
   }
 
-  // Изменение количества через кнопки
-  changeQty(index: number, delta: number) {
-    const list = [...this.vopTasks()];
-    const item = list[index];
-    if (!item) return;
-    if (item.unit === 'м') {
-      item.qty = Math.max(0, item.qty + delta * 50);
-    } else {
-      item.qty = Math.max(0, item.qty + delta);
-    }
+  // Изменение количества через кнопки по ID сооружения
+  changeQty(id: number, delta: number) {
+    const list = this.vopTasks().map(item => {
+      if (item.id === id) {
+        const newQty = item.unit === 'м'
+          ? Math.max(0, item.qty + delta * 50)
+          : Math.max(0, item.qty + delta);
+        return { ...item, qty: newQty };
+      }
+      return item;
+    });
     this.vopTasks.set(list);
   }
 
@@ -383,36 +585,39 @@ export class FortificationPlannerComponent {
       });
     });
 
+    // Присваиваем сквозной порядковый номер (displayIndex) для красивой нумерации
+    rowsCalculations.forEach((row, idx) => {
+      row.displayIndex = idx + 1;
+    });
+
     // Сводные объемы и календарные времена
     const totalEarth = rowsCalculations.reduce((sum, r) => {
-      let vol = 0;
-      const nameLower = r.name.toLowerCase();
-      if (nameLower.includes('окоп') && (nameLower.includes('бмп') || nameLower.includes('танк'))) {
-        vol = r.qty * 35;
-      } else if (nameLower.includes('ячейк')) {
-        vol = r.qty * 1.4;
-      } else if (nameLower.includes('транш') || nameLower.includes('ход')) {
-        vol = r.qty * 0.8;
-      } else if (nameLower.includes('убежищ')) {
-        vol = r.qty * 15;
-      } else if (nameLower.includes('блиндаж')) {
-        vol = r.qty * 12;
-      } else {
-        vol = r.qty * 1.5; // Дефолтный объем
-      }
-      return sum + vol;
+      const earthNorm = r.earthNorm !== undefined ? r.earthNorm : (
+        r.name.toLowerCase().includes('окоп') ? 35 : (
+          r.name.toLowerCase().includes('ячейк') ? 1.4 : (
+            r.name.toLowerCase().includes('транш') || r.name.toLowerCase().includes('ход') ? 0.8 : (
+              r.name.toLowerCase().includes('убежищ') ? 15 : (
+                r.name.toLowerCase().includes('блиндаж') ? 12 : 1.5
+              )
+            )
+          )
+        )
+      );
+      return sum + (r.qty * earthNorm);
     }, 0);
 
     const totalLaborHrs = rowsCalculations.reduce((sum, r) => sum + r.laborTotal, 0);
     const totalMachHours = rowsCalculations.reduce((sum, r) => sum + r.machTotal, 0);
     
     const totalWood = rowsCalculations.reduce((sum, r) => {
-      let wood = 0;
-      const nameLower = r.name.toLowerCase();
-      if (nameLower.includes('блиндаж')) wood = r.qty * 2.1;
-      else if (nameLower.includes('убежищ')) wood = r.qty * 3.5;
-      else if (nameLower.includes('транш') || nameLower.includes('ход')) wood = r.qty * 0.04;
-      return sum + wood;
+      const woodNorm = r.woodNorm !== undefined ? r.woodNorm : (
+        r.name.toLowerCase().includes('блиндаж') ? 2.1 : (
+          r.name.toLowerCase().includes('убежищ') ? 3.5 : (
+            r.name.toLowerCase().includes('транш') || r.name.toLowerCase().includes('ход') ? 0.04 : 0.0
+          )
+        )
+      );
+      return sum + (r.qty * woodNorm);
     }, 0);
 
     const totalDurationCal = Math.max(...rowsCalculations.map(r => r.manEndCal), 0);
@@ -506,4 +711,13 @@ export class FortificationPlannerComponent {
     }
     return null;
   });
+
+  getActiveGroupName(): string {
+    const activeId = this.vm.activeCalculationGroupId();
+    if (activeId === 'all') {
+      return 'Все объекты на карте';
+    }
+    const group = this.vm.objectGroups().find((g: any) => g.id === activeId);
+    return group ? group.name : 'Неизвестный район';
+  }
 }

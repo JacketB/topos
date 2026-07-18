@@ -9,6 +9,7 @@ import { ToogleMap } from './components/toogle-map/toogle-map';
 
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { FortificationPlannerComponent } from './components/fortification-planner/fortification-planner.component';
+import { MapLayersPanelComponent } from './components/map-layers-panel/map-layers-panel.component';
 
 @Component({
   selector: 'app-map-view',
@@ -21,7 +22,8 @@ import { FortificationPlannerComponent } from './components/fortification-planne
     ToogleMap,
     DecimalPipe,
     DragDropModule,
-    FortificationPlannerComponent
+    FortificationPlannerComponent,
+    MapLayersPanelComponent
   ],
   templateUrl: './map-view.html',
   styleUrl: './map-view.css',

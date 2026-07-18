@@ -139,7 +139,7 @@
             </div>
           </div>
 
-          @if (placed.properties['lineType'] === 'trench' || placed.properties['lineType'] === 'comm_open') {
+          @if (placed.properties['lineType'] === 'trench' || placed.properties['lineType'] === 'comm_open' || placed.properties['lineType'] === 'comm_covered') {
             <div class="vs-grid-row">
               <span class="vs-grid-label">Профиль</span>
               <div class="vs-grid-value">
@@ -156,21 +156,55 @@
             </div>
 
             <div class="vs-grid-row">
-              <span class="vs-grid-label">Крутости рва</span>
+              <span class="vs-grid-label">Глубина (см)</span>
               <div class="vs-grid-value">
-                <select 
-                  class="vs-select" 
-                  style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid var(--color-border); border-radius: 4px; background: white; color: var(--color-text-main); font-weight: 600; outline: none;"
-                  [value]="placed.properties['fortRevetment'] || 'none'"
-                  (change)="onPlacedRevetmentChange($event)"
-                >
-                  <option value="none">Без укрепления (устойчивый грунт)</option>
-                  <option value="wood">Жердевая одежда (круглый лес)</option>
-                  <option value="board">Дощатая одежда / горбыль</option>
-                  <option value="wattle">Одежда из плетня (хворост)</option>
-                </select>
+                <input 
+                  type="number" 
+                  class="vs-input" 
+                  style="border: 1px solid var(--color-border); border-radius: 4px; background: white; padding: 4px 6px; height: auto;"
+                  [value]="placed.properties['fortDepth'] !== undefined ? placed.properties['fortDepth'] : (placed.properties['lineType'] === 'comm_covered' || placed.properties['fortProfile'] === 'full' ? 150 : 110)" 
+                  (input)="onPlacedDepthChange($event)"
+                  min="30"
+                  max="300"
+                  placeholder="Глубина..."
+                />
               </div>
             </div>
+
+            <div class="vs-grid-row">
+              <span class="vs-grid-label">Ширина (см)</span>
+              <div class="vs-grid-value">
+                <input 
+                  type="number" 
+                  class="vs-input" 
+                  style="border: 1px solid var(--color-border); border-radius: 4px; background: white; padding: 4px 6px; height: auto;"
+                  [value]="placed.properties['fortWidth'] !== undefined ? placed.properties['fortWidth'] : (placed.properties['lineType'] === 'comm_covered' || placed.properties['fortProfile'] === 'full' ? 110 : 90)" 
+                  (input)="onPlacedWidthChange($event)"
+                  min="40"
+                  max="400"
+                  placeholder="Ширина..."
+                />
+              </div>
+            </div>
+
+            @if (placed.properties['lineType'] !== 'comm_covered') {
+              <div class="vs-grid-row">
+                <span class="vs-grid-label">Крутости рва</span>
+                <div class="vs-grid-value">
+                  <select 
+                    class="vs-select" 
+                    style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid var(--color-border); border-radius: 4px; background: white; color: var(--color-text-main); font-weight: 600; outline: none;"
+                    [value]="placed.properties['fortRevetment'] || 'none'"
+                    (change)="onPlacedRevetmentChange($event)"
+                  >
+                    <option value="none">Без укрепления (устойчивый грунт)</option>
+                    <option value="wood">Жердевая одежда (круглый лес)</option>
+                    <option value="board">Дощатая одежда / горбыль</option>
+                    <option value="wattle">Одежда из плетня (хворост)</option>
+                  </select>
+                </div>
+              </div>
+            }
           }
 
           @if (placed.properties['lineType'] === 'march_route') {

@@ -207,35 +207,65 @@ export class FortificationCalculationService {
       let polesCountPerMeter = norm.polesCount || 0;
       let noteDetails = norm.notes || '';
 
-      if (lineType === 'trench' || lineType === 'comm_open') {
+      if (lineType === 'trench' || lineType === 'comm_open' || lineType === 'comm_covered') {
         const profile = props.fortProfile || 'main'; // 'main' | 'full'
         const revetment = props.fortRevetment || 'none'; // 'none' | 'wood' | 'board' | 'wattle'
 
-        const profileName = profile === 'full' ? 'полного профиля (150 см)' : 'основного профиля (110 см)';
-        let revetmentName = 'без одежды крутостей';
+        // Если пользователь ввел индивидуальные размеры
+        const customDepth = props.fortDepth;
+        const customWidth = props.fortWidth;
 
-        if (profile === 'full') {
-          earthVolumePerMeter = 1.2;
-          laborHrsPerMeter = 1.6;
+        let profileName = '';
+        if (customDepth !== undefined && customWidth !== undefined) {
+          const depthM = customDepth / 100;
+          const widthM = customWidth / 100;
+          // Трапецеидальное сечение: (ширина_по_верху + ширина_по_дну_0.5м) / 2 * глубина
+          earthVolumePerMeter = (widthM + 0.5) / 2 * depthM;
+          // Трудозатраты масштабируются по объему с учетом повышающего коэффициента на глубину отрывки
+          laborHrsPerMeter = earthVolumePerMeter * (1 + (depthM - 1.1) * 0.8);
+          profileName = `произвольного профиля (гл. ${customDepth} см, шир. ${customWidth} см)`;
         } else {
-          earthVolumePerMeter = 0.8;
-          laborHrsPerMeter = 0.8;
+          // По умолчанию для крытого хода сообщения берется полный профиль 150 см
+          const isFullByDefault = (lineType === 'comm_covered' || profile === 'full');
+          profileName = isFullByDefault ? 'полного профиля (150 см)' : 'основного профиля (110 см)';
+          if (isFullByDefault) {
+            earthVolumePerMeter = 1.2;
+            laborHrsPerMeter = 1.6;
+          } else {
+            earthVolumePerMeter = 0.8;
+            laborHrsPerMeter = 0.8;
+          }
         }
 
-        if (revetment === 'wood') {
-          woodVolPerMeter += 0.06;
-          laborHrsPerMeter += 1.5;
-          revetmentName = 'с жердевой одеждой крутостей';
-        } else if (revetment === 'board') {
-          woodVolPerMeter += 0.04;
-          laborHrsPerMeter += 1.2;
-          revetmentName = 'с одеждой крутостей из досок/горбылей';
-        } else if (revetment === 'wattle') {
-          laborHrsPerMeter += 0.6;
-          revetmentName = 'с одеждой крутостей из плетня';
+        let revetmentName = '';
+
+        if (lineType === 'comm_covered') {
+          // Для крытого хода сообщения расход леса и проволоки фиксирован, а к трудозатратам добавляются часы на перекрытие
+          woodVolPerMeter = 0.23;
+          wireKgPerMeter = 0.15;
+          laborHrsPerMeter += 1.2; // Дополнительные часы на укладку одежды крутостей и перекрытия
+          revetmentName = 'с перекрытием и одеждой крутостей';
+        } else {
+          revetmentName = 'без одежды крутостей';
+          if (revetment === 'wood') {
+            woodVolPerMeter += 0.06;
+            laborHrsPerMeter += 1.5;
+            revetmentName = 'с жердевой одеждой крутостей';
+          } else if (revetment === 'board') {
+            woodVolPerMeter += 0.04;
+            laborHrsPerMeter += 1.2;
+            revetmentName = 'с одеждой крутостей из досок/горбылей';
+          } else if (revetment === 'wattle') {
+            laborHrsPerMeter += 0.6;
+            revetmentName = 'с одеждой крутостей из плетня';
+          }
         }
 
-        const typeName = lineType === 'trench' ? 'Траншея' : 'Открытый ход сообщения';
+        let typeName = '';
+        if (lineType === 'trench') typeName = 'Траншея';
+        else if (lineType === 'comm_open') typeName = 'Открытый ход сообщения';
+        else if (lineType === 'comm_covered') typeName = 'Крытый ход сообщения';
+
         noteDetails = `${typeName} ${profileName}, ${revetmentName}.`;
       }
 
