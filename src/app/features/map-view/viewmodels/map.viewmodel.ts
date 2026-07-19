@@ -144,11 +144,16 @@ export class MapViewModel {
       this.playbackService.reset();
     });
 
-    // Автоматическое открытие панели слоев и районов при выделении объектов
+    // Автоматически закрываем открытые попапы при открытии правого или левого сайдбара (выбор объекта, шаблона, начало рисования или открытия слоев)
     effect(() => {
-      const selected = this.selectedPlacedSymbols();
-      if (selected.length > 0) {
-        this.isLayersPanelOpen.set(true);
+      const isAnySidebarOpen = !!(
+        this.selectedPlacedSymbol() || 
+        this.selectedSymbol() || 
+        this.activeLineMode() !== 'none' ||
+        this.isLayersPanelOpen()
+      );
+      if (isAnySidebarOpen) {
+        this.closeAllPopupsExcept();
       }
     });
 
@@ -201,11 +206,20 @@ export class MapViewModel {
     });
   }
 
+  closeAllPopupsExcept(except?: 'areaReport' | 'marchOrder' | 'fortPlanner' | 'imageOverlay' | 'categoryDropdown' | 'quickLayers' | 'toggleMap' | 'scale') {
+    if (except !== 'areaReport') this.isAreaReportOpen.set(false);
+    if (except !== 'marchOrder') this.isMarchOrderOpen.set(false);
+    if (except !== 'fortPlanner') this.isFortPlannerOpen.set(false);
+    if (except !== 'imageOverlay') this.isImageOverlayPanelOpen.set(false);
+    if (except !== 'categoryDropdown') this.activeCategoryDropdown.set(null);
+    if (except !== 'quickLayers') this.isQuickLayersMenuOpen.set(false);
+    if (except !== 'toggleMap') this.isToogleMapMenuOpen.set(false);
+    if (except !== 'scale') this.isScaleMenuOpen.set(false);
+  }
+
   toggleAreaReport() {
     if (!this.isAreaReportOpen()) {
-      this.isMarchOrderOpen.set(false);
-      this.isFortPlannerOpen.set(false);
-      this.isImageOverlayPanelOpen.set(false);
+      this.closeAllPopupsExcept('areaReport');
     }
     this.isAreaReportOpen.update(v => !v);
   }
@@ -213,11 +227,8 @@ export class MapViewModel {
   readonly isMarchOrderOpen = signal<boolean>(false);
 
   toggleMarchOrder() {
-    // Взаимное закрытие: при открытии походного порядка закрываем ведомость района, планировщик и оверлеи изображений
     if (!this.isMarchOrderOpen()) {
-      this.isAreaReportOpen.set(false);
-      this.isFortPlannerOpen.set(false);
-      this.isImageOverlayPanelOpen.set(false);
+      this.closeAllPopupsExcept('marchOrder');
     }
     this.isMarchOrderOpen.update(v => !v);
   }
@@ -226,9 +237,7 @@ export class MapViewModel {
 
   toggleFortPlanner() {
     if (!this.isFortPlannerOpen()) {
-      this.isAreaReportOpen.set(false);
-      this.isMarchOrderOpen.set(false);
-      this.isImageOverlayPanelOpen.set(false);
+      this.closeAllPopupsExcept('fortPlanner');
     }
     this.isFortPlannerOpen.update(v => !v);
   }
@@ -237,9 +246,7 @@ export class MapViewModel {
 
   toggleImageOverlayPanel() {
     if (!this.isImageOverlayPanelOpen()) {
-      this.isAreaReportOpen.set(false);
-      this.isMarchOrderOpen.set(false);
-      this.isFortPlannerOpen.set(false);
+      this.closeAllPopupsExcept('imageOverlay');
     }
     this.isImageOverlayPanelOpen.update(v => !v);
   }
@@ -250,6 +257,9 @@ export class MapViewModel {
     if (this.activeCategoryDropdown() === categoryId) {
       this.activeCategoryDropdown.set(null);
     } else {
+      if (categoryId) {
+        this.closeAllPopupsExcept('categoryDropdown');
+      }
       this.activeCategoryDropdown.set(categoryId);
     }
   }
@@ -386,8 +396,7 @@ export class MapViewModel {
   toggleQuickLayersMenu() {
     const nextVal = !this.isQuickLayersMenuOpen();
     if (nextVal) {
-      this.isScaleMenuOpen.set(false);
-      this.isToogleMapMenuOpen.set(false);
+      this.closeAllPopupsExcept('quickLayers');
     }
     this.isQuickLayersMenuOpen.set(nextVal);
   }
@@ -395,8 +404,7 @@ export class MapViewModel {
   toggleToogleMapMenu() {
     const nextVal = !this.isToogleMapMenuOpen();
     if (nextVal) {
-      this.isScaleMenuOpen.set(false);
-      this.isQuickLayersMenuOpen.set(false);
+      this.closeAllPopupsExcept('toggleMap');
     }
     this.isToogleMapMenuOpen.set(nextVal);
   }
@@ -429,8 +437,7 @@ export class MapViewModel {
     if (event) event.stopPropagation();
     const nextVal = !this.isScaleMenuOpen();
     if (nextVal) {
-      this.isQuickLayersMenuOpen.set(false);
-      this.isToogleMapMenuOpen.set(false);
+      this.closeAllPopupsExcept('scale');
     }
     this.isScaleMenuOpen.set(nextVal);
   }
