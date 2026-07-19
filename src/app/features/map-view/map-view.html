@@ -517,6 +517,21 @@
             </div>
 
             <div class="fort-report-body">
+              <!-- Селектор района для расчетов -->
+              <div class="fort-report-selector-wrapper">
+                <label class="fort-report-selector-label">Район для расчета ведомости:</label>
+                <select 
+                  class="fort-report-selector-select" 
+                  [ngModel]="vm.activeCalculationGroupId()" 
+                  (ngModelChange)="vm.activeCalculationGroupId.set($event)"
+                >
+                  <option value="all">Все объекты на карте ({{ vm.placedSymbols().length }} шт.)</option>
+                  @for (group of vm.objectGroups(); track group.id) {
+                    <option [value]="group.id">{{ group.name }} ({{ group.elementIds.length }} шт.)</option>
+                  }
+                </select>
+              </div>
+
               @if (vm.placedFortificationsCount() === 0) {
                 <div class="fort-report-empty">
                   <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -572,27 +587,52 @@
                     </div>
                   }
 
-                  @if (report.machinerySummary.length > 0 || report.totalPolesCount > 0 || report.totalMetalKg > 0) {
-                    <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
-                      <h4 style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 0 0 8px 0; letter-spacing: 0.5px;">Техника и детали</h4>
-                      <ul style="font-size: 11px; margin: 0; padding-left: 16px; color: #1e293b; display: flex; flex-direction: column; gap: 4px; list-style-type: square;">
-                        @if (report.totalPolesCount > 0) {
-                          <li>Колья: <strong>{{ report.totalPolesCount }}</strong> шт.</li>
-                        }
-                        @if (report.totalMetalKg > 0) {
-                          <li>Металл/СПС: <strong>{{ report.totalMetalKg }}</strong> кг</li>
-                        }
-                        @for (m of report.machinerySummary; track m.type) {
-                          <li>{{ m.type }}: <strong>{{ m.hours }}</strong> маш.-ч</li>
-                        }
-                      </ul>
+                  @if (report.machinerySummary.length > 0 || report.totalPolesCount > 0 || report.totalMetalKg > 0 || report.totalBoardsVol > 0 || report.totalWireViazKg > 0 || report.totalMasNetSq > 0 || report.totalTrapsM > 0 || report.totalDoorsCount > 0) {
+                    <div style="flex: 1.5; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+                      <h4 style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 0 0 8px 0; letter-spacing: 0.5px;">Материалы и Техника</h4>
+                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #1e293b;">
+                        <ul style="margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; list-style-type: square;">
+                          @if (report.totalBoardsVol > 0) {
+                            <li>Доски обшивки: <strong>{{ report.totalBoardsVol | number:'1.2-2' }}</strong> м³</li>
+                          }
+                          @if (report.totalPostsCount > 0) {
+                            <li>Стойки обшивки: <strong>{{ report.totalPostsCount }}</strong> шт.</li>
+                          }
+                          @if (report.totalWireViazKg > 0) {
+                            <li>Вязальная проволока: <strong>{{ report.totalWireViazKg | number:'1.1-1' }}</strong> кг</li>
+                          }
+                          @if (report.totalPolesCount > 0) {
+                            <li>Колья заграждений: <strong>{{ report.totalPolesCount }}</strong> шт.</li>
+                          }
+                          @if (report.totalMetalKg > 0) {
+                            <li>Металл/СПС: <strong>{{ report.totalMetalKg }}</strong> кг</li>
+                          }
+                        </ul>
+                        <ul style="margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; list-style-type: square;">
+                          @if (report.totalMasNetSq > 0) {
+                            <li>Маскиров. сети МКТ: <strong>{{ report.totalMasNetSq }}</strong> м²</li>
+                          }
+                          @if (report.totalTrapsM > 0) {
+                            <li>Деревянные трапы: <strong>{{ report.totalTrapsM }}</strong> п.м.</li>
+                          }
+                          @if (report.totalDoorsCount > 0) {
+                            <li>Двери БД-50: <strong>{{ report.totalDoorsCount }}</strong> шт.</li>
+                          }
+                          @if (report.totalStovesCount > 0) {
+                            <li>Полевые печи: <strong>{{ report.totalStovesCount }}</strong> шт.</li>
+                          }
+                          @for (m of report.machinerySummary; track m.type + '_' + $index) {
+                            <li>{{ m.type }}: <strong>{{ m.hours }}</strong> маш.-ч</li>
+                          }
+                        </ul>
+                      </div>
                     </div>
                   }
                   
                   <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
                     <h4 style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 0 0 8px 0; letter-spacing: 0.5px;">Состав сооружений</h4>
                     <ul style="font-size: 11px; margin: 0; padding-left: 16px; color: #1e293b; display: flex; flex-direction: column; gap: 4px; list-style-type: square;">
-                      @for (el of report.elementsList; track el.name) {
+                      @for (el of report.elementsList; track el.name + '_' + $index) {
                         <li>{{ el.name }}: <strong>{{ el.count }}</strong> шт.</li>
                       }
                     </ul>
@@ -614,13 +654,44 @@
                         </tr>
                       </thead>
                       <tbody>
-                        @for (item of report.items; track item.name) {
+                        @for (item of report.items; track item.id) {
                           <tr>
                             <td style="font-weight: 600; white-space: nowrap;">{{ item.type }}</td>
                             <td style="color: #64748b; font-style: italic; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ item.name || '—' }}</td>
-                            <td style="color: #475569; font-size: 11px;">{{ item.notes || '—' }}</td>
-                            <td style="text-align: right; font-weight: 700; color: #2563eb; white-space: nowrap;">{{ item.earth }} м³</td>
-                            <td style="text-align: right; font-weight: 700; color: #10b981; white-space: nowrap;">{{ item.labor }} ч</td>
+                            <td style="color: #475569; font-size: 11px;">
+                              <div>{{ item.notes || '—' }}</div>
+                              <div style="font-size: 10px; color: #64748b; margin-top: 4px; line-height: 1.4; font-family: monospace;">
+                                @if (item.cleanVolume && item.cleanVolume > 0) {
+                                  <span>ручная зачистка: <strong>{{ item.cleanVolume }}</strong> м³ | </span>
+                                }
+                                @if (item.woodVol && item.woodVol > 0) {
+                                  <span>круглый лес: <strong>{{ item.woodVol }}</strong> м³ | </span>
+                                }
+                                @if (item.boardsVol && item.boardsVol > 0) {
+                                  <span>доски: <strong>{{ item.boardsVol }}</strong> м³ | </span>
+                                }
+                                @if (item.postsCount && item.postsCount > 0) {
+                                  <span>стойки: <strong>{{ item.postsCount }}</strong> шт | </span>
+                                }
+                                @if (item.wireViazKg && item.wireViazKg > 0) {
+                                  <span>вязальная проволока: <strong>{{ item.wireViazKg }}</strong> кг | </span>
+                                }
+                                @if (item.masNetSq && item.masNetSq > 0) {
+                                  <span>маскировочные сети: <strong>{{ item.masNetSq }}</strong> м² | </span>
+                                }
+                                @if (item.trapsM && item.trapsM > 0) {
+                                  <span>трапы: <strong>{{ item.trapsM }}</strong> п.м. | </span>
+                                }
+                                @if (item.doorsCount && item.doorsCount > 0) {
+                                  <span>двери БД-50: <strong>{{ item.doorsCount }}</strong> шт | </span>
+                                }
+                                @if (item.stovesCount && item.stovesCount > 0) {
+                                  <span>печи: <strong>{{ item.stovesCount }}</strong> шт</span>
+                                }
+                              </div>
+                            </td>
+                            <td style="text-align: right; font-weight: 700; color: #2563eb; white-space: nowrap;">{{ item.earthVolume }} м³</td>
+                            <td style="text-align: right; font-weight: 700; color: #10b981; white-space: nowrap;">{{ item.laborHrs }} ч</td>
                           </tr>
                         }
                       </tbody>

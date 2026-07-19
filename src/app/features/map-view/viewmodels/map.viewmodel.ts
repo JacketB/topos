@@ -308,11 +308,20 @@ export class MapViewModel {
     text += `Дата расчета: ${new Date().toLocaleDateString()}\n\n`;
     text += `1. Сводные показатели:\n`;
     text += `- Объем земляных работ: ${norms.totalEarthVolume} м³\n`;
+    if (norms.totalCleanVolume > 0) text += `  (в т.ч. ручная зачистка недобора: ${norms.totalCleanVolume} м³)\n`;
     text += `- Трудозатраты личного состава: ${norms.totalLaborHrs} чел.-ч\n`;
     if (norms.totalWoodVol > 0) text += `- Потребность в круглом лесе: ${norms.totalWoodVol} м³\n`;
+    if (norms.totalBoardsVol > 0) text += `- Потребность в досках обшивки (пиломатериал): ${norms.totalBoardsVol} м³\n`;
+    if (norms.totalPostsCount > 0) text += `- Количество вертикальных стоек: ${norms.totalPostsCount} шт.\n`;
     if (norms.totalWireKg > 0) text += `- Потребность в колючей проволоке: ${norms.totalWireKg} кг\n`;
+    if (norms.totalWireViazKg > 0) text += `- Потребность в вязальной проволоке: ${norms.totalWireViazKg} кг\n`;
     if (norms.totalMetalKg > 0) text += `- Потребность в металлоконструкциях: ${norms.totalMetalKg} кг\n`;
-    if (norms.totalPolesCount > 0) text += `- Количество кольев: ${norms.totalPolesCount} шт.\n`;
+    if (norms.totalPolesCount > 0) text += `- Количество кольев для заграждений: ${norms.totalPolesCount} шт.\n`;
+    if (norms.totalMasNetSq > 0) text += `- Потребность в маскировочных сетях МКТ: ${norms.totalMasNetSq} м²\n`;
+    if (norms.totalAntiDronNetSq > 0) text += `- Потребность в антидронной стальной сетке: ${norms.totalAntiDronNetSq} м²\n`;
+    if (norms.totalTrapsM > 0) text += `- Водоотводные деревянные трапы: ${norms.totalTrapsM} п.м.\n`;
+    if (norms.totalDoorsCount > 0) text += `- Защитно-герметические дверные блоки БД-50: ${norms.totalDoorsCount} шт.\n`;
+    if (norms.totalStovesCount > 0) text += `- Отопительные полевые печи: ${norms.totalStovesCount} шт.\n`;
     
     if (norms.totalLengths.trench > 0 || norms.totalLengths.comm_open > 0 || norms.totalLengths.comm_covered > 0 || norms.totalLengths.wire > 0) {
       text += `\n2. Протяженность линейных сооружений:\n`;
@@ -338,7 +347,20 @@ export class MapViewModel {
       text += `\n5. Детальная спецификация сооружений:\n`;
       norms.items.forEach(item => {
         const namePart = item.name ? ` "${item.name}"` : '';
-        text += `- ${item.type}${namePart}: земля ${item.earth} м³, трудозатраты ${item.labor} чел.-ч.\n`;
+        text += `- ${item.type}${namePart}: земля ${item.earthVolume} м³, трудозатраты ${item.laborHrs} чел.-ч.\n`;
+        const matSpecs: string[] = [];
+        if (item.cleanVolume && item.cleanVolume > 0) matSpecs.push(`ручная зачистка: ${item.cleanVolume} м³`);
+        if (item.woodVol && item.woodVol > 0) matSpecs.push(`круглый лес: ${item.woodVol} м³`);
+        if (item.boardsVol && item.boardsVol > 0) matSpecs.push(`доски: ${item.boardsVol} м³`);
+        if (item.postsCount && item.postsCount > 0) matSpecs.push(`стойки: ${item.postsCount} шт`);
+        if (item.wireViazKg && item.wireViazKg > 0) matSpecs.push(`вязальная проволока: ${item.wireViazKg} кг`);
+        if (item.masNetSq && item.masNetSq > 0) matSpecs.push(`мас. сети: ${item.masNetSq} м²`);
+        if (item.trapsM && item.trapsM > 0) matSpecs.push(`трапы: ${item.trapsM} п.м.`);
+        if (item.doorsCount && item.doorsCount > 0) matSpecs.push(`двери БД-50: ${item.doorsCount} шт`);
+        if (item.stovesCount && item.stovesCount > 0) matSpecs.push(`печи полевые: ${item.stovesCount} шт`);
+        if (matSpecs.length > 0) {
+          text += `  Материалы и работы: ${matSpecs.join(', ')}\n`;
+        }
         if (item.notes) text += `  Конфигурация: ${item.notes}\n`;
       });
     }

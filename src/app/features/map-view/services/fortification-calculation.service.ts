@@ -4,14 +4,23 @@ import { TacticalMapService } from './tactical-map.service';
 export interface FortificationNorms {
   id: string;
   name: string;
-  earthVolume: number;      // м³
+  earthVolume: number;      // м³ (общий объем выемки)
+  cleanVolume?: number;     // м³ (объем ручной зачистки недобора)
   laborHrs: number;         // чел.-ч
   machHrs?: number;         // маш.-ч
   machType?: string;        // тип техники
-  woodVol?: number;         // м³
-  wireKg?: number;          // кг
+  woodVol?: number;         // м³ (общий круглый лес)
+  boardsVol?: number;       // м³ (доски обшивки)
+  postsCount?: number;      // шт (вертикальные стойки обшивки)
+  wireKg?: number;          // кг (колючая проволока)
+  wireViazKg?: number;      // кг (проволока вязальная отожженная)
   metalKg?: number;         // кг
-  polesCount?: number;      // шт.
+  polesCount?: number;      // шт. (колья для МЗП)
+  masNetSq?: number;        // м² (маскировочные сети МКТ)
+  antiDronNetSq?: number;   // м² (антидронная стальная сетка)
+  trapsM?: number;          // п.м. (водоотводные деревянные трапы)
+  doorsCount?: number;      // шт (защитно-герметические дверные блоки БД-50)
+  stovesCount?: number;     // шт (полевые отопительные печи)
   notes?: string;
 }
 
@@ -155,6 +164,16 @@ export class FortificationCalculationService {
     }
   };
 
+  // Справочник геометрических размеров точечных сооружений для детальных расчетов
+  readonly pointDimensions: Record<string, { L: number; B: number; H: number; L_app?: number; m: number; type: 'blindage' | 'shelter' }> = {
+    fort_blindage: { L: 3.6, B: 1.35, H: 2.5, m: 0.5, type: 'blindage' },
+    blindazh: { L: 3.6, B: 1.35, H: 2.5, m: 0.5, type: 'blindage' },
+    fort_knp: { L: 5.0, B: 2.0, H: 2.5, m: 0.5, type: 'blindage' },
+    fort_bmp_trench: { L: 8.0, B: 3.5, H: 1.5, L_app: 6.0, m: 0.5, type: 'shelter' },
+    fort_tank_trench: { L: 9.5, B: 4.2, H: 1.8, L_app: 7.2, m: 0.5, type: 'shelter' },
+    fort_art_trench: { L: 10.0, B: 5.0, H: 1.5, L_app: 6.0, m: 0.5, type: 'shelter' }
+  };
+
   /**
    * Вычисляет расстояние между двумя гео-точками в метрах
    */
@@ -207,6 +226,9 @@ export class FortificationCalculationService {
       let polesCountPerMeter = norm.polesCount || 0;
       let noteDetails = norm.notes || '';
 
+      let depthM = 1.1;
+      let bottomWidthM = 0.9;
+
       if (lineType === 'trench' || lineType === 'comm_open' || lineType === 'comm_covered') {
         const profile = props.fortProfile || 'main'; // 'main' | 'full'
         const revetment = props.fortRevetment || 'none'; // 'none' | 'wood' | 'board' | 'wattle'
@@ -217,16 +239,26 @@ export class FortificationCalculationService {
 
         let profileName = '';
         if (customDepth !== undefined && customWidth !== undefined) {
-          const depthM = customDepth / 100;
-          const widthM = customWidth / 100;
-          // Трапецеидальное сечение: (ширина_по_верху + ширина_по_дну_0.5м) / 2 * глубина
-          earthVolumePerMeter = (widthM + 0.5) / 2 * depthM;
-          // Трудозатраты масштабируются по объему с учетом повышающего коэффициента на глубину отрывки
+          depthM = customDepth / 100;
+          bottomWidthM = Math.max(0.5, customWidth / 100);
+          
+          // Вычисляем коэффициент заложения откоса m.
+          const m = (revetment === 'none' || revetment === 'board_incline') ? 0.25 : 0;
+          
+          // Вычисляем ширину по верху: W_top = W_bottom + 2 * m * D
+          const topWidthM = bottomWidthM + 2 * m * depthM;
+          
+          // Трапецеидальное сечение рва
+          earthVolumePerMeter = (topWidthM + bottomWidthM) / 2 * depthM;
+          
+          // Трудозатраты масштабируются по объему
           laborHrsPerMeter = earthVolumePerMeter * (1 + (depthM - 1.1) * 0.8);
           profileName = `произвольного профиля (гл. ${customDepth} см, шир. ${customWidth} см)`;
         } else {
-          // По умолчанию для крытого хода сообщения берется полный профиль 150 см
+          // По умолчанию
           const isFullByDefault = (lineType === 'comm_covered' || profile === 'full');
+          depthM = isFullByDefault ? 1.5 : 1.1;
+          bottomWidthM = isFullByDefault ? 1.1 : 0.9;
           profileName = isFullByDefault ? 'полного профиля (150 см)' : 'основного профиля (110 см)';
           if (isFullByDefault) {
             earthVolumePerMeter = 1.2;
@@ -240,10 +272,9 @@ export class FortificationCalculationService {
         let revetmentName = '';
 
         if (lineType === 'comm_covered') {
-          // Для крытого хода сообщения расход леса и проволоки фиксирован, а к трудозатратам добавляются часы на перекрытие
           woodVolPerMeter = 0.23;
           wireKgPerMeter = 0.15;
-          laborHrsPerMeter += 1.2; // Дополнительные часы на укладку одежды крутостей и перекрытия
+          laborHrsPerMeter += 1.2;
           revetmentName = 'с перекрытием и одеждой крутостей';
         } else {
           revetmentName = 'без одежды крутостей';
@@ -258,6 +289,10 @@ export class FortificationCalculationService {
           } else if (revetment === 'wattle') {
             laborHrsPerMeter += 0.6;
             revetmentName = 'с одеждой крутостей из плетня';
+          } else if (revetment === 'board_incline') {
+            woodVolPerMeter += 0.08;
+            laborHrsPerMeter += 1.5;
+            revetmentName = 'с укреплением шпалами на откосах';
           }
         }
 
@@ -269,20 +304,161 @@ export class FortificationCalculationService {
         noteDetails = `${typeName} ${profileName}, ${revetmentName}.`;
       }
 
+      let cleanVolume = 0;
+      let boardsVol = 0;
+      let postsCount = 0;
+      let postsWoodVol = 0;
+      let trapsM = 0;
+      let trapsWoodVol = 0;
+      let wireViazKg = 0;
+      let masNetSq = 0;
+      let machHrs = 0;
+      let machType = '';
+
+      if (lineType === 'trench' || lineType === 'comm_open' || lineType === 'comm_covered') {
+        const revetment = props.fortRevetment || 'none';
+        cleanVolume = (length * bottomWidthM * 0.05) + (length * depthM * 2 * 0.05);
+        
+        if (revetment !== 'none') {
+          postsCount = Math.ceil(length) * 2;
+          postsWoodVol = postsCount * Math.PI * (0.06 ** 2) * (depthM + 0.5);
+          wireViazKg = length * 3.0; // по Excel кг на метр
+          
+          if (revetment === 'board' || revetment === 'board_incline') {
+            const wallArea = length * depthM * 2;
+            boardsVol = wallArea * 0.04;
+          }
+        }
+        
+        trapsM = length;
+        trapsWoodVol = length * 0.02;
+        
+        // Маскировочные сети
+        masNetSq = length * 1.5;
+        
+        // Машино-часы
+        machHrs = (earthVolumePerMeter * length) / 140.0; // ПЗМ-2 с производительностью 140 м3/ч
+        machType = 'ПЗМ-2';
+        
+        // Складываем круглый лес: стойки + трапы + базовый крепёжный
+        woodVolPerMeter = woodVolPerMeter + (postsWoodVol / length) + (trapsWoodVol / length);
+      }
+
       return {
         id: props.id.toString(),
         name: props.name || this.getLinearDisplayName(lineType),
         earthVolume: parseFloat((earthVolumePerMeter * length).toFixed(1)),
+        cleanVolume: cleanVolume > 0 ? parseFloat(cleanVolume.toFixed(1)) : undefined,
         laborHrs: parseFloat((laborHrsPerMeter * length).toFixed(1)),
+        machHrs: machHrs > 0 ? parseFloat(machHrs.toFixed(1)) : undefined,
+        machType: machType || undefined,
         woodVol: woodVolPerMeter > 0 ? parseFloat((woodVolPerMeter * length).toFixed(2)) : undefined,
+        boardsVol: boardsVol > 0 ? parseFloat(boardsVol.toFixed(2)) : undefined,
+        postsCount: postsCount > 0 ? postsCount : undefined,
         wireKg: wireKgPerMeter > 0 ? parseFloat((wireKgPerMeter * length).toFixed(1)) : undefined,
+        wireViazKg: wireViazKg > 0 ? parseFloat(wireViazKg.toFixed(1)) : undefined,
         polesCount: polesCountPerMeter > 0 ? Math.ceil(polesCountPerMeter * length) : undefined,
+        masNetSq: masNetSq > 0 ? Math.round(masNetSq) : undefined,
+        trapsM: trapsM > 0 ? Math.round(trapsM) : undefined,
         notes: `${noteDetails} (Длина: ${Math.round(length)} м)`
       };
     } else {
       const symbol = props.symbol;
       const norm = this.pointNorms[symbol];
       if (!norm) return null;
+
+      const dim = this.pointDimensions[symbol];
+      if (dim) {
+        // Считываем пользовательские параметры, если заданы (в сантиметрах -> переводим в метры)
+        const customL = props.fortLength !== undefined ? props.fortLength / 100 : dim.L;
+        const customB = props.fortWidth !== undefined ? props.fortWidth / 100 : dim.B;
+        const customH = props.fortDepth !== undefined ? props.fortDepth / 100 : dim.H;
+        const m = dim.m;
+        
+        let earthVolume = 0;
+        let laborHrs = 0;
+        let woodVol = 0;
+        let machHrs = 0;
+        let machType = '';
+        let notes = '';
+
+        let cleanVolume = 0;
+        let boardsVol = 0;
+        let postsCount = 0;
+        let wireViazKg = 0;
+        let masNetSq = 0;
+        let doorsCount = 0;
+        let stovesCount = 0;
+
+        if (dim.type === 'blindage') {
+          // Блиндаж
+          const botL = customL + 0.9;
+          const botB = customB + 0.9;
+          const topL = botL + 2 * m * customH;
+          const topB = botB + 2 * m * customH;
+          
+          const vKotl = customH / 6 * (botL * botB + topL * topB + (botL + topL) * (botB + topB));
+          const vTamb = (symbol === 'fort_knp') ? 15.0 : 8.0;
+          
+          earthVolume = vKotl + vTamb;
+          cleanVolume = vKotl * 0.08;
+          
+          const baseLabor = (symbol === 'fort_knp') ? 70.0 : 45.0;
+          laborHrs = baseLabor + Math.round(cleanVolume * 2);
+          woodVol = 5.0; // Базовый объем по Excel
+          machHrs = earthVolume / 40.0; // Производительность ЭОВ-4421 = 40 м3/ч
+          machType = 'ЭОВ-4421';
+          
+          masNetSq = Math.round(topL * topB * 1.3);
+          doorsCount = (symbol === 'fort_knp') ? 4 : 1;
+          stovesCount = 1;
+
+          notes = `${this.getPointDisplayName(symbol)}. Котлован блиндажного типа (гл. ${Math.round(customH*100)} см, шир. ${Math.round(customB*100)} см, дл. ${Math.round(customL*100)} см) с откосами m=${m}.`;
+        } else if (dim.type === 'shelter') {
+          // Укрытие техники
+          const topL = customL + 2 * m * customH;
+          const topB = customB + 2 * m * customH;
+          
+          const vKotl = customH / 6 * (customL * customB + topL * topB + (customL + topL) * (customB + topB));
+          const L_app = dim.L_app || (customH * 4); // Если длина аппарели не задана
+          
+          const hasTwoApparels = false; // В Excel у БМП, танков и пушек 1 аппарель
+          const appFactor = hasTwoApparels ? 2.0 : 1.0;
+          const vApp = appFactor * (0.5 * L_app * customB * customH + (m * (customH ** 2) * L_app) / 3);
+          
+          earthVolume = vKotl + vApp;
+          cleanVolume = (customL * customB + 0.5 * L_app * customB) * 0.1 + (customL + L_app) * 2 * customH * 0.05;
+          
+          laborHrs = Math.round(cleanVolume * 2); // Только ручная зачистка недобора
+          woodVol = (symbol === 'fort_art_trench') ? (customL + customB) * 2 * customH * 0.04 * 2 : (customL + customB) * 2 * customH * 0.04;
+          machHrs = earthVolume / 140.0; // Производительность ПЗМ-2 = 140 м3/ч
+          machType = 'ПЗМ-2';
+          
+          masNetSq = Math.round((customL + L_app) * customB * 1.8);
+
+          notes = `${this.getPointDisplayName(symbol)}. Котлован под технику (гл. ${Math.round(customH*100)} см, шир. ${Math.round(customB*100)} см, дл. ${Math.round(customL*100)} см) с аппарелью ${L_app} м и откосами m=${m}.`;
+        }
+
+        return {
+          id: props.id.toString(),
+          name: props.name || this.getPointDisplayName(symbol),
+          earthVolume: parseFloat(earthVolume.toFixed(1)),
+          cleanVolume: cleanVolume > 0 ? parseFloat(cleanVolume.toFixed(1)) : undefined,
+          laborHrs: parseFloat(laborHrs.toFixed(1)),
+          machHrs: parseFloat(machHrs.toFixed(1)),
+          machType: machType,
+          woodVol: woodVol > 0 ? parseFloat(woodVol.toFixed(2)) : undefined,
+          boardsVol: boardsVol > 0 ? parseFloat(boardsVol.toFixed(2)) : undefined,
+          postsCount: postsCount > 0 ? postsCount : undefined,
+          wireKg: norm.wireKg,
+          wireViazKg: wireViazKg > 0 ? parseFloat(wireViazKg.toFixed(1)) : undefined,
+          metalKg: norm.metalKg,
+          masNetSq: masNetSq > 0 ? Math.round(masNetSq) : undefined,
+          doorsCount: doorsCount > 0 ? doorsCount : undefined,
+          stovesCount: stovesCount > 0 ? stovesCount : undefined,
+          notes: notes
+        };
+      }
 
       return {
         id: props.id.toString(),
@@ -304,11 +480,20 @@ export class FortificationCalculationService {
    */
   calculateTotalNorms(features: any[]): {
     totalEarthVolume: number;
+    totalCleanVolume: number;
     totalLaborHrs: number;
     totalWoodVol: number;
+    totalBoardsVol: number;
+    totalPostsCount: number;
     totalWireKg: number;
+    totalWireViazKg: number;
     totalMetalKg: number;
     totalPolesCount: number;
+    totalMasNetSq: number;
+    totalAntiDronNetSq: number;
+    totalTrapsM: number;
+    totalDoorsCount: number;
+    totalStovesCount: number;
     machinerySummary: { type: string; hours: number }[];
     elementsCount: Record<string, number>;
     elementsList: { name: string; count: number }[];
@@ -318,14 +503,23 @@ export class FortificationCalculationService {
       comm_covered: number;
       wire: number;
     };
-    items: { name: string; type: string; earth: number; labor: number; notes?: string }[];
+    items: (FortificationNorms & { type: string })[];
   } {
     let totalEarthVolume = 0;
+    let totalCleanVolume = 0;
     let totalLaborHrs = 0;
     let totalWoodVol = 0;
+    let totalBoardsVol = 0;
+    let totalPostsCount = 0;
     let totalWireKg = 0;
+    let totalWireViazKg = 0;
     let totalMetalKg = 0;
     let totalPolesCount = 0;
+    let totalMasNetSq = 0;
+    let totalAntiDronNetSq = 0;
+    let totalTrapsM = 0;
+    let totalDoorsCount = 0;
+    let totalStovesCount = 0;
 
     let totalTrenchLength = 0;
     let totalCommOpenLength = 0;
@@ -334,7 +528,7 @@ export class FortificationCalculationService {
 
     const machinery: Record<string, number> = {};
     const elementsCount: Record<string, number> = {};
-    const items: { name: string; type: string; earth: number; labor: number; notes?: string }[] = [];
+    const items: (FortificationNorms & { type: string })[] = [];
 
     features.forEach(f => {
       const norm = this.calculateFeatureNorms(f);
@@ -344,11 +538,20 @@ export class FortificationCalculationService {
       elementsCount[typeName] = (elementsCount[typeName] || 0) + 1;
 
       totalEarthVolume += norm.earthVolume;
+      if (norm.cleanVolume) totalCleanVolume += norm.cleanVolume;
       totalLaborHrs += norm.laborHrs;
       if (norm.woodVol) totalWoodVol += norm.woodVol;
+      if (norm.boardsVol) totalBoardsVol += norm.boardsVol;
+      if (norm.postsCount) totalPostsCount += norm.postsCount;
       if (norm.wireKg) totalWireKg += norm.wireKg;
+      if (norm.wireViazKg) totalWireViazKg += norm.wireViazKg;
       if (norm.metalKg) totalMetalKg += norm.metalKg;
       if (norm.polesCount) totalPolesCount += norm.polesCount;
+      if (norm.masNetSq) totalMasNetSq += norm.masNetSq;
+      if (norm.antiDronNetSq) totalAntiDronNetSq += norm.antiDronNetSq;
+      if (norm.trapsM) totalTrapsM += norm.trapsM;
+      if (norm.doorsCount) totalDoorsCount += norm.doorsCount;
+      if (norm.stovesCount) totalStovesCount += norm.stovesCount;
 
       if (f.properties.isLinear) {
         const lineType = f.properties.lineType;
@@ -364,11 +567,8 @@ export class FortificationCalculationService {
       }
 
       items.push({
-        name: norm.name,
-        type: typeName,
-        earth: norm.earthVolume,
-        labor: norm.laborHrs,
-        notes: norm.notes
+        ...norm,
+        type: typeName
       });
     });
 
@@ -384,11 +584,20 @@ export class FortificationCalculationService {
 
     return {
       totalEarthVolume: parseFloat(totalEarthVolume.toFixed(1)),
+      totalCleanVolume: parseFloat(totalCleanVolume.toFixed(1)),
       totalLaborHrs: parseFloat(totalLaborHrs.toFixed(1)),
       totalWoodVol: parseFloat(totalWoodVol.toFixed(2)),
+      totalBoardsVol: parseFloat(totalBoardsVol.toFixed(2)),
+      totalPostsCount,
       totalWireKg: parseFloat(totalWireKg.toFixed(1)),
+      totalWireViazKg: parseFloat(totalWireViazKg.toFixed(1)),
       totalMetalKg: parseFloat(totalMetalKg.toFixed(1)),
       totalPolesCount,
+      totalMasNetSq,
+      totalAntiDronNetSq,
+      totalTrapsM,
+      totalDoorsCount,
+      totalStovesCount,
       machinerySummary,
       elementsCount,
       elementsList,

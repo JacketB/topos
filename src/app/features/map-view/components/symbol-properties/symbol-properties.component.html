@@ -200,11 +200,60 @@
                     <option value="none">Без укрепления (устойчивый грунт)</option>
                     <option value="wood">Жердевая одежда (круглый лес)</option>
                     <option value="board">Дощатая одежда / горбыль</option>
+                    <option value="board_incline">Шпалы на откосах (наклонное укрепление)</option>
                     <option value="wattle">Одежда из плетня (хворост)</option>
                   </select>
                 </div>
               </div>
             }
+          } @else if (vm.fortificationService.pointDimensions[placed.properties['symbol']]; as dim) {
+            <div class="vs-grid-row">
+              <span class="vs-grid-label">Глубина (см)</span>
+              <div class="vs-grid-value">
+                <input 
+                  type="number" 
+                  class="vs-input" 
+                  style="border: 1px solid var(--color-border); border-radius: 4px; background: white; padding: 4px 6px; height: auto;"
+                  [value]="placed.properties['fortDepth'] !== undefined ? placed.properties['fortDepth'] : dim.H * 100" 
+                  (input)="onPlacedDepthChange($event)"
+                  min="30"
+                  max="400"
+                  placeholder="Глубина..."
+                />
+              </div>
+            </div>
+
+            <div class="vs-grid-row">
+              <span class="vs-grid-label">Ширина (см)</span>
+              <div class="vs-grid-value">
+                <input 
+                  type="number" 
+                  class="vs-input" 
+                  style="border: 1px solid var(--color-border); border-radius: 4px; background: white; padding: 4px 6px; height: auto;"
+                  [value]="placed.properties['fortWidth'] !== undefined ? placed.properties['fortWidth'] : dim.B * 100" 
+                  (input)="onPlacedWidthChange($event)"
+                  min="30"
+                  max="1500"
+                  placeholder="Ширина..."
+                />
+              </div>
+            </div>
+
+            <div class="vs-grid-row">
+              <span class="vs-grid-label">Длина (см)</span>
+              <div class="vs-grid-value">
+                <input 
+                  type="number" 
+                  class="vs-input" 
+                  style="border: 1px solid var(--color-border); border-radius: 4px; background: white; padding: 4px 6px; height: auto;"
+                  [value]="placed.properties['fortLength'] !== undefined ? placed.properties['fortLength'] : dim.L * 100" 
+                  (input)="onPlacedLengthChange($event)"
+                  min="30"
+                  max="2000"
+                  placeholder="Длина..."
+                />
+              </div>
+            </div>
           }
 
           @if (placed.properties['lineType'] === 'march_route') {

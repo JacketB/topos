@@ -660,8 +660,123 @@
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  overflow-x: auto;
   flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.gantt-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  box-sizing: border-box;
+  cursor: grab;
+}
+
+/* Sticky Headers and Columns */
+.excel-table {
+  position: relative;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.excel-table th, .excel-table td {
+  box-sizing: border-box;
+}
+
+.excel-table thead tr th {
+  background-color: #f8fafc;
+  z-index: 10;
+  border-bottom: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+}
+
+.excel-table thead tr:nth-child(2) th {
+  top: 32px;
+}
+
+.table-pinned .sticky-col-1, .table-pinned .sticky-col-2, .table-pinned .sticky-col-3, .table-pinned .sticky-col-4, .table-pinned .sticky-col-5,
+.table-pinned .sticky-col-6, .table-pinned .sticky-col-7, .table-pinned .sticky-col-8, .table-pinned .sticky-col-9, .table-pinned .sticky-col-10, .table-pinned .sticky-col-11,
+.table-pinned .sticky-header-group-labor, .table-pinned .sticky-header-group-total {
+  position: sticky;
+  z-index: 5;
+  background-color: #ffffff !important;
+  box-shadow: inset -1px 0 0 #cbd5e1, inset 0 -1px 0 #e2e8f0;
+}
+
+.table-pinned th.sticky-col-1, .table-pinned th.sticky-col-2, .table-pinned th.sticky-col-3, .table-pinned th.sticky-col-4, .table-pinned th.sticky-col-5,
+.table-pinned th.sticky-col-6, .table-pinned th.sticky-col-7, .table-pinned th.sticky-col-8, .table-pinned th.sticky-col-9, .table-pinned th.sticky-col-10, .table-pinned th.sticky-col-11,
+.table-pinned th.sticky-header-group-labor, .table-pinned th.sticky-header-group-total {
+  z-index: 15;
+  background-color: #f8fafc !important;
+  box-shadow: inset -1px 0 0 #cbd5e1, inset 0 -1px 0 #cbd5e1;
+}
+
+.sticky-col-1 { width: 35px; min-width: 35px; max-width: 35px; }
+.sticky-col-2 { width: 240px; min-width: 240px; max-width: 240px; }
+.sticky-col-3 { width: 110px; min-width: 110px; max-width: 110px; }
+.sticky-col-4 { width: 60px; min-width: 60px; max-width: 60px; }
+.sticky-col-5 { width: 110px; min-width: 110px; max-width: 110px; }
+.sticky-col-6 { width: 120px; min-width: 120px; max-width: 120px; }
+.sticky-col-7 { width: 50px; min-width: 50px; max-width: 50px; }
+.sticky-col-8 { width: 60px; min-width: 60px; max-width: 60px; }
+.sticky-col-9 { width: 60px; min-width: 60px; max-width: 60px; }
+.sticky-col-10 { width: 55px; min-width: 55px; max-width: 55px; }
+.sticky-col-11 { width: 55px; min-width: 55px; max-width: 55px; }
+
+.table-pinned .sticky-col-1 { left: 0px; }
+.table-pinned .sticky-col-2 { left: 35px; }
+.table-pinned .sticky-col-3 { left: 275px; }
+.table-pinned .sticky-col-4 { left: 385px; }
+.table-pinned .sticky-col-5 { left: 445px; }
+.table-pinned .sticky-col-6 { left: 555px; }
+.table-pinned .sticky-col-7 { left: 675px; }
+.table-pinned .sticky-col-8 { left: 725px; }
+.table-pinned .sticky-col-9 { left: 785px; }
+.table-pinned .sticky-col-10 { left: 845px; }
+.table-pinned .sticky-col-11 {
+  left: 900px;
+  box-shadow: inset -2px 0 0 #94a3b8, inset 0 -1px 0 #e2e8f0, 4px 0 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.table-pinned th.sticky-col-11 {
+  box-shadow: inset -2px 0 0 #94a3b8, inset 0 -1px 0 #cbd5e1, 4px 0 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.table-pinned .sticky-header-group-labor { left: 725px; width: 120px; min-width: 120px; max-width: 120px; }
+.table-pinned .sticky-header-group-total { left: 845px; width: 110px; min-width: 110px; max-width: 110px; }
+
+/* Sticky Sum Rows at the bottom */
+.sticky-sum-col-1-9 {
+  width: 845px;
+  min-width: 845px;
+  max-width: 845px;
+}
+
+.sticky-sum-col-10-11 {
+  width: 110px;
+  min-width: 110px;
+  max-width: 110px;
+}
+
+.table-pinned .sticky-sum-col-1-9 {
+  position: sticky;
+  left: 0px;
+  z-index: 6;
+  background-color: #f1f5f9 !important;
+  box-shadow: inset -1px 0 0 #cbd5e1, inset 0 -1px 0 #cbd5e1;
+}
+
+.table-pinned .sticky-sum-col-10-11 {
+  position: sticky;
+  left: 845px;
+  z-index: 6;
+  background-color: #f1f5f9 !important;
+  box-shadow: inset -2px 0 0 #94a3b8, inset 0 -1px 0 #cbd5e1, 4px 0 8px rgba(0, 0, 0, 0.08) !important;
 }
 
 .fp-layout-51 {
@@ -745,9 +860,9 @@
   text-align: center;
   border: 1px solid #cbd5e1;
   padding: 6px;
-  background: rgba(70, 107, 247, 0.05);
+  background-color: #eff6ff !important;
   font-weight: 700;
-  color: #0f172a;
+  color: #1e40af;
 }
 
 .fp-layout-61 {
@@ -787,6 +902,7 @@
   font-size: 9px;
   font-weight: 700;
   color: #466bf7;
+  background-color: #f8fafc !important;
 }
 
 .fp-layout-65 {
@@ -796,11 +912,15 @@
 }
 
 .fp-layout-66 {
-  border: 1px solid #cbd5e1;
   padding: 6px 10px;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  position: sticky;
+  left: 0;
+  z-index: 6;
+  background-color: #f1f5f9 !important;
+  box-shadow: inset 0 -1px 0 #cbd5e1, inset 0 1px 0 #cbd5e1;
 }
 
 .fp-layout-67 {
@@ -977,8 +1097,11 @@
 .fp-layout-85 {
   text-align: left;
   padding: 8px 12px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
+  background-color: #ffffff !important;
+  position: sticky;
+  left: 0;
+  z-index: 6;
+  box-shadow: inset 0 -1px 0 #cbd5e1, inset 0 1px 0 #cbd5e1;
 }
 
 .fp-layout-86 {
@@ -1016,6 +1139,7 @@
 .fp-layout-9 {
   padding: 20px;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
   display: flex;
   flex-direction: column;

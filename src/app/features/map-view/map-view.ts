@@ -1,5 +1,6 @@
 import { Component, ViewEncapsulation, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MapViewModel } from './viewmodels/map.viewmodel';
 import { MapCanvasComponent } from './components/map-canvas/map-canvas.component';
 import { MapSidebarComponent } from './components/map-sidebar/map-sidebar.component';
@@ -23,7 +24,8 @@ import { MapLayersPanelComponent } from './components/map-layers-panel/map-layer
     DecimalPipe,
     DragDropModule,
     FortificationPlannerComponent,
-    MapLayersPanelComponent
+    MapLayersPanelComponent,
+    FormsModule
   ],
   templateUrl: './map-view.html',
   styleUrl: './map-view.css',

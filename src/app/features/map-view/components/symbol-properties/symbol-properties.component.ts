@@ -97,4 +97,12 @@ export class SymbolPropertiesComponent {
       this.vm.updatePlacedSymbolProperty('fortWidth', width);
     }
   }
+
+  onPlacedLengthChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const length = parseInt(input.value, 10);
+    if (!isNaN(length)) {
+      this.vm.updatePlacedSymbolProperty('fortLength', length);
+    }
+  }
 }

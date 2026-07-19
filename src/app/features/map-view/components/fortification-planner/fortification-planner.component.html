@@ -23,228 +23,269 @@
     <!-- Scrollable Body -->
     <div class="fort-report-body fp-layout-9" >
       
-      <!-- Top Grid: Controls + KPIs -->
-      <div class="fp-layout-10">
+      <!-- Панель управления параметрами расчета и техникой (спойлер) -->
+      <div class="dashboard-card" style="padding: 10px 16px; flex-shrink: 0; margin-bottom: 0px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+        <div (click)="isParamsExpanded.set(!isParamsExpanded())" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+          <h5 style="margin: 0; font-size: 13px; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 8px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="transition: transform 0.2s;" [style.transform]="isParamsExpanded() ? 'rotate(90deg)' : 'rotate(0deg)'"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            Параметры расчета, КТГ техники и сводные показатели
+          </h5>
+          <span style="font-size: 11px; color: #64748b; font-weight: 600;">
+            {{ isParamsExpanded() ? 'СВЕРНУТЬ НАСТРОЙКИ' : 'РАЗВЕРНУТЬ НАСТРОЙКИ (л/с, сменность, КТГ техники)' }}
+          </span>
+        </div>
         
-        <!-- Controls Panel -->
-        <div class="fp-layout-11">
-          <div class="fp-layout-12">
-            Параметры расчета
-          </div>
-
-          <!-- Выбор района для расчетов -->
-          <div class="form-group fp-layout-13" >
-            <label class="form-label fp-layout-14" >Район для расчетов:</label>
-            <select 
-              class="select-input fp-layout-15" 
-              [ngModel]="vm.activeCalculationGroupId()" 
-              (ngModelChange)="vm.activeCalculationGroupId.set($event)"
-              
-            >
-              <option value="all">Все объекты на карте</option>
-              @for (group of vm.objectGroups(); track group.id) {
-                <option [value]="group.id">{{ group.name }} ({{ group.elementIds.length }} шт.)</option>
-              }
-            </select>
-          </div>
-
-          <!-- Manpower -->
-          <div class="form-group fp-layout-13" >
-            <div class="form-label fp-layout-16" >
-              <span>Личный состав (л/с):</span>
-              <span class="fp-layout-17">{{ manpower() }} чел.</span>
-            </div>
-            <input type="range" class="range-input" min="5" max="100" [value]="manpower()" (input)="manpower.set(+$any($event.target).value)">
-          </div>
-
-          <!-- Shifts -->
-          <div class="form-group fp-layout-13" >
-            <div class="form-label fp-layout-16" >
-              <span>Режим работы:</span>
-              <span class="fp-layout-17">{{ shifts() }} смен{{ shifts() > 1 ? 'ы' : 'а' }}</span>
-            </div>
-            <input type="range" class="range-input" min="1" max="3" [value]="shifts()" (input)="shifts.set(+$any($event.target).value)">
-          </div>
-
-          <!-- Work Hours per Day -->
-          <div class="form-group fp-layout-13" >
-            <div class="form-label fp-layout-16" >
-              <span>Рабочих часов в день:</span>
-              <span class="fp-layout-17">{{ workHoursPerDay() }} ч</span>
-            </div>
-            <input type="range" class="range-input" min="4" max="24" step="1" [value]="workHoursPerDay()" (input)="workHoursPerDay.set(+$any($event.target).value)">
-          </div>
-
-          <!-- Soil -->
-          <div class="form-group fp-layout-13" >
-            <label class="form-label fp-layout-18" >Категория грунта:</label>
-            <select class="select-input fp-layout-19" [value]="soilType()" (change)="soilType.set(+$any($event.target).value)" >
-              <option [value]="0.8">Песчаный / легкий (x0.8)</option>
-              <option [value]="1.0">Суглинок / средний (x1.0)</option>
-              <option [value]="1.35">Глина / тяжелый (x1.35)</option>
-              <option [value]="2.2">Гравийно-галечный (x2.2)</option>
-              <option [value]="3.5">Скальный / мерзлый (x3.5)</option>
-            </select>
-          </div>
-
-          <!-- Factors -->
-          <div class="form-group fp-layout-13" >
-            <label class="form-label fp-layout-18" >Условия работы:</label>
-            <div class="fp-layout-20">
-              <label class="checkbox-btn fp-layout-21" [class.checked]="factorNight()" >
-                <input type="checkbox" [checked]="factorNight()" (change)="factorNight.set($any($event.target).checked)">
-                <span class="custom-check fp-layout-22" ></span>
-                Ночь (x1.3)
-              </label>
-              <label class="checkbox-btn fp-layout-21" [class.checked]="factorWinter()" >
-                <input type="checkbox" [checked]="factorWinter()" (change)="factorWinter.set($any($event.target).checked)">
-                <span class="custom-check fp-layout-22" ></span>
-                Зима (x1.5)
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Panel (KPIs + Park) -->
-        <div class="fp-layout-23">
-          <!-- KPIs Panel -->
-          <div class="kpi-container fp-layout-24" >
+        @if (isParamsExpanded()) {
+          <div class="fp-layout-10" style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #cbd5e1;">
             
-            <div class="kpi-card fp-layout-25" >
-              <span class="kpi-label fp-layout-26" >Объем грунта</span>
-              <div class="kpi-value fp-layout-27" >
-                {{ vopCalculations().totalEarth | number:'1.0-0' }} <span class="unit fp-layout-28" >м³</span>
+            <!-- Controls Panel -->
+            <div class="fp-layout-11">
+              <div class="fp-layout-12">
+                Параметры расчета
               </div>
-              <span class="kpi-subtext fp-layout-29" >
-                Суммарные земляные работы
-              </span>
+
+              <!-- Выбор района для расчетов -->
+              <div class="form-group fp-layout-13" >
+                <label class="form-label fp-layout-14" >Район для расчетов:</label>
+                <select 
+                  class="select-input fp-layout-15" 
+                  [ngModel]="vm.activeCalculationGroupId()" 
+                  (ngModelChange)="vm.activeCalculationGroupId.set($event)"
+                >
+                  <option value="all">Все объекты на карте</option>
+                  @for (group of vm.objectGroups(); track group.id) {
+                    <option [value]="group.id">{{ group.name }} ({{ group.elementIds.length }} шт.)</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Manpower -->
+              <div class="form-group fp-layout-13" >
+                <div class="form-label fp-layout-16" >
+                  <span>Личный состав (л/с):</span>
+                  <span class="fp-layout-17">{{ manpower() }} чел.</span>
+                </div>
+                <input type="range" class="range-input" min="5" max="100" [value]="manpower()" (input)="manpower.set(+$any($event.target).value)">
+              </div>
+
+              <!-- Shifts -->
+              <div class="form-group fp-layout-13" >
+                <div class="form-label fp-layout-16" >
+                  <span>Режим работы:</span>
+                  <span class="fp-layout-17">{{ shifts() }} смен{{ shifts() > 1 ? 'ы' : 'а' }}</span>
+                </div>
+                <input type="range" class="range-input" min="1" max="3" [value]="shifts()" (input)="shifts.set(+$any($event.target).value)">
+              </div>
+
+              <!-- Work Hours per Day -->
+              <div class="form-group fp-layout-13" >
+                <div class="form-label fp-layout-16" >
+                  <span>Рабочих часов в день:</span>
+                  <span class="fp-layout-17">{{ workHoursPerDay() }} ч</span>
+                </div>
+                <input type="range" class="range-input" min="4" max="24" step="1" [value]="workHoursPerDay()" (input)="workHoursPerDay.set(+$any($event.target).value)">
+              </div>
+
+              <!-- Soil -->
+              <div class="form-group fp-layout-13" >
+                <label class="form-label fp-layout-18" >Категория грунта:</label>
+                <select class="select-input fp-layout-19" [value]="soilType()" (change)="soilType.set(+$any($event.target).value)" >
+                  <option [value]="0.8">Песчаный / легкий (x0.8)</option>
+                  <option [value]="1.0">Суглинок / средний (x1.0)</option>
+                  <option [value]="1.35">Глина / тяжелый (x1.35)</option>
+                  <option [value]="2.2">Гравийно-галечный (x2.2)</option>
+                  <option [value]="3.5">Скальный / мерзлый (x3.5)</option>
+                </select>
+              </div>
+
+              <!-- Factors -->
+              <div class="form-group fp-layout-13" >
+                <label class="form-label fp-layout-18" >Условия работы:</label>
+                <div class="fp-layout-20">
+                  <label class="checkbox-btn fp-layout-21" [class.checked]="factorNight()" >
+                    <input type="checkbox" [checked]="factorNight()" (change)="factorNight.set($any($event.target).checked)">
+                    <span class="custom-check fp-layout-22" ></span>
+                    Ночь (x1.3)
+                  </label>
+                  <label class="checkbox-btn fp-layout-21" [class.checked]="factorWinter()" >
+                    <input type="checkbox" [checked]="factorWinter()" (change)="factorWinter.set($any($event.target).checked)">
+                    <span class="custom-check fp-layout-22" ></span>
+                    Зима (x1.5)
+                  </label>
+                </div>
+              </div>
             </div>
 
-            <div class="kpi-card success fp-layout-25" >
-              <span class="kpi-label fp-layout-26" >Расход леса</span>
-              <div class="kpi-value fp-layout-27" >
-                {{ vopCalculations().totalWood | number:'1.1-1' }} <span class="unit fp-layout-28" >м³</span>
-              </div>
-              <span class="kpi-subtext fp-layout-29" >
-                Материалы под укрытия
-              </span>
-            </div>
+            <!-- Right Panel (KPIs + Park) -->
+            <div class="fp-layout-23">
+              <!-- KPIs Panel -->
+              <div class="kpi-container fp-layout-24" >
+                
+                <div class="kpi-card fp-layout-25" >
+                  <span class="kpi-label fp-layout-26" >Объем грунта</span>
+                  <div class="kpi-value fp-layout-27" >
+                    {{ vopCalculations().totalEarth | number:'1.0-0' }} <span class="unit fp-layout-28" >м³</span>
+                  </div>
+                  <span class="kpi-subtext fp-layout-29" >
+                    Суммарные земляные работы
+                  </span>
+                </div>
 
-            <div class="kpi-card warning fp-layout-25" >
-              <span class="kpi-label fp-layout-26" >Трудозатраты л/с</span>
-              <div class="kpi-value fp-layout-27" >
-                {{ vopCalculations().totalLaborHrs | number:'1.0-0' }} <span class="unit fp-layout-28" >чел.-ч</span>
-              </div>
-              <span class="kpi-subtext fp-layout-29" >
-                Для доработки вручную
-              </span>
-            </div>
+                <div class="kpi-card success fp-layout-25" >
+                  <span class="kpi-label fp-layout-26" >Расход леса</span>
+                  <div class="kpi-value fp-layout-27" >
+                    {{ vopCalculations().totalWood | number:'1.1-1' }} <span class="unit fp-layout-28" >м³</span>
+                  </div>
+                  <span class="kpi-subtext fp-layout-29" >
+                    Материалы под укрытия
+                  </span>
+                </div>
 
-            <div class="kpi-card info fp-layout-25" >
-              <span class="kpi-label fp-layout-26" >Календарное время</span>
-              <div class="kpi-value fp-layout-27" >
-                {{ vopCalculations().totalDurationCal | number:'1.1-1' }} <span class="unit fp-layout-28" >ч.</span>
+                <div class="kpi-card warning fp-layout-25" >
+                  <span class="kpi-label fp-layout-26" >Трудозатраты л/с</span>
+                  <div class="kpi-value fp-layout-27" >
+                    {{ vopCalculations().totalLaborHrs | number:'1.0-0' }} <span class="unit fp-layout-28" >чел.-ч</span>
+                  </div>
+                  <span class="kpi-subtext fp-layout-29" >
+                    Для доработки вручную
+                  </span>
+                </div>
+
+                <div class="kpi-card info fp-layout-25" >
+                  <span class="kpi-label fp-layout-26" >Календарное время</span>
+                  <div class="kpi-value fp-layout-27" >
+                    {{ vopCalculations().totalDurationCal | number:'1.1-1' }} <span class="unit fp-layout-28" >ч.</span>
+                  </div>
+                  <span class="kpi-subtext fp-layout-29" >
+                    Всего с учетом КТГ техники
+                  </span>
+                </div>
               </div>
-              <span class="kpi-subtext fp-layout-29" >
-                Всего с учетом КТГ техники
-              </span>
+
+              <!-- Ведомость парка инженерной техники -->
+              <div class="dashboard-card fp-layout-30" >
+                <div class="fp-layout-31">
+                  <h4 class="fp-layout-32">
+                    Парк инженерной техники и КТГ (коэффициент технической готовности)
+                  </h4>
+                  <span class="fp-layout-33">Редактируйте параметры производительности и исправности для учета поломок и КТГ</span>
+                </div>
+
+                <table class="excel-table fp-layout-34" >
+                  <thead>
+                    <tr class="fp-layout-35">
+                      <th class="fp-layout-36">Наименование техники</th>
+                      <th class="fp-layout-37">Базовый тип</th>
+                      <th class="fp-layout-38">Базовая произв. (м³/ч)</th>
+                      <th class="fp-layout-38">Реальная произв. (м³/ч)</th>
+                      <th class="fp-layout-38">КТГ (исправность)</th>
+                      <th class="fp-layout-39"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (dev of machDevices(); track dev.id) {
+                      <tr>
+                        <td class="fp-layout-40">
+                          <input type="text" [value]="dev.name" (input)="updateDeviceField(dev.id, 'name', $event)" [disabled]="dev.id === 'none'" class="fp-layout-41" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                        </td>
+                        <td class="fp-layout-42">
+                          <select [value]="dev.type" (change)="updateDeviceField(dev.id, 'type', $event)" [disabled]="dev.id === 'none'" class="fp-layout-43">
+                            <option value="eov">ЭОВ-4421</option>
+                            <option value="pzm">ПЗМ-2</option>
+                            <option value="mdk">МДК-3</option>
+                            <option value="bu">Бульдозер</option>
+                            <option value="none">Вручную</option>
+                          </select>
+                        </td>
+                        <td class="fp-layout-44">
+                          {{ dev.basePerf | number:'1.0-1' }}
+                        </td>
+                        <td class="fp-layout-42">
+                          <input type="number" step="0.5" [value]="dev.currentPerf" (input)="updateDeviceField(dev.id, 'currentPerf', $event)" [disabled]="dev.id === 'none'" class="fp-layout-45" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                        </td>
+                        <td class="fp-layout-42">
+                          <input type="number" step="0.01" min="0.10" max="1.00" [value]="dev.efficiency" [disabled]="dev.id === 'none'" (input)="updateDeviceField(dev.id, 'efficiency', $event)" class="fp-layout-46" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                        </td>
+                        <td class="fp-layout-42">
+                          <button class="btn danger fp-layout-47"  [disabled]="dev.id === 'eov' || dev.id === 'pzm' || dev.id === 'mdk' || dev.id === 'bu' || dev.id === 'none'" (click)="removeDevice(dev.id)" title="Удалить технику">✕</button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+
+                <div class="fp-layout-48">
+                  <button class="btn secondary fp-layout-49"  (click)="addDevice()">
+                    + Добавить единицу техники
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-
-          <!-- Ведомость парка инженерной техники -->
-          <div class="dashboard-card fp-layout-30" >
-            <div class="fp-layout-31">
-              <h4 class="fp-layout-32">
-                Парк инженерной техники и КТГ (коэффициент технической готовности)
-              </h4>
-              <span class="fp-layout-33">Редактируйте параметры производительности и исправности для учета поломок и КТГ</span>
-            </div>
-
-            <table class="excel-table fp-layout-34" >
-              <thead>
-                <tr class="fp-layout-35">
-                  <th class="fp-layout-36">Наименование техники</th>
-                  <th class="fp-layout-37">Базовый тип</th>
-                  <th class="fp-layout-38">Базовая произв. (м³/ч)</th>
-                  <th class="fp-layout-38">Реальная произв. (м³/ч)</th>
-                  <th class="fp-layout-38">КТГ (исправность)</th>
-                  <th class="fp-layout-39"></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (dev of machDevices(); track dev.id) {
-                  <tr>
-                    <td class="fp-layout-40">
-                      <input type="text" [value]="dev.name" (input)="updateDeviceField(dev.id, 'name', $event)" [disabled]="dev.id === 'none'" class="fp-layout-41" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
-                    </td>
-                    <td class="fp-layout-42">
-                      <select [value]="dev.type" (change)="updateDeviceField(dev.id, 'type', $event)" [disabled]="dev.id === 'none'" class="fp-layout-43">
-                        <option value="eov">ЭОВ-4421</option>
-                        <option value="pzm">ПЗМ-2</option>
-                        <option value="mdk">МДК-3</option>
-                        <option value="bu">Бульдозер</option>
-                        <option value="none">Вручную</option>
-                      </select>
-                    </td>
-                    <td class="fp-layout-44">
-                      {{ dev.basePerf | number:'1.0-1' }}
-                    </td>
-                    <td class="fp-layout-42">
-                      <input type="number" step="0.5" [value]="dev.currentPerf" (input)="updateDeviceField(dev.id, 'currentPerf', $event)" [disabled]="dev.id === 'none'" class="fp-layout-45" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
-                    </td>
-                    <td class="fp-layout-42">
-                      <input type="number" step="0.01" min="0.10" max="1.00" [value]="dev.efficiency" [disabled]="dev.id === 'none'" (input)="updateDeviceField(dev.id, 'efficiency', $event)" class="fp-layout-46" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
-                    </td>
-                    <td class="fp-layout-42">
-                      <button class="btn danger fp-layout-47"  [disabled]="dev.id === 'eov' || dev.id === 'pzm' || dev.id === 'mdk' || dev.id === 'bu' || dev.id === 'none'" (click)="removeDevice(dev.id)" title="Удалить технику">✕</button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-
-            <div class="fp-layout-48">
-              <button class="btn secondary fp-layout-49"  (click)="addDevice()">
-                + Добавить единицу техники
-              </button>
-            </div>
-          </div>
-        </div>
+        }
       </div>
 
       <!-- Excel-like Calendar & Tasks Table -->
       <div class="dashboard-card fp-layout-50" >
-        <div class="fp-layout-31">
-          <h4 class="fp-layout-32">
-            Календарный план фортификационного оборудования опорного пункта (очереди работ)
-          </h4>
-          <span class="fp-layout-51">Пунктирная стрелка — техника | Сплошная стрелка — личный состав</span>
+        <div class="fp-layout-31" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <h4 class="fp-layout-32">
+              Календарный план фортификационного оборудования опорного пункта (очереди работ)
+            </h4>
+            <span class="fp-layout-51">Пунктирная стрелка — техника | Сплошная стрелка — личный состав</span>
+          </div>
+
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; background: #f1f5f9; padding: 4px 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+            <input type="checkbox" [checked]="pinColumns()" (change)="togglePinColumns()" style="cursor: pointer; width: 14px; height: 14px; accent-color: #2563eb;">
+            <span style="font-size: 11px; font-weight: 600; color: #334155;">Фиксировать колонки (sticky)</span>
+          </label>
         </div>
 
-        <table class="excel-table fp-layout-52" >
+        <div class="gantt-table-wrapper"
+             #ganttWrapper
+             (mousedown)="onWrapperMouseDown($event, ganttWrapper)"
+             (mouseleave)="onWrapperMouseLeave(ganttWrapper)"
+             (mouseup)="onWrapperMouseUp(ganttWrapper)"
+             (mousemove)="onWrapperMouseMove($event, ganttWrapper)">
+          <table class="excel-table fp-layout-52" [class.table-pinned]="pinColumns()">
           <thead>
             <tr class="fp-layout-35">
-              <th rowspan="2" class="fp-layout-53">№</th>
-              <th rowspan="2" class="fp-layout-54">Наименование работ</th>
-              <th rowspan="2" class="fp-layout-55">Объект работ</th>
-              <th rowspan="2" class="fp-layout-56">Ед. изм.</th>
-              <th rowspan="2" class="fp-layout-57">Объем</th>
-              <th rowspan="2" class="fp-layout-58">Техника</th>
-              <th colspan="2" class="fp-layout-59">Нормы / ед.</th>
-              <th colspan="2" class="fp-layout-59">Всего</th>
-              @for (day of dayIndices(); track day) {
-                <th colspan="6" class="fp-layout-60">{{ day + 1 }} сутки</th>
+              <th rowspan="2" class="fp-layout-53 sticky-col-1">№</th>
+              <th rowspan="2" class="fp-layout-54 sticky-col-2">Наименование работ</th>
+              <th rowspan="2" class="fp-layout-55 sticky-col-3">Объект работ</th>
+              <th rowspan="2" class="fp-layout-56 sticky-col-4">Ед. изм.</th>
+              <th rowspan="2" class="fp-layout-57 sticky-col-5">Объем</th>
+              <th rowspan="2" class="fp-layout-58 sticky-col-6">Техника</th>
+              <th rowspan="2" class="fp-layout-62 sticky-col-7" title="Количество единиц техники">Кол-во</th>
+              <th colspan="2" class="fp-layout-59 sticky-header-group-labor">Нормы / ед.</th>
+              <th colspan="2" class="fp-layout-59 sticky-header-group-total">Всего</th>
+              @if (!vopCalculations().isWeeklyMode) {
+                @for (day of dayIndices(); track day) {
+                  <th colspan="6" class="fp-layout-60">{{ day + 1 }} сутки</th>
+                }
+              } @else {
+                @for (week of dayIndices(); track week) {
+                  <th colspan="6" class="fp-layout-60">{{ week + 1 }} нед.</th>
+                }
               }
               <th rowspan="2" class="fp-layout-61"></th>
             </tr>
             <tr class="fp-layout-35">
-              <th class="fp-layout-62">маш.-ч</th>
-              <th class="fp-layout-62">чел.-ч</th>
-              <th class="fp-layout-63">м.-ч</th>
-              <th class="fp-layout-63">ч.-ч</th>
-              @for (day of dayIndices(); track day) {
-                @for (shift of [1,2,3,4,5,6]; track shift) {
-                  <th class="fp-layout-64">{{ shift }}</th>
+              <th class="fp-layout-62 sticky-col-8">маш.-ч</th>
+              <th class="fp-layout-62 sticky-col-9">чел.-ч</th>
+              <th class="fp-layout-63 sticky-col-10">м.-ч</th>
+              <th class="fp-layout-63 sticky-col-11">ч.-ч</th>
+              @if (!vopCalculations().isWeeklyMode) {
+                @for (day of dayIndices(); track day) {
+                  @for (shift of [1,2,3,4,5,6]; track shift) {
+                    <th class="fp-layout-64">{{ shift }}</th>
+                  }
+                }
+              } @else {
+                @for (week of dayIndices(); track week) {
+                  @for (dayOfWeek of [1,2,3,4,5,6]; track dayOfWeek) {
+                    <th class="fp-layout-64">дн {{ dayOfWeek }}</th>
+                  }
                 }
               }
             </tr>
@@ -253,46 +294,61 @@
             
             <!-- I ОЧЕРЕДЬ -->
             <tr class="fp-layout-65">
-              <td [attr.colspan]="11 + dayIndices().length * 6" class="fp-layout-66">I Очередь работ</td>
+              <td [attr.colspan]="12 + dayIndices().length * 6" class="fp-layout-66">
+                <span style="position: sticky; left: 12px; display: inline-block;">I Очередь работ</span>
+              </td>
             </tr>
             @for (row of vopCalculations().rows; track row.id; let idx = $index) {
               @if (row.phase === 1) {
                 <tr>
-                  <td class="fp-layout-67">{{ row.displayIndex }}</td>
-                  <td class="fp-layout-68">
-                    <input type="text" [value]="row.name" (input)="updateTaskField(row.id, 'name', $event)" class="fp-layout-41" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                  <td class="fp-layout-67 sticky-col-1">{{ row.displayIndex }}</td>
+                  <td class="fp-layout-68 sticky-col-2" style="padding-bottom: 6px;">
+                    <input type="text" [value]="row.name" (input)="updateTaskField(row.id, 'name', $event)" class="fp-layout-41" style="font-weight: 600;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                    <div style="font-size: 9px; color: #64748b; margin-top: 2px; padding-left: 4px; line-height: 1.2; font-family: monospace;">
+                      @if (row.earthNorm > 0) { <span>Земля: <strong>{{ row.qty * row.earthNorm | number:'1.0-0' }}</strong> м³ | </span> }
+                      @if (row.woodNorm > 0) { <span>Круглый лес: <strong>{{ row.qty * row.woodNorm | number:'1.1-1' }}</strong> м³ | </span> }
+                      @if (row.boardsNorm > 0) { <span>Доски: <strong>{{ row.qty * row.boardsNorm | number:'1.1-1' }}</strong> м³ | </span> }
+                      @if (row.wireViazNorm > 0) { <span>Вяз. проволока: <strong>{{ row.qty * row.wireViazNorm | number:'1.0-0' }}</strong> кг | </span> }
+                      @if (row.masNetNorm > 0) { <span>Мас. сети: <strong>{{ row.qty * row.masNetNorm | number:'1.0-0' }}</strong> м² | </span> }
+                      @if (row.trapsNorm > 0) { <span>Трапы: <strong>{{ row.qty * row.trapsNorm | number:'1.0-0' }}</strong> п.м. | </span> }
+                      @if (row.doorsNorm > 0) { <span>Двери БД-50: <strong>{{ row.qty * row.doorsNorm | number:'1.0-0' }}</strong> шт | </span> }
+                      @if (row.stovesNorm > 0) { <span>Печи: <strong>{{ row.qty * row.stovesNorm | number:'1.0-0' }}</strong> шт</span> }
+                    </div>
                   </td>
-                  <td class="fp-layout-69">
+                  <td class="fp-layout-69 sticky-col-3">
                     <input type="text" [value]="row.objectName" (input)="updateTaskField(row.id, 'objectName', $event)" class="fp-layout-70" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
                   </td>
-                  <td class="fp-layout-62">
+                  <td class="fp-layout-62 sticky-col-4">
                     <select [value]="row.unit" (change)="updateTaskField(row.id, 'unit', $event)" class="fp-layout-71">
                       <option value="шт.">шт.</option>
                       <option value="м">м</option>
                     </select>
                   </td>
-                  <td class="fp-layout-72">
+                  <td class="fp-layout-72 sticky-col-5">
                     <div class="quantity-control fp-layout-73" >
                       <button class="qty-btn" (click)="changeQty(row.id, -1)">-</button>
                       <span class="qty-val fp-layout-74" >{{ row.qty }}</span>
                       <button class="qty-btn" (click)="changeQty(row.id, 1)">+</button>
                     </div>
                   </td>
-                  <td class="fp-layout-75">
+                  <td class="fp-layout-75 sticky-col-6">
                     <select [value]="row.machType" (change)="updateTaskField(row.id, 'machType', $event)" class="fp-layout-76">
                       @for (dev of machDevices(); track dev.id) {
                         <option [value]="dev.id">{{ dev.name }}</option>
                       }
                     </select>
                   </td>
-                  <td class="fp-layout-77">
+                  <td class="fp-layout-62 sticky-col-7">
+                    <input type="number" min="1" max="20" [value]="row.machQty || 1" (input)="updateTaskField(row.id, 'machQty', $event)" [disabled]="row.machType === 'none'" class="fp-layout-78" style="font-weight: 700; text-align: center;" title="Количество единиц техники">
+                  </td>
+                  <td class="fp-layout-77 sticky-col-8">
                     <input type="number" step="0.001" [value]="row.machNorm" (input)="updateTaskField(row.id, 'machNorm', $event)" class="fp-layout-78" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
                   </td>
-                  <td class="fp-layout-77">
+                  <td class="fp-layout-77 sticky-col-9">
                     <input type="number" step="0.1" [value]="row.laborNorm" (input)="updateTaskField(row.id, 'laborNorm', $event)" class="fp-layout-79" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
                   </td>
-                  <td class="fp-layout-80">{{ row.machTotal | number:'1.1-1' }}</td>
-                  <td class="fp-layout-80">{{ row.laborTotal | number:'1.0-0' }}</td>
+                  <td class="fp-layout-80 sticky-col-10">{{ row.machTotal | number:'1.1-1' }}</td>
+                  <td class="fp-layout-80 sticky-col-11">{{ row.laborTotal | number:'1.0-0' }}</td>
                   
                   <!-- Объединенная колонка Ганта со стрелками -->
                   <td [attr.colspan]="dayIndices().length * 6" [style.min-width.px]="dayIndices().length * 192" class="fp-layout-81">
@@ -330,8 +386,8 @@
               }
             }
             <tr>
-              <td [attr.colspan]="11 + dayIndices().length * 6" class="fp-layout-85">
-                <button class="btn secondary fp-layout-86"  (click)="addTask(1)">
+              <td [attr.colspan]="12 + dayIndices().length * 6" class="fp-layout-85">
+                <button class="btn secondary fp-layout-86" style="position: sticky; left: 12px;" (click)="addTask(1)">
                   + Добавить сооружение в I очередь
                 </button>
               </td>
@@ -339,46 +395,61 @@
 
             <!-- II ОЧЕРЕДЬ -->
             <tr class="fp-layout-65">
-              <td [attr.colspan]="11 + dayIndices().length * 6" class="fp-layout-66">II Очередь работ</td>
+              <td [attr.colspan]="12 + dayIndices().length * 6" class="fp-layout-66">
+                <span style="position: sticky; left: 12px; display: inline-block;">II Очередь работ</span>
+              </td>
             </tr>
             @for (row of vopCalculations().rows; track row.id; let idx = $index) {
               @if (row.phase === 2) {
                 <tr>
-                  <td class="fp-layout-67">{{ row.displayIndex }}</td>
-                  <td class="fp-layout-68">
-                    <input type="text" [value]="row.name" (input)="updateTaskField(row.id, 'name', $event)" class="fp-layout-41" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                  <td class="fp-layout-67 sticky-col-1">{{ row.displayIndex }}</td>
+                  <td class="fp-layout-68 sticky-col-2" style="padding-bottom: 6px;">
+                    <input type="text" [value]="row.name" (input)="updateTaskField(row.id, 'name', $event)" class="fp-layout-41" style="font-weight: 600;" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
+                    <div style="font-size: 9px; color: #64748b; margin-top: 2px; padding-left: 4px; line-height: 1.2; font-family: monospace;">
+                      @if (row.earthNorm > 0) { <span>Земля: <strong>{{ row.qty * row.earthNorm | number:'1.0-0' }}</strong> м³ | </span> }
+                      @if (row.woodNorm > 0) { <span>Круглый лес: <strong>{{ row.qty * row.woodNorm | number:'1.1-1' }}</strong> м³ | </span> }
+                      @if (row.boardsNorm > 0) { <span>Доски: <strong>{{ row.qty * row.boardsNorm | number:'1.1-1' }}</strong> м³ | </span> }
+                      @if (row.wireViazNorm > 0) { <span>Вяз. проволока: <strong>{{ row.qty * row.wireViazNorm | number:'1.0-0' }}</strong> кг | </span> }
+                      @if (row.masNetNorm > 0) { <span>Мас. сети: <strong>{{ row.qty * row.masNetNorm | number:'1.0-0' }}</strong> м² | </span> }
+                      @if (row.trapsNorm > 0) { <span>Трапы: <strong>{{ row.qty * row.trapsNorm | number:'1.0-0' }}</strong> п.м. | </span> }
+                      @if (row.doorsNorm > 0) { <span>Двери БД-50: <strong>{{ row.qty * row.doorsNorm | number:'1.0-0' }}</strong> шт | </span> }
+                      @if (row.stovesNorm > 0) { <span>Печи: <strong>{{ row.qty * row.stovesNorm | number:'1.0-0' }}</strong> шт</span> }
+                    </div>
                   </td>
-                  <td class="fp-layout-69">
+                  <td class="fp-layout-69 sticky-col-3">
                     <input type="text" [value]="row.objectName" (input)="updateTaskField(row.id, 'objectName', $event)" class="fp-layout-70" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
                   </td>
-                  <td class="fp-layout-62">
+                  <td class="fp-layout-62 sticky-col-4">
                     <select [value]="row.unit" (change)="updateTaskField(row.id, 'unit', $event)" class="fp-layout-71">
                       <option value="шт.">шт.</option>
                       <option value="м">м</option>
                     </select>
                   </td>
-                  <td class="fp-layout-72">
+                  <td class="fp-layout-72 sticky-col-5">
                     <div class="quantity-control fp-layout-73" >
                       <button class="qty-btn" (click)="changeQty(row.id, -1)">-</button>
                       <span class="qty-val fp-layout-74" >{{ row.qty }}</span>
                       <button class="qty-btn" (click)="changeQty(row.id, 1)">+</button>
                     </div>
                   </td>
-                  <td class="fp-layout-75">
+                  <td class="fp-layout-75 sticky-col-6">
                     <select [value]="row.machType" (change)="updateTaskField(row.id, 'machType', $event)" class="fp-layout-76">
                       @for (dev of machDevices(); track dev.id) {
                         <option [value]="dev.id">{{ dev.name }}</option>
                       }
                     </select>
                   </td>
-                  <td class="fp-layout-77">
+                  <td class="fp-layout-62 sticky-col-7">
+                    <input type="number" min="1" max="20" [value]="row.machQty || 1" (input)="updateTaskField(row.id, 'machQty', $event)" [disabled]="row.machType === 'none'" class="fp-layout-78" style="font-weight: 700; text-align: center;" title="Количество единиц техники">
+                  </td>
+                  <td class="fp-layout-77 sticky-col-8">
                     <input type="number" step="0.001" [value]="row.machNorm" (input)="updateTaskField(row.id, 'machNorm', $event)" class="fp-layout-78" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
                   </td>
-                  <td class="fp-layout-77">
+                  <td class="fp-layout-77 sticky-col-9">
                     <input type="number" step="0.1" [value]="row.laborNorm" (input)="updateTaskField(row.id, 'laborNorm', $event)" class="fp-layout-79" (focus)="$any($event.target).style.border='1px solid #cbd5e1'" (blur)="$any($event.target).style.border='1px solid transparent'">
                   </td>
-                  <td class="fp-layout-80">{{ row.machTotal | number:'1.1-1' }}</td>
-                  <td class="fp-layout-80">{{ row.laborTotal | number:'1.0-0' }}</td>
+                  <td class="fp-layout-80 sticky-col-10">{{ row.machTotal | number:'1.1-1' }}</td>
+                  <td class="fp-layout-80 sticky-col-11">{{ row.laborTotal | number:'1.0-0' }}</td>
                   
                   <!-- Объединенная колонка Ганта со стрелками -->
                   <td [attr.colspan]="dayIndices().length * 6" [style.min-width.px]="dayIndices().length * 192" class="fp-layout-81">
@@ -416,15 +487,74 @@
               }
             }
             <tr>
-              <td [attr.colspan]="11 + dayIndices().length * 6" class="fp-layout-85">
-                <button class="btn secondary fp-layout-86"  (click)="addTask(2)">
+              <td [attr.colspan]="12 + dayIndices().length * 6" class="fp-layout-85">
+                <button class="btn secondary fp-layout-86" style="position: sticky; left: 12px;" (click)="addTask(2)">
                   + Добавить сооружение во II очередь
                 </button>
               </td>
             </tr>
 
+            <!-- ПОТРЕБНОСТЬ В МАТЕРИАЛАХ ПО ДНЯМ -->
+            <tr style="background-color: #f1f5f9; font-weight: 700; border-top: 2px solid #cbd5e1;">
+              <td colspan="9" class="sticky-sum-col-1-9" style="padding: 6px 10px; font-size: 11px; color: #334155; text-align: left; border: 1px solid #cbd5e1;">
+                {{ vopCalculations().isWeeklyMode ? 'Расход круглого леса (м³ / неделя)' : 'Расход круглого леса (м³ / сутки)' }}
+              </td>
+              <td colspan="2" class="sticky-sum-col-10-11" style="padding: 6px 10px; font-size: 11px; color: #1e293b; text-align: right; border: 1px solid #cbd5e1; white-space: nowrap;">
+                Всего: {{ vopCalculations().totalWood | number:'1.1-1' }}
+              </td>
+              @for (day of dayIndices(); track day) {
+                <td colspan="6" style="padding: 6px 4px; font-size: 11px; color: #0f172a; text-align: center; border: 1px solid #cbd5e1; background-color: #f8fafc; font-family: monospace;">
+                  {{ vopCalculations().woodPerDay[day] || 0 }}
+                </td>
+              }
+              <td style="border: 1px solid #cbd5e1;"></td>
+            </tr>
+            <tr style="background-color: #f1f5f9; font-weight: 700;">
+              <td colspan="9" class="sticky-sum-col-1-9" style="padding: 6px 10px; font-size: 11px; color: #334155; text-align: left; border: 1px solid #cbd5e1;">
+                {{ vopCalculations().isWeeklyMode ? 'Расход досок обшивки (м³ / неделя)' : 'Расход досок обшивки (м³ / сутки)' }}
+              </td>
+              <td colspan="2" class="sticky-sum-col-10-11" style="padding: 6px 10px; font-size: 11px; color: #1e293b; text-align: right; border: 1px solid #cbd5e1; white-space: nowrap;">
+                Всего: {{ vopCalculations().totalBoards | number:'1.1-1' }}
+              </td>
+              @for (day of dayIndices(); track day) {
+                <td colspan="6" style="padding: 6px 4px; font-size: 11px; color: #0f172a; text-align: center; border: 1px solid #cbd5e1; background-color: #f8fafc; font-family: monospace;">
+                  {{ vopCalculations().boardsPerDay[day] || 0 }}
+                </td>
+              }
+              <td style="border: 1px solid #cbd5e1;"></td>
+            </tr>
+            <tr style="background-color: #f1f5f9; font-weight: 700;">
+              <td colspan="9" class="sticky-sum-col-1-9" style="padding: 6px 10px; font-size: 11px; color: #334155; text-align: left; border: 1px solid #cbd5e1;">
+                {{ vopCalculations().isWeeklyMode ? 'Расход маскировочных сетей (м² / неделя)' : 'Расход маскировочных сетей (м² / сутки)' }}
+              </td>
+              <td colspan="2" class="sticky-sum-col-10-11" style="padding: 6px 10px; font-size: 11px; color: #1e293b; text-align: right; border: 1px solid #cbd5e1; white-space: nowrap;">
+                Всего: {{ vopCalculations().totalMasNet }}
+              </td>
+              @for (day of dayIndices(); track day) {
+                <td colspan="6" style="padding: 6px 4px; font-size: 11px; color: #0f172a; text-align: center; border: 1px solid #cbd5e1; background-color: #f8fafc; font-family: monospace;">
+                  {{ vopCalculations().masNetPerDay[day] || 0 }}
+                </td>
+              }
+              <td style="border: 1px solid #cbd5e1;"></td>
+            </tr>
+            <tr style="background-color: #f1f5f9; font-weight: 700; border-bottom: 2px solid #cbd5e1;">
+              <td colspan="9" class="sticky-sum-col-1-9" style="padding: 6px 10px; font-size: 11px; color: #334155; text-align: left; border: 1px solid #cbd5e1;">
+                {{ vopCalculations().isWeeklyMode ? 'Расход вязальной проволоки (кг / неделя)' : 'Расход вязальной проволоки (кг / сутки)' }}
+              </td>
+              <td colspan="2" class="sticky-sum-col-10-11" style="padding: 6px 10px; font-size: 11px; color: #1e293b; text-align: right; border: 1px solid #cbd5e1; white-space: nowrap;">
+                Всего: {{ vopCalculations().totalWireViaz | number:'1.1-1' }}
+              </td>
+              @for (day of dayIndices(); track day) {
+                <td colspan="6" style="padding: 6px 4px; font-size: 11px; color: #0f172a; text-align: center; border: 1px solid #cbd5e1; background-color: #f8fafc; font-family: monospace;">
+                  {{ vopCalculations().wireViazPerDay[day] || 0 }}
+                </td>
+              }
+              <td style="border: 1px solid #cbd5e1;"></td>
+            </tr>
+
           </tbody>
         </table>
+        </div>
 
         <!-- Сноски и примечания -->
         <div class="fp-layout-87">
