@@ -1,0 +1,53 @@
+<div class="elevation-profile-container">
+  <!-- Header -->
+  <div class="elevation-profile-header">
+    <div class="elevation-profile-title-group">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+      </svg>
+      <span class="elevation-profile-title">{{ title }}</span>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="elevation-profile-stats">
+      <div class="stat-badge">
+        <span class="stat-label">Дистанция:</span>
+        <span class="stat-value">{{ (totalDistanceM / 1000) | number:'1.1-2' }} км</span>
+      </div>
+      <div class="stat-badge">
+        <span class="stat-label">Мин:</span>
+        <span class="stat-value">{{ minElevation }} м</span>
+      </div>
+      <div class="stat-badge">
+        <span class="stat-label">Макс:</span>
+        <span class="stat-value">{{ maxElevation }} м</span>
+      </div>
+      <div class="stat-badge gain">
+        <span class="stat-label">Подъем:</span>
+        <span class="stat-value">+{{ elevationGainM }} м</span>
+      </div>
+
+      @if (hoveredPoint) {
+        <div class="stat-badge active-point">
+          <span class="stat-label">Дист:</span>
+          <span class="stat-value">{{ (hoveredPoint.distanceM / 1000) | number:'1.2-2' }} км</span>
+          <span class="stat-label" style="margin-left: 6px;">Высота:</span>
+          <span class="stat-value highlight">{{ hoveredPoint.elevationM }} м</span>
+        </div>
+      }
+    </div>
+
+    <button class="elevation-profile-close-btn" (click)="close.emit()" title="Закрыть профиль высот">
+      ✕
+    </button>
+  </div>
+
+  <!-- Body Chart Canvas -->
+  <div class="elevation-profile-body">
+    <canvas 
+      #profileCanvas 
+      (mousemove)="onCanvasMouseMove($event)" 
+      (mouseleave)="onCanvasMouseLeave()"
+    ></canvas>
+  </div>
+</div>

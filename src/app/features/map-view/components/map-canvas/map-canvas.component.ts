@@ -211,7 +211,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       pitch: prevPitch,
       minZoom: 6.48,
       fadeDuration: 0,
-    });
+      preserveDrawingBuffer: true,
+    } as any);
     this.vm.setMapInstance(this.map);
     this.updateCenterCoords();
 

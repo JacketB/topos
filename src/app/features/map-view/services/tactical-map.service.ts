@@ -1439,4 +1439,115 @@ export class TacticalMapService {
 
     map.on('mouseup', finishSelection);
   }
+
+  public exportScenarioData(): any {
+    let mapPosition = null;
+    if (this.mapInstance) {
+      mapPosition = {
+        center: this.mapInstance.getCenter().toArray(),
+        zoom: this.mapInstance.getZoom(),
+        bearing: this.mapInstance.getBearing(),
+        pitch: this.mapInstance.getPitch()
+      };
+    } else {
+      try {
+        const stored = localStorage.getItem('topos_map_position');
+        if (stored) mapPosition = JSON.parse(stored);
+      } catch (e) {}
+    }
+
+    let plannerTasks = [];
+    let plannerDevices = [];
+    try {
+      const tasks = localStorage.getItem('topos_planner_tasks');
+      if (tasks) plannerTasks = JSON.parse(tasks);
+      const devices = localStorage.getItem('topos_planner_devices');
+      if (devices) plannerDevices = JSON.parse(devices);
+    } catch (e) {}
+
+    const plannerSettings = {
+      manpower: Number(localStorage.getItem('topos_planner_manpower') || 30),
+      shifts: Number(localStorage.getItem('topos_planner_shifts') || 2),
+      soilType: localStorage.getItem('topos_planner_soilType') || 'loam',
+      factorNight: Number(localStorage.getItem('topos_planner_factorNight') || 0.7),
+      factorWinter: Number(localStorage.getItem('topos_planner_factorWinter') || 0.8),
+      workHoursPerDay: Number(localStorage.getItem('topos_planner_workHoursPerDay') || 10)
+    };
+
+    return {
+      version: "1.0",
+      type: "topos_scenario",
+      timestamp: new Date().toISOString(),
+      placedSymbols: this.placedSymbols(),
+      objectGroups: this.objectGroups(),
+      plannerTasks,
+      plannerDevices,
+      plannerSettings,
+      mapPosition
+    };
+  }
+
+  public importScenarioData(scenario: any) {
+    if (!scenario || scenario.type !== 'topos_scenario') {
+      throw new Error('Неверный формат сценария Topos');
+    }
+
+    const symbols = scenario.placedSymbols || [];
+    const groups = scenario.objectGroups || [];
+    
+    this.placedSymbols.set(symbols);
+    this.objectGroups.set(groups);
+
+    if (scenario.plannerTasks) {
+      localStorage.setItem('topos_planner_tasks', JSON.stringify(scenario.plannerTasks));
+    } else {
+      localStorage.removeItem('topos_planner_tasks');
+    }
+
+    if (scenario.plannerDevices) {
+      localStorage.setItem('topos_planner_devices', JSON.stringify(scenario.plannerDevices));
+    } else {
+      localStorage.removeItem('topos_planner_devices');
+    }
+
+    if (scenario.plannerSettings) {
+      const settings = scenario.plannerSettings;
+      if (settings.manpower !== undefined) localStorage.setItem('topos_planner_manpower', String(settings.manpower));
+      if (settings.shifts !== undefined) localStorage.setItem('topos_planner_shifts', String(settings.shifts));
+      if (settings.soilType !== undefined) localStorage.setItem('topos_planner_soilType', String(settings.soilType));
+      if (settings.factorNight !== undefined) localStorage.setItem('topos_planner_factorNight', String(settings.factorNight));
+      if (settings.factorWinter !== undefined) localStorage.setItem('topos_planner_factorWinter', String(settings.factorWinter));
+      if (settings.workHoursPerDay !== undefined) localStorage.setItem('topos_planner_workHoursPerDay', String(settings.workHoursPerDay));
+    }
+
+    if (scenario.mapPosition) {
+      localStorage.setItem('topos_map_position', JSON.stringify(scenario.mapPosition));
+      if (this.mapInstance) {
+        const pos = scenario.mapPosition;
+        if (pos.center && pos.zoom !== undefined) {
+          this.mapInstance.flyTo({
+            center: pos.center,
+            zoom: pos.zoom,
+            bearing: pos.bearing || 0,
+            pitch: pos.pitch || 0,
+            duration: 1000
+          });
+        }
+      }
+    }
+
+    // Предзагрузка картинок импортированных символов
+    symbols.forEach((s: any) => {
+      const symbolId = s.properties['symbol'];
+      const iconId = s.properties['iconId'] || symbolId;
+      const color = s.properties['color'] || '';
+      if (color) {
+        this.ensureSymbolColorImageLoadedForId(symbolId, color, iconId, () => this.updateTacticalSymbolsSource());
+      } else {
+        this.ensureSymbolImageLoadedForId(symbolId, iconId, () => this.updateTacticalSymbolsSource());
+      }
+    });
+
+    this.updateTacticalSymbolsSource();
+  }
 }

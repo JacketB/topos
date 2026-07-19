@@ -166,6 +166,12 @@ export class TerrainService {
     };
   }
 
+  getElevationAt(lng: number, lat: number): number {
+    if (!this.contoursData) return 150;
+    const nearest = this.findNearestContour(lng, lat, this.contoursData);
+    return nearest ? nearest.elevation : 150;
+  }
+
   async getApproxElevation(lng: number, lat: number): Promise<number> {
     const data = await this.loadContours();
     if (!data) return 150;

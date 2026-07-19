@@ -1390,35 +1390,115 @@ details[open] > .tree-summary {
   box-shadow: inset 0 1px 2px rgba(37, 99, 235, 0.15);
 }
 
-.symbol-dropdown-popover {
+.symbols-library-popover {
   position: absolute;
   top: 100%;
-  left: 0;
-  margin-top: 4px;
-  background: #ffffff;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  width: 320px;
-  max-height: 400px;
-  overflow-y: auto;
+  border-radius: 10px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 620px;
   z-index: 1000;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
 }
 
-.dropdown-popover-header {
+.symbols-library-layout {
+  display: flex;
+  height: 380px;
+}
+
+.symbols-library-tabs {
+  width: 190px;
+  flex-shrink: 0;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background-color: #f8fafc;
+  padding: 8px 6px;
+  gap: 4px;
+}
+
+.symbols-library-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: #475569;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.symbols-library-tab-btn:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+.symbols-library-tab-btn.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+  font-weight: 600;
+}
+
+.symbols-library-tab-btn .tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+  flex-shrink: 0;
+}
+
+.symbols-library-tab-btn .tab-label {
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.symbols-library-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.symbols-grid-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.symbols-grid-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 12px;
+}
+
+.symbols-grid-header .grid-title {
   font-size: 11px;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #f1f5f9;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   letter-spacing: 0.5px;
 }
 
@@ -1437,20 +1517,23 @@ details[open] > .tree-summary {
   color: #ef4444;
 }
 
-.symbols-dropdown-grid {
+.symbols-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
 }
 
-.symbol-dropdown-item {
+.symbol-grid-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
   background: #f8fafc;
-  padding: 8px 6px;
+  padding: 8px 4px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1458,13 +1541,13 @@ details[open] > .tree-summary {
   outline: none;
 }
 
-.symbol-dropdown-item:hover {
+.symbol-grid-item:hover {
   background-color: #f1f5f9;
   border-color: #cbd5e1;
   transform: translateY(-1px);
 }
 
-.symbol-dropdown-item.selected {
+.symbol-grid-item.selected {
   background-color: #eff6ff;
   border-color: #3b82f6;
   box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
@@ -1942,6 +2025,7 @@ details[open] > .tree-summary {
   overflow: hidden;
   z-index: 99;
   animation: panelSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes panelSlideIn {
@@ -2184,6 +2268,95 @@ details[open] > .tree-summary {
 
 .sidebar-toggle-btn-map.panel-open {
   right: 344px;
+}
+
+/* Стили плавающей HUD-карточки геодезических измерений */
+.geodesy-hud-card {
+  position: absolute;
+  top: 52px;
+  left: 16px;
+  width: 260px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 1040;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(8px);
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.geodesy-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.geodesy-hud-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+}
+
+.geodesy-hud-close {
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-weight: bold;
+  transition: color 0.2s;
+}
+
+.geodesy-hud-close:hover {
+  color: #ef4444;
+}
+
+.geodesy-hud-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.geodesy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.geodesy-label {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.geodesy-val {
+  font-weight: 700;
+  color: #1e293b;
+  font-family: monospace;
+}
+
+.geodesy-val.highlight {
+  color: #eb3b5a;
+}
+
+.geodesy-row.area {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 6px;
+  margin-top: 2px;
+}
+
+.geodesy-val.highlight-area {
+  color: #2563eb;
 }
 
 

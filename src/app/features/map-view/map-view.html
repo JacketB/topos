@@ -34,6 +34,14 @@
           </svg>
           <kbd class="key-hint">P</kbd>
         </button>
+        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'march_route'" (click)="vm.activeLineMode() === 'march_route' ? vm.cancelDrawingLine() : vm.startDrawingLine('march_route')" title="Проложить маршрут марша [Клавиша: R]">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19c2-3 5-3 8-1c3 2 6 2 8-2" />
+            <circle cx="4" cy="19" r="2" fill="currentColor" />
+            <circle cx="20" cy="16" r="2" fill="currentColor" />
+          </svg>
+          <kbd class="key-hint">R</kbd>
+        </button>
         <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
         <button class="tool-btn" [class.active]="vm.activeLineMode() === 'arrow_attack'" (click)="vm.activeLineMode() === 'arrow_attack' ? vm.cancelDrawingLine() : vm.startDrawingLine('arrow_attack')" title="Стрелка главного удара (ласточкин хвост) [Клавиша: A]">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -109,168 +117,196 @@
           </button>
         </div>
         <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
-        <div style="display: inline-flex; align-items: center; gap: 6px; user-select: none; vertical-align: middle; height: 28px; flex-shrink: 0;">
-          <input 
-            type="checkbox" 
-            [checked]="vm.isTerrainOrientationEnabled()" 
-            (change)="vm.toggleTerrainOrientation()" 
-            id="terrain-orient-check"
-            style="cursor: pointer; width: 13px; height: 13px; accent-color: #3b82f6; margin: 0; vertical-align: middle;"
-          />
-          <label for="terrain-orient-check" style="font-size: 11px; font-weight: 600; color: #475569; cursor: pointer; vertical-align: middle;">
-            Авто-рельеф
-          </label>
-        </div>
+        <button class="tool-btn" [class.active]="vm.isTerrainOrientationEnabled()" (click)="vm.toggleTerrainOrientation()" title="Автоматическая ориентация объектов по рельефу">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20h16M4 20l7-13 4 7 5-6" />
+          </svg>
+        </button>
+        <button class="tool-btn" [class.active]="vm.isCrosshairVisible()" (click)="vm.toggleCrosshair()" title="Показать/скрыть центральный визир (прицел) на карте">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="3" />
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <line x1="1" y1="12" x2="23" y2="12" />
+          </svg>
+        </button>
         <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
-        <div style="display: inline-flex; align-items: center; gap: 6px; user-select: none; vertical-align: middle; height: 28px; flex-shrink: 0;">
-          <input 
-            type="checkbox" 
-            [checked]="vm.isCrosshairVisible()" 
-            (change)="vm.toggleCrosshair()" 
-            id="crosshair-check"
-            style="cursor: pointer; width: 13px; height: 13px; accent-color: #3b82f6; margin: 0; vertical-align: middle;"
-          />
-          <label for="crosshair-check" style="font-size: 11px; font-weight: 600; color: #475569; cursor: pointer; vertical-align: middle;">
-            Прицел
-          </label>
-        </div>
+        <!-- Аналитика Milestone 3 (Профиль высот, Круги дальности, Зона видимости) -->
+        <button class="tool-btn" [class.active]="vm.isElevationProfileOpen()" (click)="vm.toggleElevationProfileFromToolbar()" title="Профиль высот рельефа местности [Клавиша: E]">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <kbd class="key-hint">E</kbd>
+        </button>
+        <button class="tool-btn" [class.active]="vm.tacticalAnalyticsService.isRangeRingsActive()" (click)="vm.toggleRangeRingsForSelected()" title="Круги дальности (500м, 1км, 3км, 5км) вокруг объекта или центра карты">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="4"></circle>
+          </svg>
+        </button>
+        <button class="tool-btn" [class.active]="vm.tacticalAnalyticsService.isViewshedActive()" (click)="vm.toggleViewshedForSelected()" title="Анализ зоны прямой видимости (Viewshed 360°) вокруг объекта или центра карты">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
       </div>
 
-      <!-- Средняя часть: тактические знаки по группам (выпадающие списки) -->
+      <!-- Средняя часть: Библиотека тактических знаков -->
       <div class="toolbar-group" style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
         <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 4px; flex-shrink: 0;"></div>
         
-        @for (category of vm.symbolsService.groupedSymbols(); track category.id) {
-          <div class="toolbar-dropdown-container" style="position: relative; display: inline-block;">
-            <button 
-              class="tool-btn" 
-              [class.active]="vm.activeCategoryDropdown() === category.id" 
-              (click)="vm.toggleCategoryDropdown(category.id)" 
-              [title]="category.name"
-            >
-              @switch (category.id) {
-                @case ('armor') {
-                  <!-- Иконка танка/бронетехники -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="11" width="18" height="8" rx="2" ry="2"></rect>
-                    <path d="M12 5v6M8 5h8"></path>
-                    <circle cx="6" cy="15" r="1"></circle>
-                    <circle cx="12" cy="15" r="1"></circle>
-                    <circle cx="18" cy="15" r="1"></circle>
-                  </svg>
-                }
-                @case ('fortification_ussr') {
-                  <!-- Иконка фортификации (бункер/блиндаж) -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 18V9a5 5 0 0 1 5-5h10a5 5 0 0 1 5 5v9H2z"></path>
-                    <rect x="7" y="9" width="10" height="3" rx="1" fill="currentColor"></rect>
-                    <line x1="1" y1="18" x2="23" y2="18"></line>
-                  </svg>
-                }
-                @case ('artillery') {
-                  <!-- Иконка пушки/артиллерии -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="8" cy="15" r="3"></circle>
-                    <line x1="8" y1="15" x2="20" y2="9"></line>
-                    <line x1="15" y1="11.5" x2="18" y2="17.5"></line>
-                  </svg>
-                }
-                @case ('air_defense_drones') {
-                  <!-- Иконка ПВО/РЛС (радар) -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2a10 10 0 0 1 10 10"></path>
-                    <path d="M12 6a6 6 0 0 1 6 6"></path>
-                    <circle cx="12" cy="12" r="2"></circle>
-                    <path d="M12 12L2 22M12 12H2"></path>
-                  </svg>
-                }
-                @case ('aviation_drones') {
-                  <!-- Иконка самолетика (авиация) -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L14 19v-5.5l8 2.5z"></path>
-                  </svg>
-                }
-                @case ('infantry') {
-                  <!-- Иконка автомата (огневые средства пехоты) -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 11l4 1.5 1-2h12v-1.5h2v2h-1l-1 2h-6v2h-2v-2H8.5L6.5 16H4.5L3 11z"></path>
-                    <path d="M13 11c0 2-1 4-2.5 5H9.5l1.5-5"></path>
-                  </svg>
-                }
-                @case ('command_comm') {
-                  <!-- Иконка значка КНП (управление, разведка и связь) -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="6" y1="2" x2="6" y2="22"></line>
-                    <polygon points="6 4 18 8 6 12" fill="currentColor" fill-opacity="0.15"></polygon>
-                    <line x1="6" y1="22" x2="10" y2="22"></line>
-                  </svg>
-                }
-                @case ('medical') {
-                  <!-- Иконка медицинского плюсика -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 8v8M8 12h8"></path>
-                  </svg>
-                }
-                @case ('engineering') {
-                  <!-- Иконка инженерных знаков/подготовки (шестеренка) -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                  </svg>
-                }
-                @case ('infrastructure') {
-                  <!-- Иконка домика (инфраструктура и ориентиры) -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                  </svg>
-                }
-                @case ('misc') {
-                  <!-- Иконка прицела (цели подразделения и разное) -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <line x1="12" y1="1" x2="12" y2="5"></line>
-                    <line x1="12" y1="19" x2="12" y2="23"></line>
-                    <line x1="1" y1="12" x2="5" y2="12"></line>
-                    <line x1="19" y1="12" x2="23" y2="12"></line>
-                  </svg>
-                }
-                @default {
-                  <!-- Дефолтная иконка звезды -->
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="12 2 15 8.5 22 9.5 17 14.5 18.5 21.5 12 18 5.5 21.5 7 14.5 2 9.5 9 8.5 12 2"></polygon>
-                  </svg>
-                }
-              }
-            </button>
-            
-            @if (vm.activeCategoryDropdown() === category.id) {
-              <div class="symbol-dropdown-popover">
-                <div class="dropdown-popover-header">
-                  <span>{{ category.name }}</span>
-                  <button class="close-popover-btn" (click)="vm.toggleCategoryDropdown(null)">✕</button>
-                </div>
-                <div class="symbols-dropdown-grid">
-                  @for (item of category.symbols; track item.id) {
+        <div class="toolbar-dropdown-container" style="position: relative; display: inline-block;">
+          <button 
+            class="tool-btn" 
+            [class.active]="vm.activeCategoryDropdown() === 'symbols_library'" 
+            (click)="vm.toggleCategoryDropdown('symbols_library')" 
+            title="Библиотека тактических знаков [Клавиша: L]"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+            <kbd class="key-hint">L</kbd>
+          </button>
+          
+          @if (vm.activeCategoryDropdown() === 'symbols_library') {
+            <div class="symbols-library-popover">
+              <div class="symbols-library-layout">
+                <!-- Левая колонка: вертикальные вкладки -->
+                <div class="symbols-library-tabs">
+                  @for (category of vm.symbolsService.groupedSymbols(); track category.id) {
                     <button 
-                      class="symbol-dropdown-item" 
-                      [class.selected]="vm.selectedSymbol()?.id === item.id"
-                      (click)="vm.selectSymbol(item); vm.toggleCategoryDropdown(null)" 
-                      [title]="item.name"
+                      class="symbols-library-tab-btn" 
+                      [class.active]="vm.activeCategoryTab() === category.id" 
+                      (click)="vm.activeCategoryTab.set(category.id)"
+                      [title]="category.name"
                     >
-                      <div class="symbol-icon-wrapper-pop">
-                        <img [src]="'symbols/' + item.symbol + '.svg'" [alt]="item.name" />
-                      </div>
-                      <span class="symbol-name-pop">{{ item.name }}</span>
+                      <span class="tab-icon">
+                        @switch (category.id) {
+                          @case ('armor') {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <rect x="3" y="11" width="18" height="8" rx="2" ry="2"></rect>
+                              <path d="M12 5v6M8 5h8"></path>
+                              <circle cx="6" cy="15" r="1"></circle>
+                              <circle cx="12" cy="15" r="1"></circle>
+                              <circle cx="18" cy="15" r="1"></circle>
+                            </svg>
+                          }
+                          @case ('fortification_ussr') {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M2 18V9a5 5 0 0 1 5-5h10a5 5 0 0 1 5 5v9H2z"></path>
+                              <rect x="7" y="9" width="10" height="3" rx="1" fill="currentColor"></rect>
+                              <line x1="1" y1="18" x2="23" y2="18"></line>
+                            </svg>
+                          }
+                          @case ('artillery') {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <circle cx="8" cy="15" r="3"></circle>
+                              <line x1="8" y1="15" x2="20" y2="9"></line>
+                              <line x1="15" y1="11.5" x2="18" y2="17.5"></line>
+                            </svg>
+                          }
+                          @case ('air_defense_drones') {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M12 2a10 10 0 0 1 10 10"></path>
+                              <path d="M12 6a6 6 0 0 1 6 6"></path>
+                              <circle cx="12" cy="12" r="2"></circle>
+                              <path d="M12 12L2 22M12 12H2"></path>
+                            </svg>
+                          }
+                          @case ('aviation_drones') {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L14 19v-5.5l8 2.5z"></path>
+                            </svg>
+                          }
+                          @case ('infantry') {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M3 11l4 1.5 1-2h12v-1.5h2v2h-1l-1 2h-6v2h-2v-2H8.5L6.5 16H4.5L3 11z"></path>
+                              <path d="M13 11c0 2-1 4-2.5 5H9.5l1.5-5"></path>
+                            </svg>
+                          }
+                          @case ('command_comm') {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <line x1="6" y1="2" x2="6" y2="22"></line>
+                              <polygon points="6 4 18 8 6 12" fill="currentColor" fill-opacity="0.15"></polygon>
+                              <line x1="6" y1="22" x2="10" y2="22"></line>
+                            </svg>
+                          }
+                          @case ('medical') {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <circle cx="12" cy="12" r="10"></circle>
+                              <path d="M12 8v8M8 12h8"></path>
+                            </svg>
+                          }
+                          @case ('engineering') {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <circle cx="12" cy="12" r="3"></circle>
+                              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                          }
+                          @case ('infrastructure') {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                          }
+                          @case ('misc') {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <circle cx="12" cy="12" r="10"></circle>
+                              <circle cx="12" cy="12" r="3"></circle>
+                              <line x1="12" y1="1" x2="12" y2="5"></line>
+                              <line x1="12" y1="19" x2="12" y2="23"></line>
+                              <line x1="1" y1="12" x2="5" y2="12"></line>
+                              <line x1="19" y1="12" x2="23" y2="12"></line>
+                            </svg>
+                          }
+                          @default {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                              <polygon points="12 2 15 8.5 22 9.5 17 14.5 18.5 21.5 12 18 5.5 21.5 7 14.5 2 9.5 9 8.5 12 2"></polygon>
+                            </svg>
+                          }
+                        }
+                      </span>
+                      <span class="tab-label">{{ category.name }}</span>
                     </button>
                   }
                 </div>
+                
+                <!-- Правая колонка: сетка значков -->
+                <div class="symbols-library-content">
+                  @for (category of vm.symbolsService.groupedSymbols(); track category.id) {
+                    @if (vm.activeCategoryTab() === category.id) {
+                      <div class="symbols-grid-container">
+                        <div class="symbols-grid-header">
+                          <span class="grid-title">{{ category.name }}</span>
+                          <button class="close-popover-btn" (click)="vm.toggleCategoryDropdown(null)">✕</button>
+                        </div>
+                        <div class="symbols-grid">
+                          @for (item of category.symbols; track item.id) {
+                            <button 
+                              class="symbol-grid-item" 
+                              [class.selected]="vm.selectedSymbol()?.id === item.id"
+                              (click)="vm.selectSymbol(item); vm.toggleCategoryDropdown(null)" 
+                              [title]="item.name"
+                            >
+                              <div class="symbol-icon-wrapper-pop">
+                                <img [src]="'symbols/' + item.symbol + '.svg'" [alt]="item.name" />
+                              </div>
+                              <span class="symbol-name-pop">{{ item.name }}</span>
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    }
+                  }
+                </div>
               </div>
-            }
-          </div>
-        }
+            </div>
+          }
+        </div>
       </div>
 
       <!-- Правая часть: перенесенные кнопки отчетов, планировщика, маршрута, фото -->
@@ -343,6 +379,45 @@
             <polyline points="21 15 16 10 5 21"></polyline>
           </svg>
         </button>
+
+        <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 4px; display: inline-block; vertical-align: middle;"></div>
+
+        <!-- Экспорт сценария (.tps) -->
+        <button 
+          class="tool-btn" 
+          (click)="vm.exportScenario()" 
+          title="Экспортировать тактическую обстановку (.tps) [Сочетание: Shift+S]"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+          <kbd class="key-hint">⇧S</kbd>
+        </button>
+
+        <!-- Импорт сценария (.tps) -->
+        <button 
+          class="tool-btn" 
+          (click)="fileInput.click()" 
+          title="Импортировать тактическую обстановку (.tps) [Сочетание: Shift+O]"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          <kbd class="key-hint">⇧O</kbd>
+        </button>
+        <input #fileInput type="file" accept=".tps,.json" style="display: none;" (change)="vm.importScenario($event)">
+
+        <!-- Экспорт фрагмента карты -->
+        <button 
+          class="tool-btn" 
+          (click)="vm.openMapExport()" 
+          title="Экспорт фрагмента карты высокого разрешения (до 600 DPI)"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+        </button>
       </div>
     </div>
   </header>
@@ -396,6 +471,51 @@
         <app-toogle-map style="display: contents;" />
         <app-quick-layers-menu style="display: contents;" />
       </div>
+
+      <!-- Плавающая HUD-карточка геодезических измерений -->
+      @if (vm.mapMeasurementService.isMeasuring() && vm.mapMeasurementService.geodesyInfo(); as g) {
+        <div class="geodesy-hud-card" [style.left.px]="(vm.tacticalMapService.selectedPlacedSymbol() || vm.selectedSymbol() || vm.activeLineMode() !== 'none') ? (vm.sidebarWidth() + 16) : 16">
+          <div class="geodesy-hud-header">
+            <span class="geodesy-hud-title">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#eb3b5a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M12 3v18M3 12h18"></path>
+              </svg>
+              Геодезия и азимуты
+            </span>
+            <button class="geodesy-hud-close" (click)="vm.mapMeasurementService.toggleMeasurement(vm.getMapInstance())">✕</button>
+          </div>
+          <div class="geodesy-hud-body">
+            <div class="geodesy-row">
+              <span class="geodesy-label">Расстояние:</span>
+              <span class="geodesy-val highlight">{{ g.distanceStr }}</span>
+            </div>
+            <div class="geodesy-row">
+              <span class="geodesy-label">Азимут истинный (&alpha;):</span>
+              <span class="geodesy-val">{{ g.bearingTrueStr }}</span>
+            </div>
+            <div class="geodesy-row">
+              <span class="geodesy-label">Азимут магнитный (&alpha;<sub>m</sub>):</span>
+              <span class="geodesy-val">{{ g.bearingMagStr }}</span>
+            </div>
+            @if (g.areaStr) {
+              <div class="geodesy-row area">
+                <span class="geodesy-label">Площадь участка:</span>
+                <span class="geodesy-val highlight-area">{{ g.areaStr }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Выезжающий нижний компонент графического профиля высот -->
+      @if (vm.isElevationProfileOpen()) {
+        <app-elevation-profile 
+          [coordinates]="vm.elevationProfileCoords()" 
+          [title]="vm.elevationProfileTitle()"
+          (close)="vm.closeElevationProfile()"
+        />
+      }
 
       <!-- Панель управления наложением растровых оверлеев (схем/планов) -->
       @if (vm.isImageOverlayPanelOpen()) {
@@ -1039,7 +1159,7 @@
 
       <!-- Маршрутная карточка марша с плеером симуляции -->
       @if (vm.selectedMarchRouteStats(); as stats) {
-        <div class="march-route-card-panel">
+        <div class="march-route-card-panel" [style.left.px]="(vm.tacticalMapService.selectedPlacedSymbol() || vm.selectedSymbol() || vm.activeLineMode() !== 'none') ? (vm.sidebarWidth() + 16) : 16" [style.bottom.px]="vm.isElevationProfileOpen() ? 220 : 24">
           <div class="fort-report-header">
             <span class="fort-report-title">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #466bf7; margin-right: 6px; display: inline-block; vertical-align: middle;">
@@ -1147,6 +1267,16 @@
                   Сброс
                 </button>
 
+                <button 
+                  class="fort-btn secondary" 
+                  style="padding: 4px 8px; font-size: 10px; display: flex; align-items: center; gap: 4px;"
+                  (click)="vm.toggleElevationProfileFromToolbar()"
+                  title="Построить график профиля высот для этого маршрута"
+                >
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                  Профиль высот
+                </button>
+
                 <input 
                   type="range" 
                   min="0" 
@@ -1248,4 +1378,8 @@
       />
     </div>
   </footer>
+
+  @if (vm.isMapExportOpen()) {
+    <app-map-export></app-map-export>
+  }
 </div>

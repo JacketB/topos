@@ -11,6 +11,8 @@ import { ToogleMap } from './components/toogle-map/toogle-map';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { FortificationPlannerComponent } from './components/fortification-planner/fortification-planner.component';
 import { MapLayersPanelComponent } from './components/map-layers-panel/map-layers-panel.component';
+import { ElevationProfileComponent } from './components/elevation-profile/elevation-profile.component';
+import { MapExportComponent } from './components/map-export/map-export.component';
 
 @Component({
   selector: 'app-map-view',
@@ -25,6 +27,8 @@ import { MapLayersPanelComponent } from './components/map-layers-panel/map-layer
     DragDropModule,
     FortificationPlannerComponent,
     MapLayersPanelComponent,
+    ElevationProfileComponent,
+    MapExportComponent,
     FormsModule
   ],
   templateUrl: './map-view.html',
@@ -42,6 +46,23 @@ export class MapView {
     }
 
     const key = event.key.toLowerCase();
+
+    // Экспорт / Импорт по Shift+S / Shift+O
+    if (event.shiftKey) {
+      if (key === 's' || key === 'ы') {
+        event.preventDefault();
+        this.vm.exportScenario();
+        return;
+      }
+      if (key === 'o' || key === 'щ') {
+        event.preventDefault();
+        const fileInput = document.querySelector('input[type="file"][accept=".tps,.json"]') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.click();
+        }
+        return;
+      }
+    }
 
     // Отмена / закрытие по Escape
     if (key === 'escape') {
@@ -76,6 +97,9 @@ export class MapView {
       case 'p': case 'з':
         this.vm.activeLineMode() === 'point' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('point');
         break;
+      case 'r': case 'к':
+        this.vm.activeLineMode() === 'march_route' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('march_route');
+        break;
       case 'a': case 'ф':
         this.vm.activeLineMode() === 'arrow_attack' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('arrow_attack');
         break;
@@ -94,11 +118,17 @@ export class MapView {
       case 'm': case 'ь':
         this.vm.toggleMarchOrder();
         break;
+      case 'e': case 'у':
+        this.vm.toggleElevationProfileFromToolbar();
+        break;
       case 'g': case 'п':
         this.vm.toggleFortPlanner();
         break;
       case 'v': case 'м':
         this.vm.toggleAreaReport();
+        break;
+      case 'l': case 'д':
+        this.vm.toggleCategoryDropdown('symbols_library');
         break;
     }
   }

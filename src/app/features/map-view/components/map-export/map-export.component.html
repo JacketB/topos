@@ -1,0 +1,87 @@
+<div class="export-overlay-container" [class.generating]="isGenerating()">
+  <!-- Стеклянная панель настроек в левом верхнем углу -->
+  <div class="export-settings-panel">
+    <div class="panel-header">
+      <h4>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        Экспорт фрагмента карты
+      </h4>
+    </div>
+
+    @if (!isGenerating()) {
+      <div class="panel-content">
+        <div class="input-row">
+          <div class="input-col">
+            <label class="input-label">Ширина (мм)</label>
+            <input type="number" class="export-input" min="50" max="1000" [ngModel]="widthMm()" (ngModelChange)="widthMm.set($event)" />
+          </div>
+          <div class="input-col">
+            <label class="input-label">Высота (мм)</label>
+            <input type="number" class="export-input" min="50" max="1000" [ngModel]="heightMm()" (ngModelChange)="heightMm.set($event)" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="input-label">Разрешение / Качество</label>
+          <div class="dpi-selector">
+            <button [class.active]="dpi() === 96" (click)="dpi.set(96)">96 DPI<span class="sub">Быстро</span></button>
+            <button [class.active]="dpi() === 300" (click)="dpi.set(300)">300 DPI<span class="sub">Печать</span></button>
+            <button [class.active]="dpi() === 600" (click)="dpi.set(600)">600 DPI<span class="sub">Ультра</span></button>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <div class="info-row">
+            <span class="info-label">Размер изображения:</span>
+            <span class="info-val">{{ resultPixels().width }} × {{ resultPixels().height }} px</span>
+          </div>
+          <div class="info-row warning" *ngIf="dpi() === 600">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            600 DPI рендерится в фоне, это может занять до 15 сек.
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-actions">
+        <button class="export-btn btn-primary" (click)="generateExport()">
+          Сгенерировать PNG
+        </button>
+        <button class="export-btn btn-secondary" (click)="close()">
+          Отмена
+        </button>
+      </div>
+    } @else {
+      <!-- Лоадер генерации -->
+      <div class="loader-content">
+        <div class="spinner-circle"></div>
+        <div class="loader-status-text">Идет генерация фрагмента карты...</div>
+        <div class="loader-progress-step">{{ generationProgress() }}</div>
+      </div>
+    }
+  </div>
+
+  <!-- Рамка видоискателя в центре экрана (клики проходят сквозь оверлей на карту) -->
+  <div class="viewfinder-wrapper" *ngIf="!isGenerating()">
+    <div 
+      class="viewfinder-box" 
+      [style.width.px]="viewfinderSize().width"
+      [style.height.px]="viewfinderSize().height"
+    >
+      <!-- Угловые прицелы рамки -->
+      <div class="corner top-left"></div>
+      <div class="corner top-right"></div>
+      <div class="corner bottom-left"></div>
+      <div class="corner bottom-right"></div>
+      
+      <div class="aspect-ratio-badge">{{ widthMm() }} × {{ heightMm() }} мм</div>
+    </div>
+  </div>
+</div>

@@ -202,7 +202,7 @@ pub fn run() {
                     .unwrap()
             }
         })
-        .invoke_handler(tauri::generate_handler![read_pmtiles_chunk])
+        .invoke_handler(tauri::generate_handler![read_pmtiles_chunk, save_scenario_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -263,4 +263,24 @@ fn read_pmtiles_chunk(app: tauri::AppHandle, filename: String, offset: u64, leng
         .map_err(|e| format!("Read error: {}", e))?;
 
     Ok(buffer)
+}
+
+#[tauri::command]
+fn save_scenario_file(app: tauri::AppHandle, filename: String, content: Vec<u8>) -> Result<String, String> {
+    use std::fs::File;
+    use std::io::Write;
+    use tauri::Manager;
+
+    let download_dir = app.path().download_dir()
+        .map_err(|e| format!("Failed to get download dir: {}", e))?;
+    
+    let file_path = download_dir.join(&filename);
+    
+    let mut file = File::create(&file_path)
+        .map_err(|e| format!("Failed to create file: {}", e))?;
+    
+    file.write_all(&content)
+        .map_err(|e| format!("Failed to write content: {}", e))?;
+    
+    Ok(file_path.to_string_lossy().to_string())
 }

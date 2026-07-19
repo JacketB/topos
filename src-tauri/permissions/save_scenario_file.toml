@@ -1,0 +1,8 @@
+[[permission]]
+identifier = "allow-save-scenario-file"
+description = "Allows the frontend to save scenario files into the downloads directory"
+
+[permission.commands]
+allow = [
+  "save_scenario_file"
+]

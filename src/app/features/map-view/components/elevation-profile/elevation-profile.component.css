@@ -1,0 +1,106 @@
+.elevation-profile-container {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(850px, calc(100vw - 320px));
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 1040;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(8px);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.elevation-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.elevation-profile-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.elevation-profile-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.elevation-profile-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.stat-badge.gain .stat-value {
+  color: #059669;
+}
+
+.stat-badge.active-point {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.stat-label {
+  color: #64748b;
+}
+
+.stat-value {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.stat-value.highlight {
+  color: #2563eb;
+}
+
+.elevation-profile-close-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-weight: bold;
+  transition: color 0.2s;
+}
+
+.elevation-profile-close-btn:hover {
+  color: #ef4444;
+}
+
+.elevation-profile-body {
+  width: 100%;
+  height: 145px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+}
+
+.elevation-profile-body canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}

@@ -12,6 +12,7 @@ import { MarchRouteService, ColumnType, MarchRoute } from '../services/march-rou
 import { PlaybackService } from '../services/playback.service';
 import { MarchOrderService, MarchOrderElement } from '../services/march-order.service';
 import { ImageOverlayService, MapImageOverlay } from '../services/image-overlay.service';
+import { TacticalAnalyticsService } from '../services/tactical-analytics.service';
 
 @Injectable({
   providedIn: 'root'
@@ -28,8 +29,10 @@ export class MapViewModel {
   readonly marchRouteService = inject(MarchRouteService);
   readonly playbackService = inject(PlaybackService);
   readonly marchOrderService = inject(MarchOrderService);
+  readonly tacticalAnalyticsService = inject(TacticalAnalyticsService);
 
   readonly scalePresets = SCALE_PRESETS;
+  readonly isMapExportOpen = signal(false);
 
   readonly isAppReady = signal<boolean>(false);
   readonly sidebarWidth = signal<number>(340);
@@ -206,7 +209,7 @@ export class MapViewModel {
     });
   }
 
-  closeAllPopupsExcept(except?: 'areaReport' | 'marchOrder' | 'fortPlanner' | 'imageOverlay' | 'categoryDropdown' | 'quickLayers' | 'toggleMap' | 'scale') {
+  closeAllPopupsExcept(except?: 'areaReport' | 'marchOrder' | 'fortPlanner' | 'imageOverlay' | 'categoryDropdown' | 'quickLayers' | 'toggleMap' | 'scale' | 'elevationProfile') {
     if (except !== 'areaReport') this.isAreaReportOpen.set(false);
     if (except !== 'marchOrder') this.isMarchOrderOpen.set(false);
     if (except !== 'fortPlanner') this.isFortPlannerOpen.set(false);
@@ -215,6 +218,106 @@ export class MapViewModel {
     if (except !== 'quickLayers') this.isQuickLayersMenuOpen.set(false);
     if (except !== 'toggleMap') this.isToogleMapMenuOpen.set(false);
     if (except !== 'scale') this.isScaleMenuOpen.set(false);
+    if (except !== 'elevationProfile') this.isElevationProfileOpen.set(false);
+  }
+
+  readonly isElevationProfileOpen = signal<boolean>(false);
+  readonly elevationProfileCoords = signal<[number, number][]>([]);
+  readonly elevationProfileTitle = signal<string>('Профиль высот рельефа местности');
+  readonly elevationHoverMarker = signal<[number, number] | null>(null);
+
+  openElevationProfile(coords: [number, number][], title = 'Профиль высот рельефа местности') {
+    if (!coords || coords.length < 2) return;
+    this.closeAllPopupsExcept('elevationProfile');
+    this.elevationProfileCoords.set(coords);
+    this.elevationProfileTitle.set(title);
+    this.isElevationProfileOpen.set(true);
+  }
+
+  closeElevationProfile() {
+    this.isElevationProfileOpen.set(false);
+    this.elevationHoverMarker.set(null);
+  }
+
+  toggleElevationProfileFromToolbar() {
+    if (this.isElevationProfileOpen()) {
+      this.closeElevationProfile();
+      return;
+    }
+
+    // 1. Если выбрана линия, строим по ней
+    const selected = this.selectedPlacedSymbol();
+    if (selected?.properties?.['isLinear'] && selected.geometry?.coordinates) {
+      const coords = (selected.properties['origCoords'] || selected.geometry.coordinates) as [number, number][];
+      this.openElevationProfile(coords, selected.properties['name'] || 'Профиль высот выбранной линии');
+      return;
+    }
+
+    // 2. Если идет рисование линии
+    const activeCoords = this.activeLineCoords();
+    if (activeCoords && activeCoords.length >= 2) {
+      this.openElevationProfile(activeCoords, 'Профиль высот рисуемой линии');
+      return;
+    }
+
+    // 3. Иначе ищем любую линейную фичу на карте
+    const placed = this.placedSymbols();
+    const linearFeature = placed.find(f => f.properties?.['isLinear']);
+    if (linearFeature && linearFeature.geometry?.coordinates) {
+      const coords = (linearFeature.properties['origCoords'] || linearFeature.geometry.coordinates) as [number, number][];
+      this.openElevationProfile(coords, linearFeature.properties['name'] || 'Профиль высот линии на карте');
+      return;
+    }
+
+    // 4. Фолбэк: сечение карты с Запада на Восток через центр карты
+    const map = this.getMapInstance();
+    if (map) {
+      const bounds = map.getBounds();
+      const west = bounds.getWest();
+      const east = bounds.getEast();
+      const lat = map.getCenter().lat;
+      const sampleCoords: [number, number][] = [
+        [west + (east - west) * 0.15, lat],
+        [west + (east - west) * 0.85, lat]
+      ];
+      this.openElevationProfile(sampleCoords, 'Профиль высот сечения карты (Запад — Восток)');
+    }
+  }
+
+  toggleRangeRingsForSelected() {
+    const selected = this.selectedPlacedSymbol();
+    const map = this.getMapInstance();
+    if (!map) return;
+
+    let center: [number, number] | null = null;
+    if (selected?.geometry?.coordinates) {
+      center = selected.geometry.type === 'Point' 
+        ? selected.geometry.coordinates as [number, number]
+        : (selected.geometry.coordinates as any)[0] as [number, number];
+    } else {
+      const c = map.getCenter();
+      center = [c.lng, c.lat];
+    }
+
+    this.tacticalAnalyticsService.toggleRangeRings(center, map);
+  }
+
+  toggleViewshedForSelected() {
+    const selected = this.selectedPlacedSymbol();
+    const map = this.getMapInstance();
+    if (!map) return;
+
+    let center: [number, number] | null = null;
+    if (selected?.geometry?.coordinates) {
+      center = selected.geometry.type === 'Point' 
+        ? selected.geometry.coordinates as [number, number]
+        : (selected.geometry.coordinates as any)[0] as [number, number];
+    } else {
+      const c = map.getCenter();
+      center = [c.lng, c.lat];
+    }
+
+    this.tacticalAnalyticsService.toggleViewshed(center, map);
   }
 
   toggleAreaReport() {
@@ -252,6 +355,7 @@ export class MapViewModel {
   }
 
   readonly activeCategoryDropdown = signal<string | null>(null);
+  readonly activeCategoryTab = signal<string>('armor');
 
   toggleCategoryDropdown(categoryId: string | null) {
     if (this.activeCategoryDropdown() === categoryId) {
@@ -259,6 +363,12 @@ export class MapViewModel {
     } else {
       if (categoryId) {
         this.closeAllPopupsExcept('categoryDropdown');
+        if (categoryId === 'symbols_library') {
+          const groups = this.symbolsService.groupedSymbols();
+          if (groups.length > 0) {
+            this.activeCategoryTab.set(groups[0].id);
+          }
+        }
       }
       this.activeCategoryDropdown.set(categoryId);
     }
@@ -386,6 +496,7 @@ export class MapViewModel {
     this.mapInstance = map;
     if (map) {
       this.imageOverlayService.init(map);
+      this.tacticalAnalyticsService.initLayers(map);
     }
   }
 
@@ -936,5 +1047,57 @@ export class MapViewModel {
     }
     newPercent = Math.max(1, Math.min(2800, newPercent));
     this.applyZoomPercent(newPercent);
+  }
+
+  async exportScenario() {
+    try {
+      const data = this.tacticalMapService.exportScenarioData();
+      const filename = `scenario_${new Date().toISOString().slice(0, 10)}.tps`;
+      const jsonStr = JSON.stringify(data, null, 2);
+
+      const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+
+      if (isTauri) {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const encoder = new TextEncoder();
+        const bytes = encoder.encode(jsonStr);
+        const savedPath = await invoke<string>('save_scenario_file', { filename, content: Array.from(bytes) });
+        alert(`Сценарий сохранен в загрузки:\n${savedPath}`);
+      } else {
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      console.error('Ошибка экспорта сценария:', e);
+    }
+  }
+
+  importScenario(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const data = JSON.parse(text);
+        this.tacticalMapService.importScenarioData(data);
+        input.value = '';
+      } catch (err: any) {
+        console.error('Ошибка импорта сценария:', err);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  openMapExport() {
+    this.isMapExportOpen.set(true);
   }
 }
