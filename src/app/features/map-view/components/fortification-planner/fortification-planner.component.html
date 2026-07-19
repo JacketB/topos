@@ -503,7 +503,10 @@
                 Всего: {{ vopCalculations().totalWood | number:'1.1-1' }}
               </td>
               @for (day of dayIndices(); track day) {
-                <td colspan="6" style="padding: 6px 4px; font-size: 11px; color: #0f172a; text-align: center; border: 1px solid #cbd5e1; background-color: #f8fafc; font-family: monospace;">
+                <td colspan="6" style="padding: 6px 4px; font-size: 11px; text-align: center; border: 1px solid #cbd5e1; font-family: monospace;"
+                    [style.background-color]="vopCalculations().woodPerDay[day] ? '#e0f2fe' : '#f8fafc'"
+                    [style.color]="vopCalculations().woodPerDay[day] ? '#0369a1' : '#94a3b8'"
+                    [style.font-weight]="vopCalculations().woodPerDay[day] ? '700' : '400'">
                   {{ vopCalculations().woodPerDay[day] || 0 }}
                 </td>
               }
@@ -517,7 +520,10 @@
                 Всего: {{ vopCalculations().totalBoards | number:'1.1-1' }}
               </td>
               @for (day of dayIndices(); track day) {
-                <td colspan="6" style="padding: 6px 4px; font-size: 11px; color: #0f172a; text-align: center; border: 1px solid #cbd5e1; background-color: #f8fafc; font-family: monospace;">
+                <td colspan="6" style="padding: 6px 4px; font-size: 11px; text-align: center; border: 1px solid #cbd5e1; font-family: monospace;"
+                    [style.background-color]="vopCalculations().boardsPerDay[day] ? '#e0f2fe' : '#f8fafc'"
+                    [style.color]="vopCalculations().boardsPerDay[day] ? '#0369a1' : '#94a3b8'"
+                    [style.font-weight]="vopCalculations().boardsPerDay[day] ? '700' : '400'">
                   {{ vopCalculations().boardsPerDay[day] || 0 }}
                 </td>
               }
@@ -531,7 +537,10 @@
                 Всего: {{ vopCalculations().totalMasNet }}
               </td>
               @for (day of dayIndices(); track day) {
-                <td colspan="6" style="padding: 6px 4px; font-size: 11px; color: #0f172a; text-align: center; border: 1px solid #cbd5e1; background-color: #f8fafc; font-family: monospace;">
+                <td colspan="6" style="padding: 6px 4px; font-size: 11px; text-align: center; border: 1px solid #cbd5e1; font-family: monospace;"
+                    [style.background-color]="vopCalculations().masNetPerDay[day] ? '#dcfce7' : '#f8fafc'"
+                    [style.color]="vopCalculations().masNetPerDay[day] ? '#15803d' : '#94a3b8'"
+                    [style.font-weight]="vopCalculations().masNetPerDay[day] ? '700' : '400'">
                   {{ vopCalculations().masNetPerDay[day] || 0 }}
                 </td>
               }
@@ -545,7 +554,10 @@
                 Всего: {{ vopCalculations().totalWireViaz | number:'1.1-1' }}
               </td>
               @for (day of dayIndices(); track day) {
-                <td colspan="6" style="padding: 6px 4px; font-size: 11px; color: #0f172a; text-align: center; border: 1px solid #cbd5e1; background-color: #f8fafc; font-family: monospace;">
+                <td colspan="6" style="padding: 6px 4px; font-size: 11px; text-align: center; border: 1px solid #cbd5e1; font-family: monospace;"
+                    [style.background-color]="vopCalculations().wireViazPerDay[day] ? '#fef3c7' : '#f8fafc'"
+                    [style.color]="vopCalculations().wireViazPerDay[day] ? '#b45309' : '#94a3b8'"
+                    [style.font-weight]="vopCalculations().wireViazPerDay[day] ? '700' : '400'">
                   {{ vopCalculations().wireViazPerDay[day] || 0 }}
                 </td>
               }

@@ -1298,6 +1298,7 @@ details[open] > .tree-summary {
   transition: all 0.12s ease;
   outline: none;
   padding: 0;
+  position: relative;
 }
 
 .tool-btn:hover {
@@ -1311,6 +1312,38 @@ details[open] > .tree-summary {
   color: #2563eb;
   border-color: #93c5fd;
   box-shadow: inset 0 1px 2px rgba(37, 99, 235, 0.15);
+}
+
+.key-hint {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 7.5px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 1px 2px;
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  border-radius: 3px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+  opacity: 0.85;
+  transition: opacity 0.12s ease, background-color 0.12s ease;
+}
+
+.tool-btn:hover .key-hint {
+  opacity: 1;
+  background-color: #ffffff;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.tool-btn.active .key-hint {
+  background-color: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
 }
 
 .mode-select-btn {
@@ -1722,18 +1755,41 @@ details[open] > .tree-summary {
 /* Сетка агрегированных показателей */
 .fort-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
 }
 
 .fort-summary-card {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fort-summary-card:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+}
+
+.fort-summary-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fort-summary-icon-pill {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .fort-summary-label {
@@ -1745,7 +1801,7 @@ details[open] > .tree-summary {
 }
 
 .fort-summary-value {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   color: #0f172a;
 }
