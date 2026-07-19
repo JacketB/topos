@@ -495,6 +495,7 @@ export class FortificationCalculationService {
     totalDoorsCount: number;
     totalStovesCount: number;
     machinerySummary: { type: string; hours: number }[];
+    totalMachHrs: number;
     elementsCount: Record<string, number>;
     elementsList: { name: string; count: number }[];
     totalLengths: {
@@ -577,6 +578,8 @@ export class FortificationCalculationService {
       hours: parseFloat(machinery[key].toFixed(1))
     }));
 
+    const totalMachHrs = parseFloat(machinerySummary.reduce((acc, m) => acc + m.hours, 0).toFixed(1));
+
     const elementsList = Object.keys(elementsCount).map(key => ({
       name: key,
       count: elementsCount[key]
@@ -599,6 +602,7 @@ export class FortificationCalculationService {
       totalDoorsCount,
       totalStovesCount,
       machinerySummary,
+      totalMachHrs,
       elementsCount,
       elementsList,
       totalLengths: {
