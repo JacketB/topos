@@ -17,11 +17,11 @@
         <div class="input-row">
           <div class="input-col">
             <label class="input-label">Ширина (мм)</label>
-            <input type="number" class="export-input" min="50" max="1000" [ngModel]="widthMm()" (ngModelChange)="widthMm.set($event)" />
+            <input type="number" class="export-input" min="50" max="1200" [ngModel]="widthMm()" (ngModelChange)="widthMm.set($event)" />
           </div>
           <div class="input-col">
             <label class="input-label">Высота (мм)</label>
-            <input type="number" class="export-input" min="50" max="1000" [ngModel]="heightMm()" (ngModelChange)="heightMm.set($event)" />
+            <input type="number" class="export-input" min="50" max="1200" [ngModel]="heightMm()" (ngModelChange)="heightMm.set($event)" />
           </div>
         </div>
 
@@ -39,13 +39,21 @@
             <span class="info-label">Размер изображения:</span>
             <span class="info-val">{{ resultPixels().width }} × {{ resultPixels().height }} px</span>
           </div>
+          <div class="info-row hint-row">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px; flex-shrink: 0;">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>Тяните рамку за маркеры мышью для кадрирования.</span>
+          </div>
           <div class="info-row warning" *ngIf="dpi() === 600">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px; flex-shrink: 0;">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            600 DPI рендерится в фоне, это может занять до 15 сек.
+            <span>600 DPI рендерится в фоне, это может занять до 15 сек.</span>
           </div>
         </div>
       </div>
@@ -68,7 +76,7 @@
     }
   </div>
 
-  <!-- Рамка видоискателя в центре экрана (клики проходят сквозь оверлей на карту) -->
+  <!-- Рамка видоискателя в центре экрана -->
   <div class="viewfinder-wrapper" *ngIf="!isGenerating()">
     <div 
       class="viewfinder-box" 
@@ -80,8 +88,26 @@
       <div class="corner top-right"></div>
       <div class="corner bottom-left"></div>
       <div class="corner bottom-right"></div>
-      
-      <div class="aspect-ratio-badge">{{ widthMm() }} × {{ heightMm() }} мм</div>
+
+      <!-- Интерактивные маркер-ручки ресайза -->
+      <div class="resize-handle handle-nw" (mousedown)="startResize($event, 'nw')" title="Изменить размер"></div>
+      <div class="resize-handle handle-n" (mousedown)="startResize($event, 'n')" title="Изменить высоту"></div>
+      <div class="resize-handle handle-ne" (mousedown)="startResize($event, 'ne')" title="Изменить размер"></div>
+      <div class="resize-handle handle-e" (mousedown)="startResize($event, 'e')" title="Изменить ширину"></div>
+      <div class="resize-handle handle-se" (mousedown)="startResize($event, 'se')" title="Изменить размер"></div>
+      <div class="resize-handle handle-s" (mousedown)="startResize($event, 's')" title="Изменить высоту"></div>
+      <div class="resize-handle handle-sw" (mousedown)="startResize($event, 'sw')" title="Изменить размер"></div>
+      <div class="resize-handle handle-w" (mousedown)="startResize($event, 'w')" title="Изменить ширину"></div>
+
+      <div class="aspect-ratio-badge">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <polyline points="9 21 3 21 3 15"></polyline>
+          <line x1="21" y1="3" x2="14" y2="10"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+        {{ widthMm() }} × {{ heightMm() }} мм
+      </div>
     </div>
   </div>
 </div>

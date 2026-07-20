@@ -35,7 +35,8 @@
       }
     },
     "resources": [
-      "assets/belarus.pmtiles"
+      "assets/belarus.pmtiles",
+      "assets/belarus_topomap_200k.pmtiles"
     ],
     "icon": [
       "icons/32x32.png",

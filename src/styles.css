@@ -50,6 +50,10 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+button, input, select, textarea {
+  font-family: inherit;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -74,5 +78,83 @@ app-root, app-map-view {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+}
+
+/* Единые базовые утилиты кнопок и полей ввода Topos GIS */
+.fort-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.fort-btn.primary {
+  background-color: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+
+.fort-btn.primary:hover {
+  background-color: #1d4ed8;
+}
+
+.fort-btn.secondary {
+  background-color: #ffffff;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.fort-btn.secondary:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.vs-input {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #1e293b;
+  outline: none;
+  background-color: #ffffff;
+  transition: border-color 0.15s ease;
+}
+
+.vs-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Приоритетный стиль кнопки закрытия в попапах (Планировщик, Ведомость, Модалки) */
+button.fort-report-close-btn,
+.fort-report-close-btn {
+  background: transparent !important;
+  border: none !important;
+  font-size: 16px !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  z-index: 10 !important;
+}
+
+button.fort-report-close-btn:hover,
+.fort-report-close-btn:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
 }

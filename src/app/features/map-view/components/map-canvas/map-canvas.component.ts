@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnDestroy, viewChild, ElementRef, inject, effect, computed, signal, HostListener, untracked } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, viewChild, ElementRef, inject, effect, computed, signal, HostListener, untracked, ChangeDetectionStrategy } from '@angular/core';
 import { NgStyle } from '@angular/common';
 import maplibregl from 'maplibre-gl';
 import { PMTiles, Protocol } from 'pmtiles';
@@ -17,6 +17,7 @@ import { mapsUrls } from '../../../../consts/map-urls';
   imports: [NgStyle],
   templateUrl: './map-canvas.component.html',
   styleUrl: './map-canvas.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   readonly mapContainer = viewChild.required<ElementRef<HTMLDivElement>>('mapContainer');
@@ -265,7 +266,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     this.map.on('zoom', () => {
       if (this.map) {
         this.vm.zoomLevel.set(this.map.getZoom());
-        this.vm.currentScale.set(this.vm.mapScaleService.getCurrentScale(this.map.getZoom()));
+        this.vm.currentScale.set(this.vm.mapScaleService.getCurrentScale(this.map.getZoom(), this.map.getCenter().lat));
         this.vm.mapScaleService.updateScaleInfo(
           this.map,
           this.mapContainer().nativeElement.clientWidth,
@@ -319,7 +320,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         this.vm.mapMeasurementService.initLayers(this.map);
         this.vm.tacticalMapService.initLayers(this.map);
 
-        this.vm.currentScale.set(this.vm.mapScaleService.getCurrentScale(this.map.getZoom()));
+        this.vm.currentScale.set(this.vm.mapScaleService.getCurrentScale(this.map.getZoom(), this.map.getCenter().lat));
         this.vm.mapScaleService.updateScaleInfo(
           this.map,
           this.mapContainer().nativeElement.clientWidth,

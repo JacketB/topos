@@ -1,0 +1,269 @@
+<div class="mo-modal-panel">
+  <!-- Header -->
+  <div class="mo-header">
+    <span class="mo-title">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #466bf7; margin-right: 6px; display: inline-block; vertical-align: middle;">
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+        <polyline points="12 5 19 12 12 19"></polyline>
+      </svg>
+      Схема походного порядка подразделения на марше
+    </span>
+    <button class="mo-close-btn" (click)="vm.toggleMarchOrder()">✕</button>
+  </div>
+
+  <div class="mo-body">
+    <!-- 1. Интерактивная визуализация походного порядка (Горизонтальная лента) -->
+    <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center;">
+        <span>Схема движения походной колонны (Голова колонны слева)</span>
+        <span style="font-weight: 600; color: #2563eb; text-transform: none;">Всего сил: {{ vm.marchOrderElements().length }} подр.</span>
+      </div>
+
+      <div style="display: flex; align-items: center; overflow-x: auto; padding: 10px 4px; min-height: 90px; scrollbar-width: thin;">
+        <!-- Направление движения (голова колонны слева, движение идет влево) -->
+        <div style="display: flex; flex-direction: column; align-items: center; min-width: 80px; justify-content: center; border-right: 2px dashed #cbd5e1; padding-right: 12px; margin-right: 8px;">
+          <span style="font-size: 10px; font-weight: 700; color: #2563eb; text-transform: uppercase;">Движение</span>
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 4px;">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </div>
+
+        @for (el of vm.marchOrderElements(); track el.id; let idx = $index; let last = $last) {
+          <!-- Карточка подразделения -->
+          <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+            <div style="background-color: white; border: 1.5px solid #2563eb; border-radius: 6px; padding: 8px 12px; width: 190px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 3px; position: relative;">
+              <!-- Иконка техники -->
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <img [src]="'symbols/' + el.icon + '.svg'" alt="" style="width: 20px; height: 20px; object-fit: contain;" />
+                <span style="font-size: 11px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 140px;" [title]="el.name">
+                  {{ el.name }}
+                </span>
+              </div>
+              <!-- Описание / Состав -->
+              <div style="font-size: 9px; color: #64748b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [title]="el.composition">
+                {{ el.composition }}
+              </div>
+              <!-- Характеристики колонны внутри -->
+              <div style="font-size: 9px; color: #3b82f6; font-weight: 600; display: flex; justify-content: space-between;">
+                <span>Техника: {{ el.vehicleCount }} ед.</span>
+                <span>(дист. {{ el.vehicleDistance }}{{ el.vehicleDistanceUnit }})</span>
+              </div>
+              <!-- Глубина колонны самого подразделения -->
+              <div style="font-size: 9px; color: #10b981; font-weight: 700; border-top: 1px dashed #e2e8f0; padding-top: 2px; text-align: right;">
+                Глубина: {{ vm.getMarchOrderUnitLengthKm(el) * 1000 | number:'1.0-0' }} м
+              </div>
+              <!-- Индекс порядка -->
+              <span style="position: absolute; top: -6px; left: -6px; background-color: #2563eb; color: white; font-size: 8px; font-weight: 800; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">
+                {{ idx + 1 }}
+              </span>
+            </div>
+
+            <!-- Стрелка дистанции до следующего подразделения (направлена влево, к голове) -->
+            @if (!last && el.distanceToNext > 0) {
+              <div style="display: flex; flex-direction: column; align-items: center; min-width: 60px; flex-shrink: 0;">
+                <span style="font-size: 9.5px; font-weight: 700; color: #475569; background-color: #e2e8f0; padding: 1px 5px; border-radius: 3px; margin-bottom: 2px;">
+                  {{ el.distanceToNext }} {{ el.distanceUnit === 'km' ? 'км' : 'м' }}
+                </span>
+                <div style="width: 100%; height: 2px; background-color: #cbd5e1; position: relative;">
+                  <div style="position: absolute; left: 0; top: -3px; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-right: 6px solid #cbd5e1;"></div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- 2. Редактор элементов походного порядка (на div-ах для стабильного Drag-and-drop) -->
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center;">
+        <span>Состав и порядок прохождения колонн</span>
+        <button 
+          class="fort-btn primary" 
+          style="padding: 4px 10px; font-size: 10.5px; font-weight: 700;"
+          (click)="onAddMarchOrderElement()"
+        >
+          + Добавить подразделение
+        </button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background-color: white;">
+        <!-- Шапка таблицы -->
+        <div style="display: flex; background-color: #f1f5f9; color: #475569; font-weight: 700; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; user-select: none;">
+          <div style="width: 60px; text-align: center; flex-shrink: 0;">Порядок</div>
+          <div style="flex: 1.5; min-width: 120px; padding-left: 10px;">Подразделение</div>
+          <div style="width: 110px; flex-shrink: 0;">Иконка</div>
+          <div style="width: 90px; flex-shrink: 0; text-align: center;">Техника (ед)</div>
+          <div style="width: 80px; flex-shrink: 0; text-align: center;">Дл. техн (м)</div>
+          <div style="width: 120px; flex-shrink: 0; text-align: center;">Дист. внутри</div>
+          <div style="width: 80px; flex-shrink: 0; text-align: right;">Глубина</div>
+          <div style="width: 130px; text-align: right; padding-right: 15px; flex-shrink: 0;">Дист. до след.</div>
+          <div style="width: 80px; text-align: center; flex-shrink: 0;">Действия</div>
+        </div>
+
+        <!-- Список строк с Drag-n-Drop (CDK) -->
+        <div 
+          cdkDropList
+          (cdkDropListDropped)="onCdkDrop($event)"
+          style="display: flex; flex-direction: column; max-height: 320px; overflow-y: auto;"
+        >
+          @for (el of vm.marchOrderElements(); track el.id; let idx = $index; let first = $first; let last = $last) {
+            <div 
+              cdkDrag
+              style="display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; background-color: white; transition: background-color 0.15s ease;"
+            >
+              <!-- Порядок и захват -->
+              <div style="width: 60px; display: flex; align-items: center; justify-content: center; gap: 4px; user-select: none; flex-shrink: 0;">
+                <span cdkDragHandle style="color: #94a3b8; font-weight: 700; font-size: 13px; cursor: grab;" title="Перетащите для изменения порядка">⋮⋮</span>
+                <span style="font-size: 10px; font-weight: 700; color: #64748b;">#{{ idx + 1 }}</span>
+              </div>
+
+              <!-- Подразделение (ввод) -->
+              <div style="flex: 1.5; min-width: 120px; padding-left: 10px;">
+                <input 
+                  type="text" 
+                  class="vs-input" 
+                  [value]="el.name" 
+                  (input)="onMarchOrderNameChange(el.id, $event)"
+                  style="width: 95%; font-weight: 600; font-size: 11px; padding: 3px 6px;"
+                />
+              </div>
+
+              <!-- Иконка -->
+              <div style="width: 110px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <img [src]="'symbols/' + el.icon + '.svg'" alt="" style="width: 18px; height: 18px; object-fit: contain;" />
+                <select 
+                  [value]="el.icon" 
+                  (change)="onMarchOrderIconChange(el.id, $event)"
+                  style="font-size: 10px; padding: 2px; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; background: white; width: 75px;"
+                >
+                  <option value="bmp_svoy1">БМП</option>
+                  <option value="btr_svoy1">БТР</option>
+                  <option value="tank_svoy_1">Танк</option>
+                  <option value="avto1">Авто</option>
+                  <option value="med_avto1">Мед.</option>
+                  <option value="brdm1">БРДМ</option>
+                  <option value="knp_peredv1">КНП подв</option>
+                  <option value="pts1">ПТС</option>
+                  <option value="ur1">УР</option>
+                  <option value="imr1">ИМР</option>
+                  <option value="kshm4">КШМ</option>
+                </select>
+              </div>
+
+              <!-- Количество техники -->
+              <div style="width: 90px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <input 
+                  type="number" 
+                  class="vs-input" 
+                  [value]="el.vehicleCount" 
+                  (input)="onMarchOrderVehicleCountChange(el.id, $event)"
+                  style="width: 50px; font-size: 11px; padding: 3px 6px; text-align: center;"
+                  min="1"
+                />
+              </div>
+
+              <!-- Средняя длина техники -->
+              <div style="width: 80px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <input 
+                  type="number" 
+                  class="vs-input" 
+                  [value]="el.vehicleLength" 
+                  (input)="onMarchOrderVehicleLengthChange(el.id, $event)"
+                  style="width: 50px; font-size: 11px; padding: 3px 6px; text-align: center;"
+                  min="1"
+                  step="0.1"
+                />
+              </div>
+
+              <!-- Дистанция внутри подразделения -->
+              <div style="width: 120px; display: flex; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0;">
+                <input 
+                  type="number" 
+                  class="vs-input" 
+                  [value]="el.vehicleDistance" 
+                  (input)="onMarchOrderVehicleDistanceChange(el.id, $event)"
+                  style="width: 45px; font-size: 11px; padding: 3px 6px; text-align: right;"
+                  min="0"
+                />
+                <select 
+                  [value]="el.vehicleDistanceUnit" 
+                  (change)="onMarchOrderVehicleDistanceUnitChange(el.id, $event)"
+                  style="font-size: 10px; padding: 2px; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; background: white;"
+                >
+                  <option value="m">м</option>
+                  <option value="km">км</option>
+                </select>
+              </div>
+
+              <!-- Глубина колонны самого подразделения (read-only) -->
+              <div style="width: 80px; display: flex; align-items: center; justify-content: flex-end; font-size: 11px; font-weight: 700; color: #10b981; padding-right: 5px; flex-shrink: 0; user-select: none;">
+                {{ vm.getMarchOrderUnitLengthKm(el) * 1000 | number:'1.0-0' }} м
+              </div>
+
+              <!-- Дистанция до следующего подразделения -->
+              <div style="width: 130px; display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding-right: 15px; flex-shrink: 0;">
+                @if (!last) {
+                  <input 
+                    type="number" 
+                    class="vs-input" 
+                    [value]="el.distanceToNext" 
+                    (input)="onMarchOrderDistanceChange(el.id, $event)"
+                    style="width: 50px; font-size: 11px; padding: 3px 6px; text-align: right;"
+                    min="0"
+                  />
+                  <select 
+                    [value]="el.distanceUnit" 
+                    (change)="onMarchOrderDistanceUnitChange(el.id, $event)"
+                    style="font-size: 10px; padding: 2px 4px; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; background: white;"
+                  >
+                    <option value="m">м</option>
+                    <option value="km">км</option>
+                  </select>
+                } @else {
+                  <span style="color: #94a3b8; font-style: italic; font-size: 10px;">Конец колонны</span>
+                }
+              </div>
+
+              <!-- Действия -->
+              <div style="width: 80px; display: flex; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0;">
+                <button 
+                  (click)="vm.moveMarchOrderElement(idx, 'up')" 
+                  [disabled]="first"
+                  style="border: none; background: none; font-size: 9px; cursor: pointer; color: #475569; padding: 2px; opacity: first ? 0.3 : 1;"
+                  title="Переместить вперед"
+                >
+                  ▲
+                </button>
+                <button 
+                  (click)="vm.moveMarchOrderElement(idx, 'down')" 
+                  [disabled]="last"
+                  style="border: none; background: none; font-size: 9px; cursor: pointer; color: #475569; padding: 2px; opacity: last ? 0.3 : 1;"
+                  title="Переместить назад"
+                >
+                  ▼
+                </button>
+                <button 
+                  (click)="vm.removeMarchOrderElement(el.id)"
+                  style="border: none; background: none; color: #ef4444; font-weight: 700; cursor: pointer; font-size: 13px; margin-left: 6px;"
+                  title="Удалить из колонны"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Итоговая панель -->
+  <div class="mo-footer">
+    <div style="font-size: 11px; color: #475569;">
+      Общая глубина походной колонны: <strong style="font-size: 12.5px; color: #2563eb;">{{ vm.getMarchOrderTotalLengthKm() | number:'1.1-2' }} км</strong>
+    </div>
+    <button class="fort-btn secondary" (click)="vm.toggleMarchOrder()">Закрыть</button>
+  </div>
+</div>

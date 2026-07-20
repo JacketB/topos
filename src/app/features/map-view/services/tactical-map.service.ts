@@ -687,11 +687,15 @@ export class TacticalMapService {
       if (callback) callback();
       return;
     }
+
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = `symbols/${symbolId}.svg`;
     img.onload = () => {
-      if (this.mapInstance && !this.mapInstance.hasImage(targetIconId)) {
+      if (this.mapInstance) {
+        if (this.mapInstance.hasImage(targetIconId)) {
+          this.mapInstance.removeImage(targetIconId);
+        }
         this.mapInstance.addImage(targetIconId, img);
       }
       if (callback) callback();
@@ -740,12 +744,20 @@ export class TacticalMapService {
               el.setAttribute('fill', color);
             }
           });
-          const serialized = new XMLSerializer().serializeToString(doc);
+
+          const xmlSerializer = new XMLSerializer();
+          const modifiedSvg = xmlSerializer.serializeToString(doc);
+          const encodedSvg = encodeURIComponent(modifiedSvg);
+          const dataUrl = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
+
           const img = new Image();
           img.crossOrigin = 'anonymous';
-          img.src = `data:image/svg+xml;charset=utf-8,` + encodeURIComponent(serialized);
+          img.src = dataUrl;
           img.onload = () => {
-            if (this.mapInstance && !this.mapInstance.hasImage(targetIconId)) {
+            if (this.mapInstance) {
+              if (this.mapInstance.hasImage(targetIconId)) {
+                this.mapInstance.removeImage(targetIconId);
+              }
               this.mapInstance.addImage(targetIconId, img);
             }
             if (callback) callback();
@@ -754,11 +766,12 @@ export class TacticalMapService {
             if (callback) callback();
           };
         } catch (e) {
-          console.error('Ошибка перекраски символа:', e);
+          console.error('Ошибка обработки цветного SVG знака:', e);
           if (callback) callback();
         }
       })
-      .catch(() => {
+      .catch(e => {
+        console.error('Ошибка загрузки SVG файла:', e);
         if (callback) callback();
       });
   }

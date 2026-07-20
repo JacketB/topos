@@ -1,0 +1,487 @@
+<header class="app-top-toolbar">
+  <div class="toolbar-left" style="width: 100%; display: flex; align-items: center; flex-wrap: nowrap;">
+    
+    <!-- 1. Группа рисования инженерных и тактических линий -->
+    <div class="toolbar-group" style="display: flex; align-items: center; flex-shrink: 0;">
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.activeLineMode() === 'trench'" 
+        (click)="vm.activeLineMode() === 'trench' ? vm.cancelDrawingLine() : vm.startDrawingLine('trench')" 
+        title="Прокладка траншеи с бруствером [Клавиша: T]"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 17l4-8 4 8 4-8 4 8 2-4" />
+        </svg>
+        <kbd class="key-hint">T</kbd>
+      </button>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.activeLineMode() === 'comm_open'" 
+        (click)="vm.activeLineMode() === 'comm_open' ? vm.cancelDrawingLine() : vm.startDrawingLine('comm_open')" 
+        title="Открытый ход сообщения (двухсторонний бруствер) [Клавиша: O]"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h18M7 12v5M11 7v5M15 12v5M19 7v5" />
+        </svg>
+        <kbd class="key-hint">O</kbd>
+      </button>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.activeLineMode() === 'comm_covered'" 
+        (click)="vm.activeLineMode() === 'comm_covered' ? vm.cancelDrawingLine() : vm.startDrawingLine('comm_covered')" 
+        title="Крытый ход сообщения (перекрытая щель) [Клавиша: C]"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h18M6 8v8M10 8v8M14 8v8M18 8v8" />
+        </svg>
+        <kbd class="key-hint">C</kbd>
+      </button>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.activeLineMode() === 'wire'" 
+        (click)="vm.activeLineMode() === 'wire' ? vm.cancelDrawingLine() : vm.startDrawingLine('wire')" 
+        title="Проволочное заграждение (МЗП) [Клавиша: W]"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 12h16M7 8l2 8M15 8l2 8M8 12c0-2 2-4 4-4s4 2 4 4" />
+        </svg>
+        <kbd class="key-hint">W</kbd>
+      </button>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.activeLineMode() === 'point'" 
+        (click)="vm.activeLineMode() === 'point' ? vm.cancelDrawingLine() : vm.startDrawingLine('point')" 
+        title="Нанести точку (ориентир) [Клавиша: P]"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="4" fill="currentColor" />
+          <circle cx="12" cy="12" r="9" />
+        </svg>
+        <kbd class="key-hint">P</kbd>
+      </button>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.activeLineMode() === 'march_route'" 
+        (click)="vm.activeLineMode() === 'march_route' ? vm.cancelDrawingLine() : vm.startDrawingLine('march_route')" 
+        title="Проложить маршрут марша [Клавиша: R]"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19c2-3 5-3 8-1c3 2 6 2 8-2" />
+          <circle cx="4" cy="19" r="2" fill="currentColor" />
+          <circle cx="20" cy="16" r="2" fill="currentColor" />
+        </svg>
+        <kbd class="key-hint">R</kbd>
+      </button>
+
+      <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.activeLineMode() === 'arrow_attack'" 
+        (click)="vm.activeLineMode() === 'arrow_attack' ? vm.cancelDrawingLine() : vm.startDrawingLine('arrow_attack')" 
+        title="Стрелка главного удара (ласточкин хвост) [Клавиша: A]"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 20s6-12 14-12" />
+          <polyline points="11 3 16 8 11 13" />
+          <line x1="2" y1="20" x2="6" y2="16" />
+        </svg>
+        <kbd class="key-hint">A</kbd>
+      </button>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.activeLineMode() === 'arrow_supporting'" 
+        (click)="vm.activeLineMode() === 'arrow_supporting' ? vm.cancelDrawingLine() : vm.startDrawingLine('arrow_supporting')" 
+        title="Стрелка вспомогательного удара (узкая)"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="21" x2="19" y2="5" />
+          <polyline points="12 5 19 5 19 12" />
+        </svg>
+      </button>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.activeLineMode() === 'arrow_retreat'" 
+        (click)="vm.activeLineMode() === 'arrow_retreat' ? vm.cancelDrawingLine() : vm.startDrawingLine('arrow_retreat')" 
+        title="Стрелка отхода / маневра (пунктир)"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 3">
+          <path d="M21 21s-6-10-12-10" />
+          <polyline points="13 6 8 11 13 16" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="0" />
+        </svg>
+      </button>
+
+      <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.isLineSmooth()" 
+        (click)="vm.toggleLineSmooth()" 
+        title="Сглаживание углов (Плавная кривая) [Клавиша: S]"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12c4-6 8-6 12 0s6 6 6 0" />
+        </svg>
+        <kbd class="key-hint">S</kbd>
+      </button>
+
+      <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
+
+      <!-- 2. Режимы взаимодействия (Движение, Правка, Рамка) -->
+      <div style="display: inline-flex; background-color: #f1f5f9; border-radius: 6px; padding: 2px; gap: 2px; border: 1px solid #cbd5e1; align-items: center; vertical-align: middle; flex-shrink: 0;">
+        <button 
+          class="tool-btn mode-select-btn" 
+          [class.active]="vm.tacticalMapService.interactionMode() === 'pan'" 
+          (click)="vm.setPanMode()" 
+          title="Режим навигации: перемещение по карте [Клавиша: 1]"
+        >
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
+            <path d="M5 9l-2 3 2 3M9 5l3-2 3 2M15 19l-3 2-3-2M19 9l2 3-2 3M2 12h20M12 2v20" />
+          </svg>
+          <span style="font-size: 10px; font-weight: 700; margin-left: 2px; vertical-align: middle;">Движение</span>
+          <kbd class="key-hint" style="bottom: 1px; right: 2px;">1</kbd>
+        </button>
+        
+        <button 
+          class="tool-btn mode-select-btn" 
+          [class.active]="vm.tacticalMapService.interactionMode() === 'edit'" 
+          (click)="vm.setEditMode()" 
+          title="Режим редактирования: выделение и перетаскивание объектов [Клавиша: 2]"
+        >
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
+            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+          <span style="font-size: 10px; font-weight: 700; margin-left: 2px; vertical-align: middle;">Правка</span>
+          <kbd class="key-hint" style="bottom: 1px; right: 2px;">2</kbd>
+        </button>
+
+        <button 
+          class="tool-btn mode-select-btn" 
+          [class.active]="vm.tacticalMapService.interactionMode() === 'select'" 
+          (click)="vm.setSelectMode()" 
+          title="Режим выделения: обведение рамкой группы элементов [Клавиша: 3 / Shift+Drag]"
+        >
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
+            <rect x="3" y="3" width="14" height="14" rx="1.5" stroke-dasharray="3 3"></rect>
+            <path d="M12 12l8 8-3-8h-5z" fill="currentColor"></path>
+          </svg>
+          <span style="font-size: 10px; font-weight: 700; margin-left: 2px; vertical-align: middle;">Рамка</span>
+          <kbd class="key-hint" style="bottom: 1px; right: 2px;">3</kbd>
+        </button>
+      </div>
+
+      <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.isTerrainOrientationEnabled()" 
+        (click)="vm.toggleTerrainOrientation()" 
+        title="Автоматическая ориентация объектов по рельефу"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 20h16M4 20l7-13 4 7 5-6" />
+        </svg>
+      </button>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.isCrosshairVisible()" 
+        (click)="vm.toggleCrosshair()" 
+        title="Показать/скрыть центральный визир (прицел) на карте"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="3" />
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <line x1="1" y1="12" x2="23" y2="12" />
+        </svg>
+      </button>
+
+      <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
+
+      <!-- 3. Аналитика (Профиль высот, Круги дальности, Зона видимости) -->
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.isElevationProfileOpen()" 
+        (click)="vm.toggleElevationProfileFromToolbar()" 
+        title="Профиль высот рельефа местности [Клавиша: E]"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        <kbd class="key-hint">E</kbd>
+      </button>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.tacticalAnalyticsService.isRangeRingsActive()" 
+        (click)="vm.toggleRangeRingsForSelected()" 
+        title="Круги дальности (500м, 1км, 3км, 5км) вокруг объекта или центра карты"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <circle cx="12" cy="12" r="4"></circle>
+        </svg>
+      </button>
+
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.tacticalAnalyticsService.isViewshedActive()" 
+        (click)="vm.toggleViewshedForSelected()" 
+        title="Анализ зоны прямой видимости (Viewshed 360°) вокруг объекта или центра карты"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
+    </div>
+
+    <!-- 4. Библиотека тактических знаков -->
+    <div class="toolbar-group" style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+      <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 4px; flex-shrink: 0;"></div>
+      
+      <div style="position: relative; display: inline-block;">
+        <button 
+          class="tool-btn" 
+          [class.active]="vm.isSymbolLibraryOpen()" 
+          (click)="vm.toggleSymbolLibraryPopover($event)" 
+          title="Библиотека тактических знаков [Клавиша: L]"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          </svg>
+          <kbd class="key-hint">L</kbd>
+        </button>
+
+        @if (vm.isSymbolLibraryOpen()) {
+          <div class="symbols-library-popover" (click)="$event.stopPropagation()">
+            <div class="symbols-library-layout">
+              <!-- Левая колонка: вертикальные вкладки -->
+              <div class="symbols-library-tabs">
+                @for (category of vm.symbolsService.groupedSymbols(); track category.id) {
+                  <button 
+                    class="symbols-library-tab-btn" 
+                    [class.active]="vm.selectedSymbolCategory() === category.id" 
+                    (click)="vm.selectedSymbolCategory.set(category.id)"
+                    [title]="category.name"
+                  >
+                    <span class="tab-icon">
+                      @switch (category.id) {
+                        @case ('armor') {
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="8" rx="2" ry="2"></rect>
+                            <path d="M12 5v6M8 5h8"></path>
+                            <circle cx="6" cy="15" r="1"></circle>
+                            <circle cx="12" cy="15" r="1"></circle>
+                            <circle cx="18" cy="15" r="1"></circle>
+                          </svg>
+                        }
+                        @case ('fortification_ussr') {
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 18V9a5 5 0 0 1 5-5h10a5 5 0 0 1 5 5v9H2z"></path>
+                            <rect x="7" y="9" width="10" height="3" rx="1" fill="currentColor"></rect>
+                            <line x1="1" y1="18" x2="23" y2="18"></line>
+                          </svg>
+                        }
+                        @case ('artillery') {
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="8" cy="15" r="3"></circle>
+                            <line x1="8" y1="15" x2="20" y2="9"></line>
+                            <line x1="15" y1="11.5" x2="18" y2="17.5"></line>
+                          </svg>
+                        }
+                        @case ('air_defense_drones') {
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a10 10 0 0 1 10 10"></path>
+                            <path d="M12 6a6 6 0 0 1 6 6"></path>
+                            <circle cx="12" cy="12" r="2"></circle>
+                            <path d="M12 12L2 22M12 12H2"></path>
+                          </svg>
+                        }
+                        @case ('aviation_drones') {
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L14 19v-5.5l8 2.5z"></path>
+                          </svg>
+                        }
+                        @case ('infantry') {
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 11l4 1.5 1-2h12v-1.5h2v2h-1l-1 2h-6v2h-2v-2H8.5L6.5 16H4.5L3 11z"></path>
+                            <path d="M13 11c0 2-1 4-2.5 5H9.5l1.5-5"></path>
+                          </svg>
+                        }
+                        @case ('command_comm') {
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="6" y1="2" x2="6" y2="22"></line>
+                            <polygon points="6 4 18 8 6 12" fill="currentColor" fill-opacity="0.15"></polygon>
+                            <line x1="6" y1="22" x2="10" y2="22"></line>
+                          </svg>
+                        }
+                        @default {
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15 8.5 22 9.5 17 14.5 18.5 21.5 12 18 5.5 21.5 7 14.5 2 9.5 9 8.5 12 2"></polygon>
+                          </svg>
+                        }
+                      }
+                    </span>
+                    <span class="tab-label">{{ category.name }}</span>
+                  </button>
+                }
+              </div>
+              
+              <!-- Правая колонка: сетка значков -->
+              <div class="symbols-library-content">
+                @for (category of vm.symbolsService.groupedSymbols(); track category.id) {
+                  @if (vm.selectedSymbolCategory() === category.id) {
+                    <div class="symbols-grid-container">
+                      <div class="symbols-grid-header">
+                        <span class="grid-title">{{ category.name }}</span>
+                        <button class="close-popover-btn" (click)="vm.isSymbolLibraryOpen.set(false)">✕</button>
+                      </div>
+                      <div class="symbols-grid">
+                        @for (item of category.symbols; track item.id) {
+                          <button 
+                            class="symbol-grid-item" 
+                            [class.selected]="vm.selectedSymbol()?.id === item.id"
+                            (click)="vm.selectSymbolFromLibrary(item); vm.isSymbolLibraryOpen.set(false)" 
+                            [title]="item.name"
+                          >
+                            <div class="symbol-icon-wrapper-pop">
+                              <img [src]="'symbols/' + item.symbol + '.svg'" [alt]="item.name" />
+                            </div>
+                            <span class="symbol-name-pop">{{ item.name }}</span>
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- 5. Специализированные панели и экспорт/импорт сценариев -->
+    <div class="toolbar-group" style="display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-left: auto;">
+      <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 4px;"></div>
+      
+      <!-- Схема походного порядка (Маршрут) -->
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.isMarchOrderOpen()" 
+        (click)="vm.toggleMarchOrder()" 
+        title="Схема походного порядка подразделения на марше (Маршрут) [Клавиша: M]"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 14 19"></polyline>
+        </svg>
+        <kbd class="key-hint">M</kbd>
+      </button>
+
+      <!-- Планировщик фортификации (Календарь) -->
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.isFortPlannerOpen()" 
+        (click)="vm.toggleFortPlanner()" 
+        title="Планировщик и графики фортификационных работ (Календарь) [Клавиша: G]"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <kbd class="key-hint">G</kbd>
+      </button>
+
+      <!-- Инженерная ведомость (Сводка) -->
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.isAreaReportOpen()" 
+        (click)="vm.toggleAreaReport()" 
+        title="Инженерно-фортификационная ведомость района (Сводка) [Клавиша: V]"
+        style="position: relative;"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <kbd class="key-hint">V</kbd>
+        @if (vm.placedFortificationsCount() > 0) {
+          <span style="position: absolute; top: -5px; right: -5px; background: #e11d48; color: white; border-radius: 50%; width: 13px; height: 13px; font-size: 7px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.25); z-index: 2;">
+            {{ vm.placedFortificationsCount() }}
+          </span>
+        }
+      </button>
+
+      <!-- Наложение изображений (Фото) -->
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.isImageOverlayPanelOpen()" 
+        (click)="vm.toggleImageOverlayPanel()" 
+        title="Наложение схем и растровых оверлеев на карту (Фото)"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+      </button>
+
+      <!-- Экспорт фрагмента карты (PNG 600 DPI) -->
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.isMapExportOpen()" 
+        (click)="vm.openMapExport()" 
+        title="Экспорт фрагмента карты в изображение (PNG 600 DPI с рамкой)"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+      </button>
+
+      <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 4px;"></div>
+
+      <!-- Кнопка Экспорта Сценария TPS -->
+      <button 
+        class="tool-btn" 
+        (click)="vm.exportScenario()" 
+        title="Сохранить файл обстановки сценария (.tps)"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+      </button>
+
+      <!-- Кнопка Импорта Сценария TPS -->
+      <label class="tool-btn" style="cursor: pointer;" title="Загрузить файл обстановки сценария (.tps)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <input type="file" accept=".tps,.json" (change)="vm.importScenario($event)" style="display: none;" />
+      </label>
+    </div>
+  </div>
+</header>

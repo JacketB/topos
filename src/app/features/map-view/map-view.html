@@ -1,429 +1,8 @@
 <div class="app-root-layout">
-  <header class="app-top-toolbar">
-    <div class="toolbar-left" style="width: 100%; display: flex; align-items: center; flex-wrap: nowrap;">
-      <!-- Левая часть: рисование линий и вспомогательные чекбоксы -->
-      <div class="toolbar-group" style="display: flex; align-items: center; flex-shrink: 0;">
-        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'trench'" (click)="vm.activeLineMode() === 'trench' ? vm.cancelDrawingLine() : vm.startDrawingLine('trench')" title="Прокладка траншеи с бруствером [Клавиша: T]">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 17l4-8 4 8 4-8 4 8 2-4" />
-          </svg>
-          <kbd class="key-hint">T</kbd>
-        </button>
-        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'comm_open'" (click)="vm.activeLineMode() === 'comm_open' ? vm.cancelDrawingLine() : vm.startDrawingLine('comm_open')" title="Открытый ход сообщения (двухсторонний бруствер) [Клавиша: O]">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 12h18M7 12v5M11 7v5M15 12v5M19 7v5" />
-          </svg>
-          <kbd class="key-hint">O</kbd>
-        </button>
-        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'comm_covered'" (click)="vm.activeLineMode() === 'comm_covered' ? vm.cancelDrawingLine() : vm.startDrawingLine('comm_covered')" title="Крытый ход сообщения (перекрытая щель) [Клавиша: C]">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 12h18M6 8v8M10 8v8M14 8v8M18 8v8" />
-          </svg>
-          <kbd class="key-hint">C</kbd>
-        </button>
-        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'wire'" (click)="vm.activeLineMode() === 'wire' ? vm.cancelDrawingLine() : vm.startDrawingLine('wire')" title="Проволочное заграждение (МЗП) [Клавиша: W]">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 12h16M7 8l2 8M15 8l2 8M8 12c0-2 2-4 4-4s4 2 4 4" />
-          </svg>
-          <kbd class="key-hint">W</kbd>
-        </button>
-        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'point'" (click)="vm.activeLineMode() === 'point' ? vm.cancelDrawingLine() : vm.startDrawingLine('point')" title="Нанести точку (ориентир) [Клавиша: P]">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="4" fill="currentColor" />
-            <circle cx="12" cy="12" r="9" />
-          </svg>
-          <kbd class="key-hint">P</kbd>
-        </button>
-        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'march_route'" (click)="vm.activeLineMode() === 'march_route' ? vm.cancelDrawingLine() : vm.startDrawingLine('march_route')" title="Проложить маршрут марша [Клавиша: R]">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 19c2-3 5-3 8-1c3 2 6 2 8-2" />
-            <circle cx="4" cy="19" r="2" fill="currentColor" />
-            <circle cx="20" cy="16" r="2" fill="currentColor" />
-          </svg>
-          <kbd class="key-hint">R</kbd>
-        </button>
-        <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
-        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'arrow_attack'" (click)="vm.activeLineMode() === 'arrow_attack' ? vm.cancelDrawingLine() : vm.startDrawingLine('arrow_attack')" title="Стрелка главного удара (ласточкин хвост) [Клавиша: A]">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 20s6-12 14-12" />
-            <polyline points="11 3 16 8 11 13" />
-            <line x1="2" y1="20" x2="6" y2="16" />
-          </svg>
-          <kbd class="key-hint">A</kbd>
-        </button>
-        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'arrow_supporting'" (click)="vm.activeLineMode() === 'arrow_supporting' ? vm.cancelDrawingLine() : vm.startDrawingLine('arrow_supporting')" title="Стрелка вспомогательного удара (узкая)">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="3" y1="21" x2="19" y2="5" />
-            <polyline points="12 5 19 5 19 12" />
-          </svg>
-        </button>
-        <button class="tool-btn" [class.active]="vm.activeLineMode() === 'arrow_retreat'" (click)="vm.activeLineMode() === 'arrow_retreat' ? vm.cancelDrawingLine() : vm.startDrawingLine('arrow_retreat')" title="Стрелка отхода / маневра (пунктир)">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 3">
-            <path d="M21 21s-6-10-12-10" />
-            <polyline points="13 6 8 11 13 16" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="0" />
-          </svg>
-        </button>
-        <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
-        <button class="tool-btn" [class.active]="vm.isLineSmooth()" (click)="vm.toggleLineSmooth()" title="Сглаживание углов (Плавная кривая) [Клавиша: S]">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12c4-6 8-6 12 0s6 6 6 0" />
-          </svg>
-          <kbd class="key-hint">S</kbd>
-        </button>
-        <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
-        <!-- Режимы взаимодействия (Движение, Редактирование, Выделение) -->
-        <div class="toolbar-mode-group" style="display: inline-flex; background-color: #f1f5f9; border-radius: 6px; padding: 2px; gap: 2px; border: 1px solid #cbd5e1; align-items: center; vertical-align: middle; flex-shrink: 0;">
-          <!-- Движение карты -->
-          <button 
-            class="tool-btn mode-select-btn" 
-            [class.active]="vm.tacticalMapService.interactionMode() === 'pan'" 
-            (click)="vm.tacticalMapService.interactionMode.set('pan')" 
-            title="Режим навигации: перемещение по карте [Клавиша: 1]"
-          >
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
-              <path d="M5 9l-2 3 2 3M9 5l3-2 3 2M15 19l-3 2-3-2M19 9l2 3-2 3M2 12h20M12 2v20" />
-            </svg>
-            <span style="font-size: 10px; font-weight: 700; margin-left: 2px; vertical-align: middle;">Движение</span>
-            <kbd class="key-hint" style="bottom: 1px; right: 2px;">1</kbd>
-          </button>
-          
-          <!-- Редактирование объектов -->
-          <button 
-            class="tool-btn mode-select-btn" 
-            [class.active]="vm.tacticalMapService.interactionMode() === 'edit'" 
-            (click)="vm.tacticalMapService.interactionMode.set('edit')" 
-            title="Режим редактирования: выделение и перетаскивание объектов [Клавиша: 2]"
-          >
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
-              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-            </svg>
-            <span style="font-size: 10px; font-weight: 700; margin-left: 2px; vertical-align: middle;">Правка</span>
-            <kbd class="key-hint" style="bottom: 1px; right: 2px;">2</kbd>
-          </button>
-
-          <!-- Выделение рамкой -->
-          <button 
-            class="tool-btn mode-select-btn" 
-            [class.active]="vm.tacticalMapService.interactionMode() === 'select'" 
-            (click)="vm.tacticalMapService.interactionMode.set('select')" 
-            title="Режим выделения: обведение рамкой группы элементов [Клавиша: 3 / Shift+Drag]"
-          >
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
-              <rect x="3" y="3" width="14" height="14" rx="1.5" stroke-dasharray="3 3"></rect>
-              <path d="M12 12l8 8-3-8h-5z" fill="currentColor"></path>
-            </svg>
-            <span style="font-size: 10px; font-weight: 700; margin-left: 2px; vertical-align: middle;">Рамка</span>
-            <kbd class="key-hint" style="bottom: 1px; right: 2px;">3</kbd>
-          </button>
-        </div>
-        <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
-        <button class="tool-btn" [class.active]="vm.isTerrainOrientationEnabled()" (click)="vm.toggleTerrainOrientation()" title="Автоматическая ориентация объектов по рельефу">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 20h16M4 20l7-13 4 7 5-6" />
-          </svg>
-        </button>
-        <button class="tool-btn" [class.active]="vm.isCrosshairVisible()" (click)="vm.toggleCrosshair()" title="Показать/скрыть центральный визир (прицел) на карте">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9" />
-            <circle cx="12" cy="12" r="3" />
-            <line x1="12" y1="1" x2="12" y2="23" />
-            <line x1="1" y1="12" x2="23" y2="12" />
-          </svg>
-        </button>
-        <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
-        <!-- Аналитика Milestone 3 (Профиль высот, Круги дальности, Зона видимости) -->
-        <button class="tool-btn" [class.active]="vm.isElevationProfileOpen()" (click)="vm.toggleElevationProfileFromToolbar()" title="Профиль высот рельефа местности [Клавиша: E]">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-          </svg>
-          <kbd class="key-hint">E</kbd>
-        </button>
-        <button class="tool-btn" [class.active]="vm.tacticalAnalyticsService.isRangeRingsActive()" (click)="vm.toggleRangeRingsForSelected()" title="Круги дальности (500м, 1км, 3км, 5км) вокруг объекта или центра карты">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <circle cx="12" cy="12" r="4"></circle>
-          </svg>
-        </button>
-        <button class="tool-btn" [class.active]="vm.tacticalAnalyticsService.isViewshedActive()" (click)="vm.toggleViewshedForSelected()" title="Анализ зоны прямой видимости (Viewshed 360°) вокруг объекта или центра карты">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-        </button>
-      </div>
-
-      <!-- Средняя часть: Библиотека тактических знаков -->
-      <div class="toolbar-group" style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-        <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 4px; flex-shrink: 0;"></div>
-        
-        <div class="toolbar-dropdown-container" style="position: relative; display: inline-block;">
-          <button 
-            class="tool-btn" 
-            [class.active]="vm.activeCategoryDropdown() === 'symbols_library'" 
-            (click)="vm.toggleCategoryDropdown('symbols_library')" 
-            title="Библиотека тактических знаков [Клавиша: L]"
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-            </svg>
-            <kbd class="key-hint">L</kbd>
-          </button>
-          
-          @if (vm.activeCategoryDropdown() === 'symbols_library') {
-            <div class="symbols-library-popover">
-              <div class="symbols-library-layout">
-                <!-- Левая колонка: вертикальные вкладки -->
-                <div class="symbols-library-tabs">
-                  @for (category of vm.symbolsService.groupedSymbols(); track category.id) {
-                    <button 
-                      class="symbols-library-tab-btn" 
-                      [class.active]="vm.activeCategoryTab() === category.id" 
-                      (click)="vm.activeCategoryTab.set(category.id)"
-                      [title]="category.name"
-                    >
-                      <span class="tab-icon">
-                        @switch (category.id) {
-                          @case ('armor') {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <rect x="3" y="11" width="18" height="8" rx="2" ry="2"></rect>
-                              <path d="M12 5v6M8 5h8"></path>
-                              <circle cx="6" cy="15" r="1"></circle>
-                              <circle cx="12" cy="15" r="1"></circle>
-                              <circle cx="18" cy="15" r="1"></circle>
-                            </svg>
-                          }
-                          @case ('fortification_ussr') {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M2 18V9a5 5 0 0 1 5-5h10a5 5 0 0 1 5 5v9H2z"></path>
-                              <rect x="7" y="9" width="10" height="3" rx="1" fill="currentColor"></rect>
-                              <line x1="1" y1="18" x2="23" y2="18"></line>
-                            </svg>
-                          }
-                          @case ('artillery') {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <circle cx="8" cy="15" r="3"></circle>
-                              <line x1="8" y1="15" x2="20" y2="9"></line>
-                              <line x1="15" y1="11.5" x2="18" y2="17.5"></line>
-                            </svg>
-                          }
-                          @case ('air_defense_drones') {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M12 2a10 10 0 0 1 10 10"></path>
-                              <path d="M12 6a6 6 0 0 1 6 6"></path>
-                              <circle cx="12" cy="12" r="2"></circle>
-                              <path d="M12 12L2 22M12 12H2"></path>
-                            </svg>
-                          }
-                          @case ('aviation_drones') {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L14 19v-5.5l8 2.5z"></path>
-                            </svg>
-                          }
-                          @case ('infantry') {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M3 11l4 1.5 1-2h12v-1.5h2v2h-1l-1 2h-6v2h-2v-2H8.5L6.5 16H4.5L3 11z"></path>
-                              <path d="M13 11c0 2-1 4-2.5 5H9.5l1.5-5"></path>
-                            </svg>
-                          }
-                          @case ('command_comm') {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <line x1="6" y1="2" x2="6" y2="22"></line>
-                              <polygon points="6 4 18 8 6 12" fill="currentColor" fill-opacity="0.15"></polygon>
-                              <line x1="6" y1="22" x2="10" y2="22"></line>
-                            </svg>
-                          }
-                          @case ('medical') {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                              <circle cx="12" cy="12" r="10"></circle>
-                              <path d="M12 8v8M8 12h8"></path>
-                            </svg>
-                          }
-                          @case ('engineering') {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <circle cx="12" cy="12" r="3"></circle>
-                              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                            </svg>
-                          }
-                          @case ('infrastructure') {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                            </svg>
-                          }
-                          @case ('misc') {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <circle cx="12" cy="12" r="10"></circle>
-                              <circle cx="12" cy="12" r="3"></circle>
-                              <line x1="12" y1="1" x2="12" y2="5"></line>
-                              <line x1="12" y1="19" x2="12" y2="23"></line>
-                              <line x1="1" y1="12" x2="5" y2="12"></line>
-                              <line x1="19" y1="12" x2="23" y2="12"></line>
-                            </svg>
-                          }
-                          @default {
-                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
-                              <polygon points="12 2 15 8.5 22 9.5 17 14.5 18.5 21.5 12 18 5.5 21.5 7 14.5 2 9.5 9 8.5 12 2"></polygon>
-                            </svg>
-                          }
-                        }
-                      </span>
-                      <span class="tab-label">{{ category.name }}</span>
-                    </button>
-                  }
-                </div>
-                
-                <!-- Правая колонка: сетка значков -->
-                <div class="symbols-library-content">
-                  @for (category of vm.symbolsService.groupedSymbols(); track category.id) {
-                    @if (vm.activeCategoryTab() === category.id) {
-                      <div class="symbols-grid-container">
-                        <div class="symbols-grid-header">
-                          <span class="grid-title">{{ category.name }}</span>
-                          <button class="close-popover-btn" (click)="vm.toggleCategoryDropdown(null)">✕</button>
-                        </div>
-                        <div class="symbols-grid">
-                          @for (item of category.symbols; track item.id) {
-                            <button 
-                              class="symbol-grid-item" 
-                              [class.selected]="vm.selectedSymbol()?.id === item.id"
-                              (click)="vm.selectSymbol(item); vm.toggleCategoryDropdown(null)" 
-                              [title]="item.name"
-                            >
-                              <div class="symbol-icon-wrapper-pop">
-                                <img [src]="'symbols/' + item.symbol + '.svg'" [alt]="item.name" />
-                              </div>
-                              <span class="symbol-name-pop">{{ item.name }}</span>
-                            </button>
-                          }
-                        </div>
-                      </div>
-                    }
-                  }
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      </div>
-
-      <!-- Правая часть: перенесенные кнопки отчетов, планировщика, маршрута, фото -->
-      <div class="toolbar-group" style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-        <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 4px;"></div>
-        
-        <!-- Кнопка Схемы походного порядка (Маршрут) -->
-        <button 
-          class="tool-btn" 
-          [class.active]="vm.isMarchOrderOpen()" 
-          (click)="vm.toggleMarchOrder()" 
-          title="Схема походного порядка подразделения на марше (Маршрут) [Клавиша: M]"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-            <polyline points="12 5 19 12 12 19"></polyline>
-          </svg>
-          <kbd class="key-hint">M</kbd>
-        </button>
-
-        <!-- Кнопка Планировщика фортификации (Календарь) -->
-        <button 
-          class="tool-btn" 
-          [class.active]="vm.isFortPlannerOpen()" 
-          (click)="vm.toggleFortPlanner()" 
-          title="Планировщик и графики фортификационных работ (Календарь) [Клавиша: G]"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <kbd class="key-hint">G</kbd>
-        </button>
-
-        <!-- Кнопка Инженерной ведомости (Сводка) -->
-        <button 
-          class="tool-btn" 
-          [class.active]="vm.isAreaReportOpen()" 
-          (click)="vm.toggleAreaReport()" 
-          title="Инженерно-фортификационная ведомость района (Сводка) [Клавиша: V]"
-          style="position: relative;"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
-          </svg>
-          <kbd class="key-hint">V</kbd>
-          @if (vm.placedFortificationsCount() > 0) {
-            <span class="badge" style="position: absolute; top: -5px; right: -5px; background: #e11d48; color: white; border-radius: 50%; width: 13px; height: 13px; font-size: 7px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.25); z-index: 2;">
-              {{ vm.placedFortificationsCount() }}
-            </span>
-          }
-        </button>
-
-        <!-- Кнопка Наложения изображений (Фото) -->
-        <button 
-          class="tool-btn" 
-          [class.active]="vm.isImageOverlayPanelOpen()" 
-          (click)="vm.toggleImageOverlayPanel()" 
-          title="Наложение схем и растровых оверлеев на карту (Фото)"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-            <polyline points="21 15 16 10 5 21"></polyline>
-          </svg>
-        </button>
-
-        <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 4px; display: inline-block; vertical-align: middle;"></div>
-
-        <!-- Экспорт сценария (.tps) -->
-        <button 
-          class="tool-btn" 
-          (click)="vm.exportScenario()" 
-          title="Экспортировать тактическую обстановку (.tps) [Сочетание: Shift+S]"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-          </svg>
-          <kbd class="key-hint">⇧S</kbd>
-        </button>
-
-        <!-- Импорт сценария (.tps) -->
-        <button 
-          class="tool-btn" 
-          (click)="fileInput.click()" 
-          title="Импортировать тактическую обстановку (.tps) [Сочетание: Shift+O]"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-          </svg>
-          <kbd class="key-hint">⇧O</kbd>
-        </button>
-        <input #fileInput type="file" accept=".tps,.json" style="display: none;" (change)="vm.importScenario($event)">
-
-        <!-- Экспорт фрагмента карты -->
-        <button 
-          class="tool-btn" 
-          (click)="vm.openMapExport()" 
-          title="Экспорт фрагмента карты высокого разрешения (до 600 DPI)"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-            <circle cx="12" cy="13" r="4"></circle>
-          </svg>
-        </button>
-      </div>
-    </div>
-  </header>
+  <!-- Главная верхняя панель инструментов ГИС (Тулбар) -->
+  <app-map-toolbar />
 
   <div class="map-view-layout">
-    
     <div class="map-canvas-container" style="flex: 1; position: relative; height: 100%; display: flex; overflow: hidden;">
       
       <!-- Левый сайдбар свойств и параметров рисования -->
@@ -450,11 +29,8 @@
       @if (vm.isCrosshairVisible()) {
         <div class="map-center-crosshair">
           <svg viewBox="0 0 100 100" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-            <!-- Круг в центре -->
             <circle cx="50" cy="50" r="12" />
-            <!-- Точка в самом центре -->
             <circle cx="50" cy="50" r="1.5" fill="currentColor" />
-            <!-- Линии прицеливания -->
             <line x1="50" y1="5" x2="50" y2="28" />
             <line x1="50" y1="72" x2="50" y2="95" />
             <line x1="5" y1="50" x2="28" y2="50" />
@@ -520,7 +96,6 @@
       <!-- Панель управления наложением растровых оверлеев (схем/планов) -->
       @if (vm.isImageOverlayPanelOpen()) {
         <div class="image-overlay-card-panel">
-          <!-- Header -->
           <div class="fort-report-header">
             <span class="fort-report-title">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#466bf7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -533,9 +108,7 @@
             <button class="image-overlay-close-btn" (click)="vm.toggleImageOverlayPanel()">✕</button>
           </div>
 
-          <!-- Body -->
           <div class="image-overlay-body">
-            <!-- Загрузка нового оверлея -->
             <div class="image-overlay-upload-container">
               <input 
                 type="file" 
@@ -557,7 +130,6 @@
               </button>
             </div>
 
-            <!-- Список оверлеев -->
             @if (vm.imageOverlayService.overlays().length === 0) {
               <div class="image-overlay-empty">
                 <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -572,37 +144,29 @@
               <div class="image-overlay-list">
                 @for (overlay of vm.imageOverlayService.overlays(); track overlay.id) {
                   <div class="image-overlay-item">
-                    <!-- Верхняя строчка: имя + кнопки блокировки/удаления -->
                     <div class="image-overlay-item-header">
                       <span class="image-overlay-item-name" [title]="overlay.name">
                         {{ overlay.name }}
                       </span>
-                      
-                      <!-- Кнопка фиксации (Locked/Unlocked) -->
-                      <button 
-                        (click)="vm.imageOverlayService.setLocked(overlay.id, !overlay.locked)" 
-                        [style.color]="overlay.locked ? '#16a34a' : '#64748b'"
-                        class="image-overlay-lock-btn"
-                        [title]="overlay.locked ? 'Разблокировать для масштабирования' : 'Закрепить на карте (защита от сдвига)'"
-                      >
-                        @if (overlay.locked) {
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        } @else {
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
-                        }
-                      </button>
-
-                      <!-- Кнопка удаления -->
-                      <button 
-                        (click)="vm.imageOverlayService.removeOverlay(overlay.id)" 
-                        class="image-overlay-delete-btn"
-                        title="Удалить с карты"
-                      >
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                      </button>
+                      <div class="image-overlay-item-actions">
+                        <button 
+                          class="image-overlay-action-btn" 
+                          [class.locked]="overlay.locked"
+                          (click)="vm.imageOverlayService.setLocked(overlay.id, !overlay.locked)"
+                          [title]="overlay.locked ? 'Разблокировать трансформер' : 'Зафиксировать на карте'"
+                        >
+                          @if (overlay.locked) { 🔒 } @else { 🔓 }
+                        </button>
+                        <button 
+                          class="image-overlay-action-btn delete" 
+                          (click)="vm.imageOverlayService.removeOverlay(overlay.id)"
+                          title="Удалить оверлей"
+                        >
+                          🗑
+                        </button>
+                      </div>
                     </div>
 
-                    <!-- Нижняя строчка: ползунок прозрачности -->
                     <div class="image-overlay-opacity-container">
                       <span class="image-overlay-opacity-label">Прозрачность:</span>
                       <input 
@@ -614,9 +178,7 @@
                         (input)="vm.imageOverlayService.setOpacity(overlay.id, +$any($event.target).value)" 
                         class="image-overlay-opacity-slider"
                       />
-                      <span class="image-overlay-opacity-value">
-                        {{ (overlay.opacity * 100).toFixed(0) }}%
-                      </span>
+                      <span class="image-overlay-opacity-val">{{ (overlay.opacity * 100).toFixed(0) }}%</span>
                     </div>
                   </div>
                 }
@@ -626,689 +188,17 @@
         </div>
       }
 
-      <!-- Планировщик и графики фортификационных работ -->
-      @if (vm.isFortPlannerOpen()) {
-        <app-fortification-planner style="display: contents;" />
-      }
+      <!-- Инженерно-фортификационная ведомость района -->
+      <app-district-summary-modal />
 
-      <!-- Инженерная ведомость фортификации района -->
-      @if (vm.isAreaReportOpen()) {
-        <div class="fort-area-report-overlay" (click)="vm.toggleAreaReport()">
-          <div class="fort-area-report-modal" (click)="$event.stopPropagation()">
-            <div class="fort-report-header">
-              <span class="fort-report-title">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #466bf7;">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                Инженерно-фортификационная ведомость района
-              </span>
-              <button class="fort-report-close-btn" (click)="vm.toggleAreaReport()" title="Закрыть ведомость">✕</button>
-            </div>
-
-            <div class="fort-report-body">
-              <!-- Селектор района для расчетов -->
-              <div class="fort-report-selector-wrapper">
-                <label class="fort-report-selector-label">Район для расчета ведомости:</label>
-                <select 
-                  class="fort-report-selector-select" 
-                  [ngModel]="vm.activeCalculationGroupId()" 
-                  (ngModelChange)="vm.activeCalculationGroupId.set($event)"
-                >
-                  <option value="all">Все объекты на карте ({{ vm.placedSymbols().length }} шт.)</option>
-                  @for (group of vm.objectGroups(); track group.id) {
-                    <option [value]="group.id">{{ group.name }} ({{ group.elementIds.length }} шт.)</option>
-                  }
-                </select>
-              </div>
-
-              @if (vm.placedFortificationsCount() === 0) {
-                <div class="fort-report-empty">
-                  <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                  </svg>
-                  <p style="font-weight: 600; font-size: 13px; margin: 8px 0 0 0; color: #475569;">Нет нанесенных элементов</p>
-                  <p style="font-size: 11px; margin: 4px 0 0 0; color: #64748b; max-width: 320px;">Нанесите на карту траншеи, ходы сообщения, окопы или блиндажи, чтобы рассчитать сводные объемы работ.</p>
-                </div>
-              } @else {
-                @let report = vm.totalAreaNorms();
-                
-                <!-- Карточки суммарных показателей (5 KPI Cards) -->
-                <div class="fort-summary-grid">
-                  <div class="fort-summary-card" style="border-left: 3px solid #2563eb;">
-                    <div class="fort-summary-card-header">
-                      <span class="fort-summary-label">Земляные работы</span>
-                      <div class="fort-summary-icon-pill" style="background-color: #eff6ff; color: #2563eb;">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l4-8 4 8 4-8 4 8 2-4"/></svg>
-                      </div>
-                    </div>
-                    <span class="fort-summary-value">{{ report.totalEarthVolume }}<span class="fort-summary-unit">м³</span></span>
-                  </div>
-
-                  <div class="fort-summary-card" style="border-left: 3px solid #16a34a;">
-                    <div class="fort-summary-card-header">
-                      <span class="fort-summary-label">Личный состав</span>
-                      <div class="fort-summary-icon-pill" style="background-color: #f0fdf4; color: #16a34a;">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                      </div>
-                    </div>
-                    <span class="fort-summary-value">{{ report.totalLaborHrs }}<span class="fort-summary-unit">чел.-ч</span></span>
-                  </div>
-
-                  <div class="fort-summary-card" style="border-left: 3px solid #d97706;">
-                    <div class="fort-summary-card-header">
-                      <span class="fort-summary-label">Круглый лес</span>
-                      <div class="fort-summary-icon-pill" style="background-color: #fffbeb; color: #d97706;">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg>
-                      </div>
-                    </div>
-                    <span class="fort-summary-value">{{ report.totalWoodVol }}<span class="fort-summary-unit">м³</span></span>
-                  </div>
-
-                  <div class="fort-summary-card" style="border-left: 3px solid #0284c7;">
-                    <div class="fort-summary-card-header">
-                      <span class="fort-summary-label">Техника</span>
-                      <div class="fort-summary-icon-pill" style="background-color: #f0f9ff; color: #0284c7;">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="7" cy="12" r="2"/><circle cx="17" cy="12" r="2"/></svg>
-                      </div>
-                    </div>
-                    <span class="fort-summary-value">{{ report.totalMachHrs }}<span class="fort-summary-unit">м.-ч</span></span>
-                  </div>
-
-                  <div class="fort-summary-card" style="border-left: 3px solid #dc2626;">
-                    <div class="fort-summary-card-header">
-                      <span class="fort-summary-label">Проволока (МЗП)</span>
-                      <div class="fort-summary-icon-pill" style="background-color: #fef2f2; color: #dc2626;">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M7 8l2 8M15 8l2 8"/></svg>
-                      </div>
-                    </div>
-                    <span class="fort-summary-value">{{ report.totalWireKg }}<span class="fort-summary-unit">кг</span></span>
-                  </div>
-                </div>
-
-                <!-- Дополнительные материалы, техника и длины -->
-                <div style="display: flex; gap: 16px; margin-top: 8px;">
-                  @if (report.totalLengths.trench > 0 || report.totalLengths.comm_open > 0 || report.totalLengths.comm_covered > 0 || report.totalLengths.wire > 0) {
-                    <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
-                      <h4 style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 0 0 8px 0; letter-spacing: 0.5px;">Протяженность</h4>
-                      <ul style="font-size: 11px; margin: 0; padding-left: 16px; color: #1e293b; display: flex; flex-direction: column; gap: 4px; list-style-type: square;">
-                        @if (report.totalLengths.trench > 0) {
-                          <li>Траншеи: <strong>{{ report.totalLengths.trench }}</strong> м</li>
-                        }
-                        @if (report.totalLengths.comm_open > 0) {
-                          <li>Открытые ходы: <strong>{{ report.totalLengths.comm_open }}</strong> м</li>
-                        }
-                        @if (report.totalLengths.comm_covered > 0) {
-                          <li>Перекрытые щели: <strong>{{ report.totalLengths.comm_covered }}</strong> м</li>
-                        }
-                        @if (report.totalLengths.wire > 0) {
-                          <li>Проволочные (МЗП): <strong>{{ report.totalLengths.wire }}</strong> м</li>
-                        }
-                      </ul>
-                    </div>
-                  }
-
-                  @if (report.machinerySummary.length > 0 || report.totalPolesCount > 0 || report.totalMetalKg > 0 || report.totalBoardsVol > 0 || report.totalWireViazKg > 0 || report.totalMasNetSq > 0 || report.totalTrapsM > 0 || report.totalDoorsCount > 0) {
-                    <div style="flex: 1.5; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
-                      <h4 style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 0 0 8px 0; letter-spacing: 0.5px;">Материалы и Техника</h4>
-                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #1e293b;">
-                        <ul style="margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; list-style-type: square;">
-                          @if (report.totalBoardsVol > 0) {
-                            <li>Доски обшивки: <strong>{{ report.totalBoardsVol | number:'1.2-2' }}</strong> м³</li>
-                          }
-                          @if (report.totalPostsCount > 0) {
-                            <li>Стойки обшивки: <strong>{{ report.totalPostsCount }}</strong> шт.</li>
-                          }
-                          @if (report.totalWireViazKg > 0) {
-                            <li>Вязальная проволока: <strong>{{ report.totalWireViazKg | number:'1.1-1' }}</strong> кг</li>
-                          }
-                          @if (report.totalPolesCount > 0) {
-                            <li>Колья заграждений: <strong>{{ report.totalPolesCount }}</strong> шт.</li>
-                          }
-                          @if (report.totalMetalKg > 0) {
-                            <li>Металл/СПС: <strong>{{ report.totalMetalKg }}</strong> кг</li>
-                          }
-                        </ul>
-                        <ul style="margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; list-style-type: square;">
-                          @if (report.totalMasNetSq > 0) {
-                            <li>Маскиров. сети МКТ: <strong>{{ report.totalMasNetSq }}</strong> м²</li>
-                          }
-                          @if (report.totalTrapsM > 0) {
-                            <li>Деревянные трапы: <strong>{{ report.totalTrapsM }}</strong> п.м.</li>
-                          }
-                          @if (report.totalDoorsCount > 0) {
-                            <li>Двери БД-50: <strong>{{ report.totalDoorsCount }}</strong> шт.</li>
-                          }
-                          @if (report.totalStovesCount > 0) {
-                            <li>Полевые печи: <strong>{{ report.totalStovesCount }}</strong> шт.</li>
-                          }
-                          @for (m of report.machinerySummary; track m.type + '_' + $index) {
-                            <li>{{ m.type }}: <strong>{{ m.hours }}</strong> маш.-ч</li>
-                          }
-                        </ul>
-                      </div>
-                    </div>
-                  }
-                  
-                  <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
-                    <h4 style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 0 0 8px 0; letter-spacing: 0.5px;">Состав сооружений</h4>
-                    <ul style="font-size: 11px; margin: 0; padding-left: 16px; color: #1e293b; display: flex; flex-direction: column; gap: 4px; list-style-type: square;">
-                      @for (el of report.elementsList; track el.name + '_' + $index) {
-                        <li>{{ el.name }}: <strong>{{ el.count }}</strong> шт.</li>
-                      }
-                    </ul>
-                  </div>
-                </div>
-
-                <!-- Детальный перечень -->
-                <div class="fort-details-section" style="margin-top: 8px;">
-                  <div class="fort-details-title">Спецификация размещенных сооружений</div>
-                  <div class="fort-table-wrapper">
-                    <table class="fort-details-table">
-                      <thead>
-                        <tr>
-                          <th>Элемент</th>
-                          <th>Название</th>
-                          <th>Характеристики и конфигурация</th>
-                          <th style="text-align: right; white-space: nowrap;">Земля</th>
-                          <th style="text-align: right; white-space: nowrap;">Время</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        @for (item of report.items; track item.id) {
-                          <tr>
-                            <td style="font-weight: 600; white-space: nowrap;">{{ item.type }}</td>
-                            <td style="color: #64748b; font-style: italic; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ item.name || '—' }}</td>
-                            <td style="color: #475569; font-size: 11px;">
-                              <div>{{ item.notes || '—' }}</div>
-                              <div style="font-size: 10px; color: #64748b; margin-top: 4px; line-height: 1.4; font-family: monospace;">
-                                @if (item.cleanVolume && item.cleanVolume > 0) {
-                                  <span>ручная зачистка: <strong>{{ item.cleanVolume }}</strong> м³ | </span>
-                                }
-                                @if (item.woodVol && item.woodVol > 0) {
-                                  <span>круглый лес: <strong>{{ item.woodVol }}</strong> м³ | </span>
-                                }
-                                @if (item.boardsVol && item.boardsVol > 0) {
-                                  <span>доски: <strong>{{ item.boardsVol }}</strong> м³ | </span>
-                                }
-                                @if (item.postsCount && item.postsCount > 0) {
-                                  <span>стойки: <strong>{{ item.postsCount }}</strong> шт | </span>
-                                }
-                                @if (item.wireViazKg && item.wireViazKg > 0) {
-                                  <span>вязальная проволока: <strong>{{ item.wireViazKg }}</strong> кг | </span>
-                                }
-                                @if (item.masNetSq && item.masNetSq > 0) {
-                                  <span>маскировочные сети: <strong>{{ item.masNetSq }}</strong> м² | </span>
-                                }
-                                @if (item.trapsM && item.trapsM > 0) {
-                                  <span>трапы: <strong>{{ item.trapsM }}</strong> п.м. | </span>
-                                }
-                                @if (item.doorsCount && item.doorsCount > 0) {
-                                  <span>двери БД-50: <strong>{{ item.doorsCount }}</strong> шт | </span>
-                                }
-                                @if (item.stovesCount && item.stovesCount > 0) {
-                                  <span>печи: <strong>{{ item.stovesCount }}</strong> шт</span>
-                                }
-                              </div>
-                            </td>
-                            <td style="text-align: right; font-weight: 700; color: #2563eb; white-space: nowrap;">{{ item.earthVolume }} м³</td>
-                            <td style="text-align: right; font-weight: 700; color: #10b981; white-space: nowrap;">{{ item.laborHrs }} ч</td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              }
-            </div>
-
-            <div class="fort-report-footer">
-              <button class="fort-btn secondary" (click)="vm.toggleAreaReport()">Закрыть</button>
-              @if (vm.placedFortificationsCount() > 0) {
-                <button class="fort-btn primary" (click)="vm.copyAreaReportToClipboard()">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px; display: inline-block; vertical-align: middle;">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                  Скопировать сводку
-                </button>
-              }
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Схема походного порядка подразделения -->
+      <!-- Схема походного порядка подразделения (марш) -->
       @if (vm.isMarchOrderOpen()) {
-        <div class="fort-area-report-overlay" (click)="vm.toggleMarchOrder()" (dragover)="$event.preventDefault()" (drop)="$event.preventDefault()">
-          <div class="fort-area-report-modal" style="width: 1000px; max-width: 95%; max-height: 90%;" (click)="$event.stopPropagation()">
-            <div class="fort-report-header">
-              <span class="fort-report-title">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #466bf7; margin-right: 6px; display: inline-block; vertical-align: middle;">
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                  <polyline points="12 5 19 12 12 19"></polyline>
-                </svg>
-                Схема походного порядка подразделения (марш)
-              </span>
-              <button class="fort-report-close-btn" (click)="vm.toggleMarchOrder()" title="Закрыть схему">✕</button>
-            </div>
-
-            <div class="fort-report-body" style="padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px;">
-              <!-- 1. Интерактивная визуализация походной колонны (Горизонтальная лента) -->
-              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
-                <div style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-                  Визуальная схема походного порядка главных сил и охранения
-                </div>
-                
-                <!-- Горизонтальная скролл-лента походной колонны -->
-                <div style="display: flex; align-items: center; overflow-x: auto; padding: 10px 0; gap: 8px; width: 100%;">
-                  <!-- Направление движения (голова колонны слева, движение идет влево) -->
-                  <div style="display: flex; flex-direction: column; align-items: center; min-width: 80px; justify-content: center; border-right: 2px dashed #cbd5e1; padding-right: 12px; margin-right: 8px;">
-                    <span style="font-size: 10px; font-weight: 700; color: #2563eb; text-transform: uppercase;">Движение</span>
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 4px;">
-                      <line x1="19" y1="12" x2="5" y2="12"></line>
-                      <polyline points="12 19 5 12 12 5"></polyline>
-                    </svg>
-                  </div>
-
-                  @for (el of vm.marchOrderElements(); track el.id; let idx = $index; let last = $last) {
-                    <!-- Карточка подразделения -->
-                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                      <div style="background-color: white; border: 1.5px solid #2563eb; border-radius: 6px; padding: 8px 12px; width: 190px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 3px; position: relative;">
-                        <!-- Иконка техники -->
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                          <img [src]="'symbols/' + el.icon + '.svg'" alt="" style="width: 20px; height: 20px; object-fit: contain;" />
-                          <span style="font-size: 11px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 140px;" [title]="el.name">
-                            {{ el.name }}
-                          </span>
-                        </div>
-                        <!-- Описание / Состав -->
-                        <div style="font-size: 9px; color: #64748b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [title]="el.composition">
-                          {{ el.composition }}
-                        </div>
-                        <!-- Характеристики колонны внутри -->
-                        <div style="font-size: 9px; color: #3b82f6; font-weight: 600; display: flex; justify-content: space-between;">
-                          <span>Техника: {{ el.vehicleCount }} ед.</span>
-                          <span>(дист. {{ el.vehicleDistance }}{{ el.vehicleDistanceUnit }})</span>
-                        </div>
-                        <!-- Глубина колонны самого подразделения -->
-                        <div style="font-size: 9px; color: #10b981; font-weight: 700; border-top: 1px dashed #e2e8f0; padding-top: 2px; text-align: right;">
-                          Глубина: {{ vm.getMarchOrderUnitLengthKm(el) * 1000 | number:'1.0-0' }} м
-                        </div>
-                        <!-- Индекс порядка -->
-                        <span style="position: absolute; top: -6px; left: -6px; background-color: #2563eb; color: white; font-size: 8px; font-weight: 800; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">
-                          {{ idx + 1 }}
-                        </span>
-                      </div>
-
-                      <!-- Стрелка дистанции до следующего подразделения (направлена влево, к голове) -->
-                      @if (!last && el.distanceToNext > 0) {
-                        <div style="display: flex; flex-direction: column; align-items: center; min-width: 60px; flex-shrink: 0;">
-                          <span style="font-size: 9.5px; font-weight: 700; color: #475569; background-color: #e2e8f0; padding: 1px 5px; border-radius: 3px; margin-bottom: 2px;">
-                            {{ el.distanceToNext }} {{ el.distanceUnit === 'km' ? 'км' : 'м' }}
-                          </span>
-                          <div style="width: 100%; height: 2px; background-color: #cbd5e1; position: relative;">
-                            <div style="position: absolute; left: 0; top: -3px; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-right: 6px solid #cbd5e1;"></div>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <!-- 2. Редактор элементов походного порядка (на div-ах для стабильного Drag-and-drop) -->
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center;">
-                  <span>Состав и порядок прохождения колонн</span>
-                  <button 
-                    class="fort-btn primary" 
-                    style="padding: 4px 10px; font-size: 10.5px; font-weight: 700;"
-                    (click)="onAddMarchOrderElement()"
-                  >
-                    + Добавить подразделение
-                  </button>
-                </div>
-
-                <div style="display: flex; flex-direction: column; width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background-color: white;">
-                  <!-- Шапка таблицы -->
-                  <div style="display: flex; background-color: #f1f5f9; color: #475569; font-weight: 700; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; user-select: none;">
-                    <div style="width: 60px; text-align: center; flex-shrink: 0;">Порядок</div>
-                    <div style="flex: 1.5; min-width: 120px; padding-left: 10px;">Подразделение</div>
-                    <div style="width: 110px; flex-shrink: 0;">Иконка</div>
-                    <div style="width: 90px; flex-shrink: 0; text-align: center;">Техника (ед)</div>
-                    <div style="width: 80px; flex-shrink: 0; text-align: center;">Дл. техн (м)</div>
-                    <div style="width: 120px; flex-shrink: 0; text-align: center;">Дист. внутри</div>
-                    <div style="width: 80px; flex-shrink: 0; text-align: right;">Глубина</div>
-                    <div style="width: 130px; text-align: right; padding-right: 15px; flex-shrink: 0;">Дист. до след.</div>
-                    <div style="width: 80px; text-align: center; flex-shrink: 0;">Действия</div>
-                  </div>
-
-                  <!-- Список строк с Drag-n-Drop (CDK) -->
-                  <div 
-                    cdkDropList
-                    (cdkDropListDropped)="onCdkDrop($event)"
-                    style="display: flex; flex-direction: column; max-height: 320px; overflow-y: auto;"
-                  >
-                    @for (el of vm.marchOrderElements(); track el.id; let idx = $index; let first = $first; let last = $last) {
-                      <div 
-                        cdkDrag
-                        style="display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; background-color: white; transition: background-color 0.15s ease;"
-                      >
-                        <!-- Порядок и захват -->
-                        <div style="width: 60px; display: flex; align-items: center; justify-content: center; gap: 4px; user-select: none; flex-shrink: 0;">
-                          <span cdkDragHandle style="color: #94a3b8; font-weight: 700; font-size: 13px; cursor: grab;" title="Перетащите для изменения порядка">⋮⋮</span>
-                          <span style="font-size: 10px; font-weight: 700; color: #64748b;">#{{ idx + 1 }}</span>
-                        </div>
-
-                        <!-- Подразделение (ввод) -->
-                        <div style="flex: 1.5; min-width: 120px; padding-left: 10px;">
-                          <input 
-                            type="text" 
-                            class="vs-input" 
-                            [value]="el.name" 
-                            (input)="onMarchOrderNameChange(el.id, $event)"
-                            style="width: 95%; font-weight: 600; font-size: 11px; padding: 3px 6px;"
-                          />
-                        </div>
-
-                        <!-- Иконка -->
-                        <div style="width: 110px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                          <img [src]="'symbols/' + el.icon + '.svg'" alt="" style="width: 18px; height: 18px; object-fit: contain;" />
-                          <select 
-                            [value]="el.icon" 
-                            (change)="onMarchOrderIconChange(el.id, $event)"
-                            style="font-size: 10px; padding: 2px; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; background: white; width: 75px;"
-                          >
-                            <option value="bmp_svoy1">БМП</option>
-                            <option value="btr_svoy1">БТР</option>
-                            <option value="tank_svoy_1">Танк</option>
-                            <option value="avto1">Авто</option>
-                            <option value="med_avto1">Мед.</option>
-                            <option value="brdm1">БРДМ</option>
-                            <option value="knp_peredv1">КНП подв</option>
-                            <option value="pts1">ПТС</option>
-                            <option value="ur1">УР</option>
-                            <option value="imr1">ИМР</option>
-                            <option value="kshm4">КШМ</option>
-                          </select>
-                        </div>
-
-                        <!-- Количество техники -->
-                        <div style="width: 90px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                          <input 
-                            type="number" 
-                            class="vs-input" 
-                            [value]="el.vehicleCount" 
-                            (input)="onMarchOrderVehicleCountChange(el.id, $event)"
-                            style="width: 50px; font-size: 11px; padding: 3px 6px; text-align: center;"
-                            min="1"
-                          />
-                        </div>
-
-                        <!-- Средняя длина техники -->
-                        <div style="width: 80px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                          <input 
-                            type="number" 
-                            class="vs-input" 
-                            [value]="el.vehicleLength" 
-                            (input)="onMarchOrderVehicleLengthChange(el.id, $event)"
-                            style="width: 50px; font-size: 11px; padding: 3px 6px; text-align: center;"
-                            min="1"
-                            step="0.1"
-                          />
-                        </div>
-
-                        <!-- Дистанция внутри подразделения -->
-                        <div style="width: 120px; display: flex; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0;">
-                          <input 
-                            type="number" 
-                            class="vs-input" 
-                            [value]="el.vehicleDistance" 
-                            (input)="onMarchOrderVehicleDistanceChange(el.id, $event)"
-                            style="width: 45px; font-size: 11px; padding: 3px 6px; text-align: right;"
-                            min="0"
-                          />
-                          <select 
-                            [value]="el.vehicleDistanceUnit" 
-                            (change)="onMarchOrderVehicleDistanceUnitChange(el.id, $event)"
-                            style="font-size: 10px; padding: 2px; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; background: white;"
-                          >
-                            <option value="m">м</option>
-                            <option value="km">км</option>
-                          </select>
-                        </div>
-
-                        <!-- Глубина колонны самого подразделения (read-only) -->
-                        <div style="width: 80px; display: flex; align-items: center; justify-content: flex-end; font-size: 11px; font-weight: 700; color: #10b981; padding-right: 5px; flex-shrink: 0; user-select: none;">
-                          {{ vm.getMarchOrderUnitLengthKm(el) * 1000 | number:'1.0-0' }} м
-                        </div>
-
-                        <!-- Дистанция до следующего подразделения -->
-                        <div style="width: 130px; display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding-right: 15px; flex-shrink: 0;">
-                          @if (!last) {
-                            <input 
-                              type="number" 
-                              class="vs-input" 
-                              [value]="el.distanceToNext" 
-                              (input)="onMarchOrderDistanceChange(el.id, $event)"
-                              style="width: 50px; font-size: 11px; padding: 3px 6px; text-align: right;"
-                              min="0"
-                            />
-                            <select 
-                              [value]="el.distanceUnit" 
-                              (change)="onMarchOrderDistanceUnitChange(el.id, $event)"
-                              style="font-size: 10px; padding: 2px 4px; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; background: white;"
-                            >
-                              <option value="m">м</option>
-                              <option value="km">км</option>
-                            </select>
-                          } @else {
-                            <span style="color: #94a3b8; font-style: italic; font-size: 10px;">Конец колонны</span>
-                          }
-                        </div>
-
-                        <!-- Действия -->
-                        <div style="width: 80px; display: flex; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0;">
-                          <button 
-                            (click)="vm.moveMarchOrderElement(idx, 'up')" 
-                            [disabled]="first"
-                            style="border: none; background: none; font-size: 9px; cursor: pointer; color: #475569; padding: 2px; opacity: first ? 0.3 : 1;"
-                            title="Переместить вперед"
-                          >
-                            ▲
-                          </button>
-                          <button 
-                            (click)="vm.moveMarchOrderElement(idx, 'down')" 
-                            [disabled]="last"
-                            style="border: none; background: none; font-size: 9px; cursor: pointer; color: #475569; padding: 2px; opacity: last ? 0.3 : 1;"
-                            title="Переместить назад"
-                          >
-                            ▼
-                          </button>
-                          <button 
-                            (click)="vm.removeMarchOrderElement(el.id)"
-                            style="border: none; background: none; color: #ef4444; font-weight: 700; cursor: pointer; font-size: 13px; margin-left: 6px;"
-                            title="Удалить из колонны"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Итоговая панель -->
-            <div class="fort-report-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px;">
-              <div style="font-size: 11px; color: #475569;">
-                Общая глубина походной колонны: <strong style="font-size: 12.5px; color: #2563eb;">{{ vm.getMarchOrderTotalLengthKm() | number:'1.1-2' }} км</strong>
-              </div>
-              <button class="fort-btn secondary" (click)="vm.toggleMarchOrder()">Закрыть</button>
-            </div>
-          </div>
-        </div>
+        <app-march-order-modal />
       }
 
       <!-- Маршрутная карточка марша с плеером симуляции -->
-      @if (vm.selectedMarchRouteStats(); as stats) {
-        <div class="march-route-card-panel" [style.left.px]="(vm.tacticalMapService.selectedPlacedSymbol() || vm.selectedSymbol() || vm.activeLineMode() !== 'none') ? (vm.sidebarWidth() + 16) : 16" [style.bottom.px]="vm.isElevationProfileOpen() ? 220 : 24">
-          <div class="fort-report-header">
-            <span class="fort-report-title">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #466bf7; margin-right: 6px; display: inline-block; vertical-align: middle;">
-                <circle cx="6" cy="19" r="3" />
-                <circle cx="18" cy="5" r="3" />
-                <path d="M9 19h4.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H15" />
-              </svg>
-              Характеристики маршрута марша
-            </span>
-          </div>
+      <app-march-route-modal />
 
-          <div class="fort-report-body" style="padding: 12px; display: flex; flex-direction: column; gap: 10px;">
-            <!-- Параметры колонны -->
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <span style="font-size: 10.5px; font-weight: 600; color: #475569;">Колонна:</span>
-                <select 
-                  [value]="vm.marchColumnType()" 
-                  (change)="onMarchColumnChange($event)"
-                  style="font-size: 10.5px; padding: 2px 4px; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; background: white;"
-                >
-                  <option value="wheel">Колесная</option>
-                  <option value="track">Гусеничная</option>
-                  <option value="mixed">Смешанная</option>
-                  <option value="foot">Пешая</option>
-                </select>
-              </div>
-
-              <div style="display: inline-flex; align-items: center; gap: 4px; user-select: none;">
-                <input 
-                  type="checkbox" 
-                  [checked]="vm.marchIsNight()" 
-                  (change)="onMarchNightChange($event)" 
-                  id="march-night-check"
-                  style="cursor: pointer; width: 12px; height: 12px; accent-color: #3b82f6; margin: 0;"
-                />
-                <label for="march-night-check" style="font-size: 10.5px; font-weight: 600; color: #475569; cursor: pointer;">
-                  Ночной марш
-                </label>
-              </div>
-            </div>
-
-            <!-- Таблица сегментов -->
-            <div style="max-height: 120px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 4px;">
-              <table class="fort-details-table" style="font-size: 10px;">
-                <thead>
-                  <tr style="background-color: #f8fafc;">
-                    <th style="padding: 4px 6px;">Участок</th>
-                    <th style="padding: 4px 6px;">Дорога</th>
-                    <th style="padding: 4px 6px; text-align: right;">Длина</th>
-                    <th style="padding: 4px 6px; text-align: right;">Уклон</th>
-                    <th style="padding: 4px 6px; text-align: right;">Скорость</th>
-                    <th style="padding: 4px 6px; text-align: right;">Время</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (seg of stats.segments; track $index) {
-                    <tr>
-                      <td style="padding: 4px 6px; font-weight: 600;">{{ $index + 1 }} → {{ $index + 2 }}</td>
-                      <td style="padding: 4px 6px; color: #64748b;">{{ seg.roadType }}</td>
-                      <td style="padding: 4px 6px; text-align: right;">{{ seg.distanceKm | number:'1.1-2' }} км</td>
-                      <td style="padding: 4px 6px; text-align: right;" [style.color]="seg.elevationSlope > 8 ? '#ef4444' : '#475569'">{{ seg.elevationSlope | number:'1.0-0' }}%</td>
-                      <td style="padding: 4px 6px; text-align: right; font-weight: 700;">{{ seg.speedKmH | number:'1.0-0' }} км/ч</td>
-                      <td style="padding: 4px 6px; text-align: right; color: #10b981; font-weight: 600;">{{ vm.formatDuration(seg.durationHrs) }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Итоги -->
-            <div style="background-color: #f1f5f9; border-radius: 4px; padding: 6px 10px; font-size: 10.5px; display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #475569;">Общая дистанция:</span>
-                <strong style="color: #0f172a;">{{ stats.totalDistanceKm | number:'1.1-2' }} км</strong>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #475569;">Расчетное время марша:</span>
-                <strong style="color: #10b981;">{{ vm.formatDuration(stats.totalDurationHrs) }}</strong>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #475569;">Средняя скорость:</span>
-                <strong style="color: #2563eb;">{{ (stats.totalDistanceKm / (stats.totalDurationHrs || 1)) | number:'1.0-0' }} км/ч</strong>
-              </div>
-            </div>
-
-            <!-- Блок симуляции (Плеер) -->
-            <div style="border-top: 1px dashed #cbd5e1; padding-top: 8px; display: flex; flex-direction: column; gap: 6px;">
-              <div style="font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Симуляция движения</div>
-              
-              <!-- Кнопки управления и таймлайн -->
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <button 
-                  class="fort-btn primary" 
-                  style="padding: 4px 8px; font-size: 10px; width: 44px; display: flex; align-items: center; justify-content: center;"
-                  (click)="onTogglePlayback()"
-                >
-                  {{ vm.isPlayingPlayback() ? 'Пауза' : 'Пуск' }}
-                </button>
-                <button 
-                  class="fort-btn secondary" 
-                  style="padding: 4px 8px; font-size: 10px;"
-                  (click)="onResetPlayback()"
-                >
-                  Сброс
-                </button>
-
-                <button 
-                  class="fort-btn secondary" 
-                  style="padding: 4px 8px; font-size: 10px; display: flex; align-items: center; gap: 4px;"
-                  (click)="vm.toggleElevationProfileFromToolbar()"
-                  title="Построить график профиля высот для этого маршрута"
-                >
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                  Профиль высот
-                </button>
-
-                <input 
-                  type="range" 
-                  min="0" 
-                  [max]="stats.totalDurationHrs" 
-                  step="0.001"
-                  [value]="vm.playbackTime()" 
-                  (input)="onPlaybackTimelineChange($event)"
-                  style="flex: 1; height: 4px; cursor: pointer; accent-color: #3b82f6;"
-                />
-
-                <select 
-                  [value]="vm.playbackSpeed()" 
-                  (change)="onPlaybackSpeedChange($event)"
-                  style="font-size: 10px; padding: 2px; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; background: white;"
-                >
-                  <option value="1">x1</option>
-                  <option value="10">x10</option>
-                  <option value="60">x60</option>
-                  <option value="120">x120</option>
-                  <option value="300">x300</option>
-                </select>
-              </div>
-
-              <!-- Инфо по маркеру -->
-              <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: #475569; background-color: #f8fafc; padding: 4px 6px; border-radius: 4px;">
-                <span>Текущее время: <strong>{{ vm.formatDuration(vm.playbackTime()) }}</strong></span>
-                <span>Дорога: <strong>{{ vm.playbackRoadType() }}</strong> ({{ vm.playbackCurrentSpeed() | number:'1.0-0' }} км/ч)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
       <!-- Панель слоев и районов (районов расчетов) справа -->
       <app-map-layers-panel 
         [class.open]="vm.isLayersPanelOpen()" 
@@ -1317,6 +207,7 @@
     </div>
   </div>
 
+  <!-- Статус бар -->
   <footer class="app-status-bar">
     <div class="status-left">
       <span class="status-dot" [class.ready]="vm.isAppReady()"></span>
@@ -1348,15 +239,9 @@
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <input 
-          type="text" 
-          class="zoom-percent-input" 
-          [value]="vm.zoomPercentText()" 
-          (keydown)="vm.onZoomPercentKeydown($event)"
-          (blur)="vm.onZoomPercentBlur($event)"
-          (input)="vm.onZoomPercentInput($event)"
-          title="Процент увеличения (зум карты)"
-        />
+        
+        <span class="zoom-percent-badge">{{ vm.zoomPercentText() }}</span>
+        
         <button class="zoom-arrow-btn" (click)="vm.adjustZoomPercent(10)" title="Увеличить зум">
           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="9 18 15 12 9 6"/>
@@ -1366,20 +251,20 @@
     </div>
 
     <div class="status-right">
-      <span class="coords-label">Координаты:</span>
-      <input 
-        type="text" 
-        class="coords-input" 
-        [value]="vm.cursorCoords()" 
-        (focus)="vm.onCoordsFocus()"
-        (blur)="vm.onCoordsBlur($event)"
-        (keydown)="vm.onCoordsKeydown($event)"
-        title="Координаты курсора / центра. Нажмите для ввода и Enter для быстрого перемещения"
-      />
+      <span class="coords-label">Координаты прицела:</span>
+      <div class="coords-value-wrapper">
+        <span class="coords-value">{{ vm.centerCoords() }}</span>
+      </div>
     </div>
   </footer>
-
-  @if (vm.isMapExportOpen()) {
-    <app-map-export></app-map-export>
-  }
 </div>
+
+<!-- Модальное окно планировщика Ганта фортификации -->
+@if (vm.isFortPlannerOpen()) {
+  <app-fortification-planner style="display: contents;" />
+}
+
+<!-- Оверлей экспорта фрагмента карты -->
+@if (vm.isMapExportOpen()) {
+  <app-map-export style="display: contents;" />
+}

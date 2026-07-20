@@ -11,6 +11,7 @@ describe('MapExportComponent', () => {
   beforeEach(async () => {
     mockMapViewModel = {
       isMapExportOpen: signal(false),
+      getMapInstance: () => mockMapViewModel.mapInstance,
       mapInstance: {
         getContainer: () => ({ clientWidth: 1000, clientHeight: 800 }),
         getCenter: () => ({ lng: 27.5, lat: 53.9 }),
@@ -19,6 +20,7 @@ describe('MapExportComponent', () => {
         getPitch: () => 0,
         getStyle: () => ({ version: 8, sources: {}, layers: [] }),
         listImages: () => [],
+        getImage: () => null,
         unproject: (xy: [number, number]) => ({ lng: 27.5 + xy[0]/10000, lat: 53.9 - xy[1]/10000 })
       }
     };
@@ -63,5 +65,45 @@ describe('MapExportComponent', () => {
   it('should close map export overlay', () => {
     component.close();
     expect(mockMapViewModel.isMapExportOpen()).toBe(false);
+  });
+
+  it('should handle mouse resize start and mouse move for handles', () => {
+    component.widthMm.set(200);
+    component.heightMm.set(150);
+
+    const event = new MouseEvent('mousedown', { clientX: 500, clientY: 400 });
+    component.startResize(event, 'se');
+
+    const moveEvent = new MouseEvent('mousemove', { clientX: 550, clientY: 440 });
+    window.dispatchEvent(moveEvent);
+
+    expect(component.widthMm()).toBeGreaterThan(200);
+    expect(component.heightMm()).toBeGreaterThan(150);
+
+    const upEvent = new MouseEvent('mouseup');
+    window.dispatchEvent(upEvent);
+  });
+
+  it('should copy image objects correctly when mainMap has images', () => {
+    const mockImageObj = {
+      width: 32,
+      height: 32,
+      data: new Uint8Array(32 * 32 * 4)
+    };
+    mockMapViewModel.mapInstance.listImages = () => ['symbol_tank_red'];
+    mockMapViewModel.mapInstance.getImage = (id: string) => {
+      if (id === 'symbol_tank_red') {
+        return {
+          data: mockImageObj,
+          pixelRatio: 1,
+          sdf: false
+        };
+      }
+      return null;
+    };
+
+    expect(mockMapViewModel.mapInstance.listImages()).toContain('symbol_tank_red');
+    const styleImg = mockMapViewModel.mapInstance.getImage('symbol_tank_red');
+    expect(styleImg.data).toBe(mockImageObj);
   });
 });

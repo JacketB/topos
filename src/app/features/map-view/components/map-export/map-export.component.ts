@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, HostListener, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MapViewModel } from '../../viewmodels/map.viewmodel';
@@ -11,7 +11,7 @@ import maplibregl from 'maplibre-gl';
   templateUrl: './map-export.component.html',
   styleUrl: './map-export.component.css'
 })
-export class MapExportComponent {
+export class MapExportComponent implements OnDestroy {
   readonly vm = inject(MapViewModel);
 
   // Физический размер экспортируемой области на бумаге в мм
@@ -29,39 +29,45 @@ export class MapExportComponent {
   readonly isGenerating = signal<boolean>(false);
   readonly generationProgress = signal<string>('');
 
+  // Перетаскивание ручек ресайза мышью
+  private activeResizeHandle: string | null = null;
+  private resizeStartX = 0;
+  private resizeStartY = 0;
+  private resizeStartWidthMm = 0;
+  private resizeStartHeightMm = 0;
+
   @HostListener('window:resize')
   onResize() {
     this.windowWidth.set(window.innerWidth);
     this.windowHeight.set(window.innerHeight);
   }
 
+  ngOnDestroy() {
+    this.removeResizeListeners();
+  }
+
   // Расчет пропорций
   readonly aspectRatio = computed(() => this.widthMm() / this.heightMm());
 
-  // Вычисление экранных размеров рамки видоискателя
-  readonly viewfinderSize = computed(() => {
-    // Резервируем место под сайдбар (340px) и статус-панели
+  // Вычисление масштабного коэффициента экранных пикселей на 1 мм
+  readonly scalePxPerMm = computed(() => {
     const wWidth = Math.max(300, this.windowWidth() - 340);
     const wHeight = Math.max(300, this.windowHeight() - 80);
 
     const maxW = wWidth * 0.65;
     const maxH = wHeight * 0.65;
-    const ratio = this.aspectRatio();
 
-    let width = 0;
-    let height = 0;
+    // Вычисляем базовый масштаб для стандартных 200х150 мм
+    const baseScale = Math.min(maxW / 200, maxH / 150);
+    return Math.max(0.5, Math.min(6.0, baseScale));
+  });
 
-    if (maxW / maxH > ratio) {
-      height = maxH;
-      width = maxH * ratio;
-    } else {
-      width = maxW;
-      height = maxW / ratio;
-    }
-
+  // Вычисление экранных размеров рамки видоискателя (независимо по каждой оси)
+  readonly viewfinderSize = computed(() => {
+    const scale = this.scalePxPerMm();
     return {
-      width: Math.round(width),
-      height: Math.round(height)
+      width: Math.round(this.widthMm() * scale),
+      height: Math.round(this.heightMm() * scale)
     };
   });
 
@@ -79,6 +85,87 @@ export class MapExportComponent {
 
   close() {
     this.vm.isMapExportOpen.set(false);
+  }
+
+  /**
+   * Начало интерактивного изменения размера видоискателя мышью
+   */
+  startResize(event: MouseEvent, handle: string) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    this.activeResizeHandle = handle;
+    this.resizeStartX = event.clientX;
+    this.resizeStartY = event.clientY;
+    this.resizeStartWidthMm = this.widthMm();
+    this.resizeStartHeightMm = this.heightMm();
+
+    window.addEventListener('mousemove', this.onMouseMove);
+    window.addEventListener('mouseup', this.onMouseUp);
+  }
+
+  private readonly onMouseMove = (event: MouseEvent) => {
+    if (!this.activeResizeHandle) return;
+
+    const deltaX = event.clientX - this.resizeStartX;
+    const deltaY = event.clientY - this.resizeStartY;
+
+    let dxPx = 0;
+    let dyPx = 0;
+
+    switch (this.activeResizeHandle) {
+      case 'e':
+        dxPx = deltaX * 2;
+        break;
+      case 'w':
+        dxPx = -deltaX * 2;
+        break;
+      case 's':
+        dyPx = deltaY * 2;
+        break;
+      case 'n':
+        dyPx = -deltaY * 2;
+        break;
+      case 'se':
+        dxPx = deltaX * 2;
+        dyPx = deltaY * 2;
+        break;
+      case 'sw':
+        dxPx = -deltaX * 2;
+        dyPx = deltaY * 2;
+        break;
+      case 'ne':
+        dxPx = deltaX * 2;
+        dyPx = -deltaY * 2;
+        break;
+      case 'nw':
+        dxPx = -deltaX * 2;
+        dyPx = -deltaY * 2;
+        break;
+    }
+
+    const scale = this.scalePxPerMm();
+
+    if (dxPx !== 0) {
+      const deltaMm = Math.round(dxPx / scale);
+      const newWidth = Math.max(50, Math.min(1200, this.resizeStartWidthMm + deltaMm));
+      this.widthMm.set(newWidth);
+    }
+    if (dyPx !== 0) {
+      const deltaMm = Math.round(dyPx / scale);
+      const newHeight = Math.max(50, Math.min(1200, this.resizeStartHeightMm + deltaMm));
+      this.heightMm.set(newHeight);
+    }
+  };
+
+  private readonly onMouseUp = () => {
+    this.activeResizeHandle = null;
+    this.removeResizeListeners();
+  };
+
+  private removeResizeListeners() {
+    window.removeEventListener('mousemove', this.onMouseMove);
+    window.removeEventListener('mouseup', this.onMouseUp);
   }
 
   // Рендеринг и экспорт на скрытой карте высокого разрешения
@@ -143,29 +230,38 @@ export class MapExportComponent {
         interactive: false,
         preserveDrawingBuffer: true,
         fadeDuration: 0,
-        devicePixelRatio: 1 // Важно! Фиксируем 1:1 пиксели, чтобы DPI задавался размером холста
+        devicePixelRatio: 1 // Фиксируем 1:1 пиксели, чтобы DPI задавался размером холста
       } as any);
 
-      // На этапе загрузки стиля переносим все перекрашенные тактические SVG-иконки со старой карты
-      hiddenMap.on('style.load', () => {
-        const images = mainMap.listImages();
-        images.forEach((imgId) => {
-          const imgData = mainMap.getImage(imgId) as any;
-          if (imgData) {
-            hiddenMap.addImage(imgId, {
-              width: imgData.width,
-              height: imgData.height,
-              data: imgData.data
-            } as any, {
-              pixelRatio: imgData.pixelRatio || 1,
-              sdf: imgData.sdf || false
-            } as any);
-          }
-        });
-      });
+      // Функция перегрузки всех тактических SVG-икон со старой карты
+      const copyAllImages = () => {
+        try {
+          const images = mainMap.listImages();
+          images.forEach((imgId) => {
+            if (hiddenMap.hasImage(imgId)) return;
+            const imgData = mainMap.getImage(imgId) as any;
+            if (imgData) {
+              // imgData is StyleImage: { data: RGBAImage | HTMLImageElement, pixelRatio: number, sdf: boolean }
+              // RGBAImage is { width: number, height: number, data: Uint8Array }
+              const rawImg = imgData.data || imgData;
+              hiddenMap.addImage(imgId, rawImg, {
+                pixelRatio: imgData.pixelRatio || 1,
+                sdf: !!imgData.sdf
+              });
+            }
+          });
+        } catch (e) {
+          console.warn('Ошибка копирования иконки:', e);
+        }
+      };
 
-      // Фокусируем фоновую карту строго на выделенные географические границы
-      // Задаем padding: 0 для идеального попадания в границы кадра
+      // Переносим иконки на всех этапах инициализации стиля
+      copyAllImages();
+      hiddenMap.on('style.load', () => copyAllImages());
+      hiddenMap.on('load', () => copyAllImages());
+
+      // Фокусируем фоновую карту строго на выделенные географические границы (padding: 0)
+      copyAllImages();
       hiddenMap.fitBounds(bounds, { animate: false, padding: 0 });
 
       // Ожидаем завершения рендеринга (событие idle) с тайм-аутом защиты в 20 секунд

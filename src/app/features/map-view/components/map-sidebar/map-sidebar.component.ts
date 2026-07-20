@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MapViewModel } from '../../viewmodels/map.viewmodel';
 import { SymbolPropertiesComponent } from '../symbol-properties/symbol-properties.component';
 
@@ -7,7 +7,8 @@ import { SymbolPropertiesComponent } from '../symbol-properties/symbol-propertie
   standalone: true,
   imports: [SymbolPropertiesComponent],
   templateUrl: './map-sidebar.component.html',
-  styleUrl: './map-sidebar.component.css'
+  styleUrl: './map-sidebar.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MapSidebarComponent {
   readonly vm = inject(MapViewModel);
