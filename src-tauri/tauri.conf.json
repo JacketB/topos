@@ -36,7 +36,8 @@
     },
     "resources": [
       "assets/belarus.pmtiles",
-      "assets/belarus_topomap_200k.pmtiles"
+      "assets/belarus_topomap_200k.pmtiles",
+      "sidecar-renderer/**/*"
     ],
     "icon": [
       "icons/32x32.png",

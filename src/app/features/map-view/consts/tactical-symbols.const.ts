@@ -98,7 +98,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
         id: "fort_bmp_trench",
         name: "Окоп для БМП/БТР",
         symbol: "fort_bmp_trench",
-        size: 0.08
+        size: 0.4
       },
       {
         id: "fort_art_trench",

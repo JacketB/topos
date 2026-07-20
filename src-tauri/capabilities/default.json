@@ -7,7 +7,10 @@
   ],
   "permissions": [
     "core:default",
+    "shell:default",
+    "fs:default",
     "allow-read-pmtiles-chunk",
-    "allow-save-scenario-file"
+    "allow-save-scenario-file",
+    "allow-export-map-native"
   ]
 }

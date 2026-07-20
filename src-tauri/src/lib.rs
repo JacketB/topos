@@ -72,6 +72,7 @@ fn parse_range(range_val: &str, file_len: u64) -> Option<(u64, u64)> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -202,7 +203,7 @@ pub fn run() {
                     .unwrap()
             }
         })
-        .invoke_handler(tauri::generate_handler![read_pmtiles_chunk, save_scenario_file])
+        .invoke_handler(tauri::generate_handler![read_pmtiles_chunk, save_scenario_file, export_map_native])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -283,4 +284,164 @@ fn save_scenario_file(app: tauri::AppHandle, filename: String, content: Vec<u8>)
         .map_err(|e| format!("Failed to write content: {}", e))?;
     
     Ok(file_path.to_string_lossy().to_string())
+}
+
+#[derive(serde::Deserialize)]
+struct MapExportParams {
+    center: [f64; 2],
+    zoom: f64,
+    bearing: f64,
+    pitch: f64,
+    width_mm: u32,
+    height_mm: u32,
+    dpi: u32,
+    scale: u32,
+    logical_width: u32,
+    logical_height: u32,
+    ratio: f64,
+    filename: String,
+}
+
+#[tauri::command]
+async fn export_map_native(
+    app: tauri::AppHandle,
+    params: MapExportParams,
+    style_json: String,
+    geojson_data: String,
+    images_json: String,
+) -> Result<String, String> {
+    log::info!(
+        "export_map_native invoked center=[{:?}, {:?}], zoom={}, dpi={}, scale={}, size={}x{}mm, filename={}",
+        params.center[0],
+        params.center[1],
+        params.zoom,
+        params.dpi,
+        params.scale,
+        params.width_mm,
+        params.height_mm,
+        params.filename
+    );
+
+    let mut style: serde_json::Value = serde_json::from_str(&style_json)
+        .map_err(|e| format!("Failed to parse style JSON: {}", e))?;
+
+    // Интегрируем GeoJSON данные во внутренний источник стиля для надежности
+    if !geojson_data.is_empty() && geojson_data != "{}" {
+        if let Ok(geojson) = serde_json::from_str::<serde_json::Value>(&geojson_data) {
+            if let Some(sources) = style.get_mut("sources") {
+                if let Some(sources_obj) = sources.as_object_mut() {
+                    sources_obj.insert(
+                        "tactical-symbols".to_string(),
+                        serde_json::json!({
+                            "type": "geojson",
+                            "data": geojson
+                        })
+                    );
+                }
+            }
+        }
+    }
+
+    let resource_dir = app.path().resource_dir().map_err(|e| e.to_string())?;
+    
+    // Сначала ищем в ресурсах (для прод-сборки)
+    let mut script_path = resource_dir.join("sidecar-renderer").join("index.js");
+    
+    // Если в ресурсах нет, значит мы в дев-режиме, ищем в исходниках
+    if !script_path.exists() {
+        let current_dir = std::env::current_dir().map_err(|e| e.to_string())?;
+        let base_dir = if current_dir.ends_with("src-tauri") {
+            current_dir.parent().unwrap().to_path_buf()
+        } else {
+            current_dir.clone()
+        };
+        script_path = base_dir.join("src-tauri").join("sidecar-renderer").join("index.js");
+    }
+
+    if !script_path.exists() {
+        return Err(format!("Renderer script not found at {:?}", script_path));
+    }
+
+    let download_dir = app.path().download_dir()
+        .map_err(|e| format!("Failed to get download dir: {}", e))?;
+    let output_path = download_dir.join(&params.filename);
+
+    let mut config = serde_json::json!({
+        "zoom": params.zoom,
+        "width": params.logical_width,
+        "height": params.logical_height,
+        "center": params.center,
+        "bearing": params.bearing,
+        "pitch": params.pitch,
+        "style": style,
+        "ratio": params.ratio,
+        "outputPath": output_path.to_string_lossy().to_string()
+    });
+
+    if !images_json.is_empty() && images_json != "{}" {
+        if let Ok(images) = serde_json::from_str::<serde_json::Value>(&images_json) {
+            if let Some(config_obj) = config.as_object_mut() {
+                config_obj.insert("images".to_string(), images);
+            }
+        }
+    }
+
+    let config_str = serde_json::to_string(&config)
+        .map_err(|e| format!("Failed to serialize config: {}", e))?;
+
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    #[cfg(target_os = "windows")]
+    let mut command = {
+        use std::os::windows::process::CommandExt;
+        let mut cmd = Command::new("node");
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        cmd
+    };
+
+    #[cfg(not(target_os = "windows"))]
+    let mut command = Command::new("node");
+
+    let mut child = command
+        .arg(&script_path)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Failed to start Node renderer: {}", e))?;
+
+    {
+        let mut stdin = child.stdin.take().ok_or_else(|| "Failed to open stdin".to_string())?;
+        stdin.write_all(config_str.as_bytes())
+            .map_err(|e| format!("Failed to write to stdin: {}", e))?;
+    }
+
+    let output = child.wait_with_output()
+        .map_err(|e| format!("Failed to wait for Node process: {}", e))?;
+
+    if !output.status.success() {
+        let err_msg = String::from_utf8_lossy(&output.stderr).into_owned();
+        return Err(format!("Node renderer error: {}", err_msg));
+    }
+
+    let stdout_str = String::from_utf8_lossy(&output.stdout).into_owned();
+    log::info!("Node renderer stdout: {}", stdout_str);
+
+    if let Ok(result_val) = serde_json::from_str::<serde_json::Value>(&stdout_str) {
+        if let Some(success) = result_val.get("success").and_then(|v| v.as_bool()) {
+            if success {
+                return Ok(output_path.to_string_lossy().to_string());
+            }
+        }
+        if let Some(error_msg) = result_val.get("error").and_then(|v| v.as_str()) {
+            return Err(format!("Render failed: {}", error_msg));
+        }
+    }
+
+    if output_path.exists() {
+        Ok(output_path.to_string_lossy().to_string())
+    } else {
+        Err(format!("Render process finished but output file not found. Stdout: {}", stdout_str))
+    }
 }

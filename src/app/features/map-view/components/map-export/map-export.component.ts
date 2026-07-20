@@ -2,6 +2,7 @@ import { Component, inject, signal, computed, HostListener, OnDestroy } from '@a
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MapViewModel } from '../../viewmodels/map.viewmodel';
+import { NativeMapExportService } from '../../services/native-map-export.service';
 import maplibregl from 'maplibre-gl';
 
 @Component({
@@ -13,6 +14,7 @@ import maplibregl from 'maplibre-gl';
 })
 export class MapExportComponent implements OnDestroy {
   readonly vm = inject(MapViewModel);
+  readonly nativeExport = inject(NativeMapExportService);
 
   // Физический размер экспортируемой области на бумаге в мм
   readonly widthMm = signal<number>(200);
@@ -265,11 +267,6 @@ export class MapExportComponent implements OnDestroy {
   async generateExport() {
     if (this.isGenerating()) return;
 
-    let hiddenDiv: HTMLDivElement | null = null;
-    let hiddenMap: any = null;
-    let originalDpr = typeof window !== 'undefined' ? window.devicePixelRatio : 1.0;
-    let isDprOverridden = false;
-
     try {
       const mainMap = this.vm.getMapInstance();
       if (!mainMap) throw new Error('Карта не проинициализирована');
@@ -311,30 +308,12 @@ export class MapExportComponent implements OnDestroy {
       const wPxOriginal = Math.round((printMm.width / 25.4) * dpiVal);
       const safeScale = wPxOriginal > 0 ? targetW / wPxOriginal : 1.0;
 
-      // SERIOUS-2: logicalW/H привязаны к targetW/H через целевой effectiveRatio
+      // logicalW/H привязаны к targetW/H через целевой effectiveRatio
       const effectiveRatio = Math.max(1.0, dpiVal / 96);
       const logicalW = Math.round(targetW / effectiveRatio);
       const logicalH = Math.round(targetH / effectiveRatio);
 
-      this.generationProgress.set(`Рендеринг ${targetW}×${targetH} px (${dpiVal} DPI)...`);
-
-      // MODERATE-3: visibility:hidden вместо left:-99999px
-      hiddenDiv = document.createElement('div');
-      hiddenDiv.style.width = `${logicalW}px`;
-      hiddenDiv.style.height = `${logicalH}px`;
-      hiddenDiv.style.position = 'fixed';
-      hiddenDiv.style.top = '0';
-      hiddenDiv.style.left = '0';
-      hiddenDiv.style.visibility = 'hidden';
-      hiddenDiv.style.zIndex = '-1';
-      hiddenDiv.style.pointerEvents = 'none';
-      document.body.appendChild(hiddenDiv);
-
-      // Даем браузеру применить стили и размеры (reflow)
-      const triggerReflow = hiddenDiv.offsetHeight;
-      await new Promise(r => setTimeout(r, 50));
-
-      // CRITICAL-1: Вычисление exportZoom из топомасштаба
+      // Вычисление exportZoom из топомасштаба
       const selectedScale = this.exportScale();
       let exportZoom: number;
 
@@ -349,8 +328,6 @@ export class MapExportComponent implements OnDestroy {
         const latRad = (exportCenter[1] * Math.PI) / 180;
         const cosLat = Math.cos(latRad);
 
-        // MapLibre: metersPerPhysicalPixel = 156543.03392 * cos(lat) / (2^zoom * pixelRatio)
-        // Решаем относительно zoom:
         exportZoom = Math.log2((156543.03392 * cosLat) / (metersPerPx * effectiveRatio));
 
         // ВАЖНО: Если safeScale < 1.0 (изображение сжато по лимитам GPU),
@@ -366,66 +343,21 @@ export class MapExportComponent implements OnDestroy {
         exportZoom = mainZoom + Math.log2(scaleRatio) - 0.1375;
       }
 
-      // Временно подменяем devicePixelRatio для MapLibre GL
-      try {
-        Object.defineProperty(window, 'devicePixelRatio', {
-          get: () => effectiveRatio,
-          configurable: true
-        });
-        isDprOverridden = true;
-      } catch {}
+      this.generationProgress.set('Подготовка тактических условных знаков...');
 
-      // Инициализируем hidden-карту MapLibre
-      const hiddenMapInstance = new maplibregl.Map({
-        container: hiddenDiv,
-        style: mainMap.getStyle(),
-        center: exportCenter,
-        zoom: exportZoom,
-        bearing: mainMap.getBearing(),
-        pitch: mainMap.getPitch(),
-        interactive: false,
-        preserveDrawingBuffer: true,
-        fadeDuration: 0,
-        pixelRatio: effectiveRatio
-      } as any);
-      hiddenMap = hiddenMapInstance;
-
-      // CRITICAL-3: Правильный lifecycle — ждём полной загрузки стиля и тайлов
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Превышено время загрузки скрытой карты'));
-        }, 30000);
-
-        hiddenMap.once('load', () => {
-          // Принудительно пересчитываем размеры вьюпорта после загрузки в DOM
-          hiddenMap.resize();
-          clearTimeout(timeout);
-          resolve();
-        });
-      });
-
-      this.generationProgress.set('Загрузка тактических иконок...');
-
-      // Переносим все SVG-иконки (топознаки) с основной карты на скрытую карту
+      // Собираем все динамические картинки (топознаки) с основной карты
       const images = (mainMap.style as any).imageManager?.images || {};
+      const exportImages: { [key: string]: { url: string; pixelRatio: number; sdf: boolean } } = {};
       const addPromises: Promise<void>[] = [];
 
       for (const key of Object.keys(images)) {
         const img = images[key];
         const isSdf = img?.sdf || false;
 
-        const promise = new Promise<void>(async (res) => {
-          // Если изображение уже добавлено в стиль hiddenMap, не добавляем повторно
-          if (hiddenMap.hasImage(key)) {
-            res();
-            return;
-          }
-
-          // Находим оригинальный SVG-элемент условного знака
+        const promise = new Promise<void>((res) => {
           const svgEl = document.querySelector(`svg[data-icon-id="${key}"]`) as SVGElement;
 
           if (svgEl) {
-            // Реконструируем SVG с высоким DPI разрешением
             const clonedSvg = svgEl.cloneNode(true) as SVGElement;
             const sizeMultiplier = effectiveRatio;
             const origW = parseFloat(svgEl.getAttribute('width') || '24');
@@ -451,15 +383,14 @@ export class MapExportComponent implements OnDestroy {
               if (ctx) {
                 ctx.drawImage(image, 0, 0);
                 try {
-                  const imgData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-                  // Поддержка различных версий MapLibre GL (imgData.data || imgData)
-                  const rawImg = (imgData as any).data || imgData;
-                  hiddenMap.addImage(key, { width: targetWidth, height: targetHeight, data: rawImg }, {
+                  const base64Data = canvas.toDataURL('image/png');
+                  exportImages[key] = {
+                    url: base64Data,
                     pixelRatio: effectiveRatio,
                     sdf: isSdf
-                  });
+                  };
                 } catch (e) {
-                  console.error('Ошибка добавления изображения:', e);
+                  console.error('Ошибка экспорта изображения:', e);
                 }
               }
               URL.revokeObjectURL(url);
@@ -470,7 +401,6 @@ export class MapExportComponent implements OnDestroy {
               res();
             };
           } else {
-            // Fallback: копируем пиксели из готового canvas-атласа, если SVG недоступен
             const atlasImage = img.data;
             if (atlasImage && atlasImage.width && atlasImage.height) {
               const canvas = document.createElement('canvas');
@@ -484,9 +414,7 @@ export class MapExportComponent implements OnDestroy {
 
                 const origW = atlasImage.width;
                 const origH = atlasImage.height;
-                const imgId = key;
 
-                // Дополнительный ресайз под HiDPI для растровых маркеров
                 const sizeMultiplier = effectiveRatio;
                 const targetWidth = origW * sizeMultiplier;
                 const targetHeight = origH * sizeMultiplier;
@@ -495,27 +423,19 @@ export class MapExportComponent implements OnDestroy {
                 resCanvas.width = targetWidth;
                 resCanvas.height = targetHeight;
                 const resCtx = resCanvas.getContext('2d');
-                let pixelData: Uint8ClampedArray | null = null;
 
                 if (resCtx) {
                   resCtx.imageSmoothingEnabled = true;
                   resCtx.imageSmoothingQuality = 'high';
                   resCtx.drawImage(canvas, 0, 0, origW, origH, 0, 0, targetWidth, targetHeight);
                   try {
-                    pixelData = resCtx.getImageData(0, 0, targetWidth, targetHeight).data;
+                    const base64Data = resCanvas.toDataURL('image/png');
+                    exportImages[key] = {
+                      url: base64Data,
+                      pixelRatio: effectiveRatio,
+                      sdf: isSdf
+                    };
                   } catch {}
-                }
-
-                if (pixelData && pixelData.length === targetWidth * targetHeight * 4) {
-                  hiddenMap.addImage(imgId, { width: targetWidth, height: targetHeight, data: pixelData }, {
-                    pixelRatio: effectiveRatio,
-                    sdf: isSdf
-                  });
-                } else if (atlasImage.data && atlasImage.data.length === origW * origH * 4) {
-                  hiddenMap.addImage(imgId, { width: origW, height: origH, data: atlasImage.data }, {
-                    pixelRatio: effectiveRatio,
-                    sdf: isSdf
-                  });
                 }
               }
               res();
@@ -528,69 +448,44 @@ export class MapExportComponent implements OnDestroy {
         addPromises.push(promise);
       }
 
-      // Ожидаем загрузку всех SVG-иконок
       await Promise.all(addPromises);
 
-      this.generationProgress.set('Финальный рендеринг карты...');
+      this.generationProgress.set('Выполнение рендеринга на бэкенде...');
 
-      // Принудительный resize перед позиционированием
-      hiddenMap.resize();
+      const styleObj = mainMap.getStyle();
+      const styleJson = JSON.stringify(styleObj);
 
-      // CRITICAL-1: jumpTo вместо fitBounds — зум уже рассчитан
-      hiddenMap.jumpTo({
-        center: exportCenter,
-        zoom: exportZoom,
-        bearing: mainMap.getBearing(),
-        pitch: mainMap.getPitch()
-      });
+      const tacticalSource = mainMap.getSource('tactical-symbols') as any;
+      const geojsonData = tacticalSource && tacticalSource._data 
+        ? JSON.stringify(tacticalSource._data) 
+        : '{}';
 
-      // Ожидаем завершения рендеринга всех тайлов (idle)
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Превышено время ожидания рендеринга карты'));
-        }, 30000);
-
-        hiddenMap.once('idle', () => {
-          clearTimeout(timeout);
-          resolve();
-        });
-      });
-
-      // Дополнительная пауза для завершения WebGL flush
-      await new Promise(r => setTimeout(r, 200));
-
-      this.generationProgress.set('Сохранение изображения...');
-
-      // MODERATE-2: toBlob() вместо toDataURL() — экономия RAM
-      const mapCanvas = hiddenMap.getCanvas();
       const scaleTag = selectedScale > 0 ? `1-${selectedScale}` : 'auto';
       const filename = `map_export_${printMm.width}x${printMm.height}mm_${scaleTag}_${dpiVal}dpi_${new Date().toISOString().slice(0, 10)}.png`;
 
       const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
 
       if (isTauri) {
-        // Tauri: toBlob → ArrayBuffer → invoke
-        const blob = await new Promise<Blob>((resolve, reject) => {
-          mapCanvas.toBlob((b: Blob | null) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png');
-        });
-        const buffer = await blob.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        const { invoke } = await import('@tauri-apps/api/core');
-        const savedPath = await invoke<string>('save_scenario_file', { filename, content: Array.from(bytes) });
-        alert(`ГИС-карта высокого разрешения успешно сохранена в папку загрузок:\n${savedPath}`);
+        // Tauri: вызываем нативный рендерер через Tauri IPC
+        const savedPath = await this.nativeExport.exportMapNative({
+          center: [exportCenter[0], exportCenter[1]],
+          zoom: exportZoom,
+          bearing: mainMap.getBearing(),
+          pitch: mainMap.getPitch(),
+          width_mm: printMm.width,
+          height_mm: printMm.height,
+          dpi: dpiVal,
+          scale: selectedScale,
+          logical_width: logicalW,
+          logical_height: logicalH,
+          ratio: effectiveRatio,
+          filename: filename
+        }, styleJson, geojsonData, JSON.stringify(exportImages));
+
+        alert(`ГИС-карта высокого разрешения успешно сохранена на бэкенде в папку загрузок:\n${savedPath}`);
       } else {
-        // Браузер: toBlob → ObjectURL → download
-        const blob = await new Promise<Blob>((resolve, reject) => {
-          mapCanvas.toBlob((b: Blob | null) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png');
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // Браузер: fallback на скачивание (не должно вызываться в Tauri, но полезно для веб-версии)
+        alert('Нативный экспорт поддерживается только в оффлайн-приложении Tauri.');
       }
 
       this.close();
@@ -598,28 +493,6 @@ export class MapExportComponent implements OnDestroy {
       console.error('Ошибка экспорта:', err);
       alert(`Не удалось выполнить экспорт: ${err.message || err}`);
     } finally {
-      // Восстанавливаем оригинальный devicePixelRatio
-      if (isDprOverridden) {
-        try {
-          Object.defineProperty(window, 'devicePixelRatio', {
-            get: () => originalDpr,
-            configurable: true
-          });
-        } catch {}
-      }
-
-      if (hiddenMap) {
-        try {
-          hiddenMap.remove();
-        } catch {}
-      }
-
-      if (hiddenDiv && hiddenDiv.parentNode) {
-        try {
-          hiddenDiv.parentNode.removeChild(hiddenDiv);
-        } catch {}
-      }
-
       this.isGenerating.set(false);
     }
   }

@@ -1,0 +1,8 @@
+[[permission]]
+identifier = "allow-export-map-native"
+description = "Allows the frontend to invoke the native map export command"
+
+[permission.commands]
+allow = [
+  "export_map_native"
+]
