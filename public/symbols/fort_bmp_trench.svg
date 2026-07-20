@@ -1,6 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <path d="M 102,435 L 102,154 L 410,154 L 410,435" fill="none" stroke="#854d0e" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="180" y="230" width="153" height="205" rx="20" fill="none" stroke="#854d0e" stroke-width="32"/>
-  <circle cx="256" cy="307" r="30" fill="#854d0e"/>
-  <line x1="256" y1="307" x2="256" y2="180" stroke="#854d0e" stroke-width="26" stroke-linecap="round"/>
+<svg viewBox="0 0 210 150" width="210" height="150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M43.378 88.7534L29.4253 88.742L29.5821 50.2894L43.2754 50.4129L43.378 88.7534ZM53.772 50.321L107.86 50.9957L141.261 71.9432L110.142 88.8051L53.7777 88.9602L53.772 50.321ZM157.797 71.8312C151.412 67.8232 152.082 68.34 112.4 43.1921C19 42.2877 50.2674 42.3135 19 42.2877L19.1825 96.5427C112.523 96.7667 20.326 96.3331 113.666 96.5571C157.797 71.8312 119.198 92.9079 157.797 71.8312C157.922 64.886 157.671 78.7793 157.797 71.8312Z" fill="#FF0000"/>
+  <line x1="114.5" y1="18.1233" x2="114.5" y2="4.89493e-06" stroke="#FF0000" stroke-width="11"/>
+  <line x1="166" y1="68" x2="185" y2="68" stroke="#FF0000" stroke-width="11"/>
+  <line y1="-5.5" x2="19.8669" y2="-5.5" transform="matrix(0.704689 -0.709516 0.704689 0.709516 154 36.2466)" stroke="#FF0000" stroke-width="11"/>
+  <line y1="-5.5" x2="18.4478" y2="-5.5" transform="matrix(0.704689 0.709516 -0.704689 0.709516 151 108.74)" stroke="#FF0000" stroke-width="11"/>
+  <line x1="114.5" y1="117.801" x2="114.5" y2="136.932" stroke="#FF0000" stroke-width="11"/>
+  <path d="M109 14.5993C127.833 14.4315 165.6 25.4733 166 70.9828C166.4 116.492 128.167 123.507 109 121.325" stroke="#FF0000" stroke-width="8"/>
 </svg>

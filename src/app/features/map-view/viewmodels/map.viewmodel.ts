@@ -58,6 +58,55 @@ export class MapViewModel {
 
   readonly isMeasuring = this.mapMeasurementService.isMeasuring;
   readonly measurementResult = this.mapMeasurementService.measurementResult;
+
+  // Поповер библиотеки знаков и управление тулбаром
+  readonly isSymbolLibraryOpen = signal<boolean>(false);
+  readonly selectedSymbolCategory = signal<string>('armored');
+  readonly symbolCategories = [
+    { id: 'armored', label: 'Бронетехника' },
+    { id: 'artillery', label: 'Артиллерия' },
+    { id: 'infantry', label: 'Пехота / Пулеметы' },
+    { id: 'air', label: 'Авиация / БПЛА' },
+    { id: 'knp', label: 'Командные пункты' },
+    { id: 'fortification', label: 'Фортификация' }
+  ];
+
+  setPanMode() {
+    this.tacticalMapService.interactionMode.set('pan');
+  }
+
+  setEditMode() {
+    this.tacticalMapService.interactionMode.set('edit');
+  }
+
+  setSelectMode() {
+    this.tacticalMapService.interactionMode.set('select');
+  }
+
+  toggleSymbolLibraryPopover(event?: Event) {
+    if (event) event.stopPropagation();
+    this.isSymbolLibraryOpen.update(v => !v);
+  }
+
+  selectSymbolCategory(id: string) {
+    this.selectedSymbolCategory.set(id);
+  }
+
+  selectSymbolFromLibrary(sym: any) {
+    this.tacticalMapService.selectedSymbol.set(sym);
+  }
+
+  readonly currentCategoryTitle = computed(() => {
+    const cat = this.symbolCategories.find(c => c.id === this.selectedSymbolCategory());
+    return cat ? cat.label : 'Тактические знаки';
+  });
+
+  readonly currentCategorySymbols = computed(() => {
+    const catId = this.selectedSymbolCategory();
+    const grouped = this.symbolsService.groupedSymbols();
+    const found = grouped.find((g: any) => g.id === catId);
+    return found ? found.symbols : [];
+  });
   readonly symbolSearchQuery = this.symbolsService.symbolSearchQuery;
   readonly selectedSymbol = this.tacticalMapService.selectedSymbol;
   readonly selectedPlacedSymbol = this.tacticalMapService.selectedPlacedSymbol;
@@ -179,7 +228,7 @@ export class MapViewModel {
     });
 
     // Реактивно пересчитываем характеристики маршрута
-    effect(async () => {
+    effect(() => {
       const selected = this.selectedPlacedSymbol();
       const mode = this.activeLineMode();
       const activeCoords = this.activeLineCoords();
@@ -193,13 +242,13 @@ export class MapViewModel {
       }
 
       if (mode === 'march_route' && activeCoords && activeCoords.length >= 2) {
-        const stats = await this.marchRouteService.calculateRouteStats(map, activeCoords, columnType, isNight);
-        this.selectedMarchRouteStats.set(stats);
+        this.marchRouteService.calculateRouteStats(map, activeCoords, columnType, isNight)
+          .then(stats => this.selectedMarchRouteStats.set(stats));
       } else if (selected && selected.properties?.['lineType'] === 'march_route') {
         const origCoords = selected.properties['origCoords'] as [number, number][];
         if (origCoords && origCoords.length >= 2) {
-          const stats = await this.marchRouteService.calculateRouteStats(map, origCoords, columnType, isNight);
-          this.selectedMarchRouteStats.set(stats);
+          this.marchRouteService.calculateRouteStats(map, origCoords, columnType, isNight)
+            .then(stats => this.selectedMarchRouteStats.set(stats));
         } else {
           this.selectedMarchRouteStats.set(null);
         }
