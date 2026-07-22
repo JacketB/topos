@@ -1,15 +1,20 @@
 :host {
-  position: fixed;
+  display: contents;
+}
+
+.mo-modal-overlay {
+  position: absolute;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  right: 0;
+  bottom: 0;
   background-color: rgba(15, 23, 42, 0.4);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
+  pointer-events: auto;
 }
 
 .mo-modal-panel {

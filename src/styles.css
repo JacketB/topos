@@ -1,14 +1,12 @@
 @import 'maplibre-gl/dist/maplibre-gl.css';
 
 :root {
-  /* Фирменная палитра Topos (из user.md preferences) */
-  --color-primary: #466bf7;         /* Persian Blue */
+  --color-primary: #466bf7;
   --color-primary-hover: #3556db;
-  --color-primary-light: #eff4ff;   /* Подсветка выбранных знаков */
+  --color-primary-light: #eff4ff;
   --color-accent-indigo: #6366f1;
   --color-accent-violet: #8b5cf6;
   
-  /* Нейтральные тона (Slate / Inter UI) */
   --color-bg-app: #f8fafc;
   --color-bg-panel: #ffffff;
   --color-border: #e2e8f0;
@@ -17,12 +15,10 @@
   --color-text-main: #0f172a;
   --color-text-muted: #64748b;
   
-  /* Функциональные цвета */
-  --color-danger: #e11d48;          /* Только для удаления объектов */
+  --color-danger: #e11d48;
   --color-danger-light: #fecdd3;
-  --color-success: #10b981;         /* Индикатор готовности системы */
+  --color-success: #10b981;
   
-  /* Тени и радиусы */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
   --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.12);
@@ -80,7 +76,6 @@ app-root, app-map-view {
   padding: 0;
 }
 
-/* Единые базовые утилиты кнопок и полей ввода Topos GIS */
 .fort-btn {
   display: inline-flex;
   align-items: center;
@@ -134,7 +129,6 @@ app-root, app-map-view {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
-/* Приоритетный стиль кнопки закрытия в попапах (Планировщик, Ведомость, Модалки) */
 button.fort-report-close-btn,
 .fort-report-close-btn {
   background: transparent !important;
@@ -157,4 +151,65 @@ button.fort-report-close-btn:hover,
 .fort-report-close-btn:hover {
   background-color: #e2e8f0 !important;
   color: #0f172a !important;
+}
+
+.topos-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.topos-modal-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.topos-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background-color: #f8fafc;
+}
+
+.topos-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topos-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.topos-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-border);
+  background-color: #f8fafc;
 }

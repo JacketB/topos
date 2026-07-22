@@ -1,4 +1,3 @@
-/* Контейнер оверлея экспорта (пропускает клики на карту) */
 .export-overlay-container {
   position: fixed;
   top: 0;
@@ -12,14 +11,12 @@
   transition: background-color 0.3s;
 }
 
-/* Блокировка кликов во время генерации */
 .export-overlay-container.generating {
   pointer-events: auto !important;
   background-color: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(3px);
 }
 
-/* Панель настроек в левом нижнем углу (не перекрывает центр карты) */
 .export-settings-panel {
   position: absolute;
   bottom: 40px;

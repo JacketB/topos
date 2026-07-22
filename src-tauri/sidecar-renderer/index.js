@@ -27,7 +27,6 @@ class NodeFileSource {
   }
 }
 
-// Фильтруем неопасное системное EGL предупреждение при закрытии OpenGL контекста
 const origStderrWrite = process.stderr.write;
 process.stderr.write = function (chunk, encoding, fd) {
   const str = chunk ? chunk.toString() : '';
@@ -37,7 +36,6 @@ process.stderr.write = function (chunk, encoding, fd) {
   return origStderrWrite.apply(this, arguments);
 };
 
-// Сохраняем оригинальный request и подменяем его в кэше до импорта mbgl-renderer
 const realRequest = require('request');
 
 let globalConfig = {};
@@ -106,7 +104,6 @@ const requestMock = function(options, callback) {
     }
   }
 
-  // Перехватываем относительные пути (начинающиеся со слэша или не содержащие протокола)
   const isAbsolute = url.includes('://') || /^[a-zA-Z]:\\/.test(url);
   if (!isAbsolute) {
     const cleanPath = url.replace(/^\/+/, '');
@@ -298,7 +295,7 @@ async function renderTiled(cleanedStyle, options) {
   const ratio = options.ratio || 1;
   const totalPxWidth = Math.floor(options.width * ratio);
   const totalPxHeight = Math.floor(options.height * ratio);
-  const MAX_CHUNK_PX = 3072; // Безопасная плитка 3072x3072 пикселей для EGL
+  const MAX_CHUNK_PX = 3072;
 
   if (totalPxWidth <= MAX_CHUNK_PX && totalPxHeight <= MAX_CHUNK_PX) {
     return render(cleanedStyle, options.width, options.height, options);
@@ -431,7 +428,6 @@ async function renderTiled(cleanedStyle, options) {
   return stitchedBuffer;
 }
 
-// Читаем входные данные из STDIN
 let inputData = '';
 
 process.stdin.on('data', chunk => {
@@ -443,31 +439,11 @@ process.stdin.on('end', () => {
     const config = JSON.parse(inputData);
     initPMTiles(config);
 
-    // Очищаем pmtiles:// протокол в стиле, заменяя на http://
     let cleanedStyle = null;
     if (config.style) {
       let styleStr = JSON.stringify(config.style);
       styleStr = styleStr.replace(/pmtiles:\/\/http:\/\//g, 'http://');
       cleanedStyle = JSON.parse(styleStr);
-    }
-
-    if (cleanedStyle) {
-      console.error(`[STYLE LOG] Glyphs URL: ${cleanedStyle.glyphs}`);
-      const symbolLayers = (cleanedStyle.layers || []).filter(l => l.type === 'symbol');
-      console.error(`[STYLE LOG] Total symbol layers count: ${symbolLayers.length}`);
-      symbolLayers.forEach(l => {
-        console.error(`[STYLE LOG] Layer '${l.id}': text-field = ${JSON.stringify(l.layout?.['text-field'])}, text-font = ${JSON.stringify(l.layout?.['text-font'])}`);
-      });
-
-      if (cleanedStyle.sources && cleanedStyle.sources['tactical-symbols']) {
-        const feats = cleanedStyle.sources['tactical-symbols']?.data?.features || [];
-        console.error(`[GEOJSON LOG] tactical-symbols total count: ${feats.length}`);
-        const pointFeats = feats.filter(f => !f.properties?.isLinear);
-        console.error(`[GEOJSON LOG] point symbols count: ${pointFeats.length}`);
-        pointFeats.slice(0, 5).forEach((f, idx) => {
-          console.error(`[GEOJSON LOG] Point Feature #${idx} properties: ${JSON.stringify(f.properties)}`);
-        });
-      }
     }
     
     const options = {
