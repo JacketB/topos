@@ -430,17 +430,19 @@ async fn export_map_native(
     let config_str = serde_json::to_string(&config)
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
 
-    let run_res = run_node_renderer(&script_path, &config_str, &output_path);
+    let run_res = run_node_renderer(Some(&app), &script_path, &config_str, &output_path);
     run_res.map(|_| output_path.to_string_lossy().to_string())
 }
 
 fn run_node_renderer(
+    app: Option<&tauri::AppHandle>,
     script_path: &std::path::Path,
     config_str: &str,
     output_path: &std::path::Path,
 ) -> Result<(), String> {
-    use std::io::Write;
+    use std::io::{BufRead, BufReader, Write};
     use std::process::{Command, Stdio};
+    use tauri::Emitter;
 
     let script_dir = script_path.parent().ok_or_else(|| "Failed to get script parent directory".to_string())?;
 
@@ -448,7 +450,7 @@ fn run_node_renderer(
     let mut command = {
         use std::os::windows::process::CommandExt;
         let mut cmd = Command::new("node");
-        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        cmd.creation_flags(0x08000000);
         cmd.current_dir(script_dir);
         cmd
     };
@@ -467,6 +469,24 @@ fn run_node_renderer(
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|e| format!("Failed to start Node renderer: {}", e))?;
+
+    let stdout_stream = child.stdout.take().ok_or_else(|| "Failed to open stdout".to_string())?;
+    let app_handle_clone = app.cloned();
+
+    let stdout_thread = std::thread::spawn(move || {
+        let reader = BufReader::new(stdout_stream);
+        let mut final_stdout = String::new();
+        for line in reader.lines().flatten() {
+            if line.contains("\"type\":\"progress\"") || line.contains("\"type\": \"progress\"") {
+                if let Some(ref handle) = app_handle_clone {
+                    let _ = handle.emit("export-progress", &line);
+                }
+            }
+            final_stdout.push_str(&line);
+            final_stdout.push('\n');
+        }
+        final_stdout
+    });
 
     let write_result = if let Some(mut stdin) = child.stdin.take() {
         stdin.write_all(config_str.as_bytes())
@@ -497,12 +517,17 @@ fn run_node_renderer(
     let output = child.wait_with_output()
         .map_err(|e| format!("Failed to wait for Node process: {}", e))?;
 
+    let stdout_str = stdout_thread.join().unwrap_or_default();
+    let stderr_str = String::from_utf8_lossy(&output.stderr).into_owned();
+
     if !output.status.success() {
-        let err_msg = String::from_utf8_lossy(&output.stderr).into_owned();
+        let err_msg = if !stderr_str.trim().is_empty() { stderr_str } else { String::from_utf8_lossy(&output.stderr).to_string() };
         return Err(format!("Node renderer error: {}", err_msg));
     }
 
-    let stdout_str = String::from_utf8_lossy(&output.stdout).into_owned();
+    if !stderr_str.trim().is_empty() {
+        log::info!("Node renderer stderr:\n{}", stderr_str);
+    }
     log::info!("Node renderer stdout: {}", stdout_str);
 
     if let Ok(result_val) = serde_json::from_str::<serde_json::Value>(&stdout_str) {
@@ -568,7 +593,7 @@ mod tests {
         });
 
         let config_str = serde_json::to_string(&config).unwrap();
-        let result = run_node_renderer(&script_path, &config_str, &output_path);
+        let result = run_node_renderer(None, &script_path, &config_str, &output_path);
         println!("Test run result: {:?}", result);
         
         if output_path.exists() {

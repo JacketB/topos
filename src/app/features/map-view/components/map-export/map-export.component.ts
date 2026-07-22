@@ -33,6 +33,7 @@ export class MapExportComponent implements OnDestroy {
   // Состояние генерации
   readonly isGenerating = signal<boolean>(false);
   readonly generationProgress = signal<string>('');
+  readonly exportPercent = signal<number | null>(null);
 
   // Перетаскивание ручек ресайза мышью
   private activeResizeHandle: string | null = null;
@@ -498,8 +499,22 @@ export class MapExportComponent implements OnDestroy {
 
       const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
 
+      this.exportPercent.set(0);
+      let unlisten: (() => void) | null = null;
+
       if (isTauri) {
-        // Tauri: вызываем нативный рендерер через Tauri IPC
+        try {
+          const { listen } = await import('@tauri-apps/api/event');
+          unlisten = await listen<string>('export-progress', (event) => {
+            try {
+              const data = JSON.parse(event.payload);
+              if (data && typeof data.percent === 'number') {
+                this.exportPercent.set(data.percent);
+              }
+            } catch (e) {}
+          });
+        } catch (e) {}
+
         const savedPath = await this.nativeExport.exportMapNative({
           center: [exportCenter[0], exportCenter[1]],
           zoom: exportZoom,
@@ -515,9 +530,11 @@ export class MapExportComponent implements OnDestroy {
           filename: filename
         }, styleJson, geojsonData, JSON.stringify(exportImages));
 
+        if (unlisten) unlisten();
+        this.exportPercent.set(100);
+
         alert(`ГИС-карта высокого разрешения успешно сохранена на бэкенде в папку загрузок:\n${savedPath}`);
       } else {
-        // Браузер: fallback на скачивание (не должно вызываться в Tauri, но полезно для веб-версии)
         alert('Нативный экспорт поддерживается только в оффлайн-приложении Tauri.');
       }
 
@@ -526,6 +543,7 @@ export class MapExportComponent implements OnDestroy {
       console.error('Ошибка экспорта:', err);
       alert(`Не удалось выполнить экспорт: ${err.message || err}`);
     } finally {
+      this.exportPercent.set(null);
       this.isGenerating.set(false);
     }
   }
@@ -537,6 +555,10 @@ export class MapExportComponent implements OnDestroy {
   private sanitizeStyleForNative(styleObj: any): any {
     if (!styleObj || !Array.isArray(styleObj.layers)) return styleObj;
     const cloned = JSON.parse(JSON.stringify(styleObj));
+
+    if (!cloned.glyphs) {
+      cloned.glyphs = 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf';
+    }
 
     const sanitizeExpr = (expr: any): any => {
       if (!Array.isArray(expr)) return expr;
@@ -590,15 +612,23 @@ export class MapExportComponent implements OnDestroy {
         // Для слоев типа symbol безопасно обогащаем текстовые свойства при их отсутствии
         if (layer.type === 'symbol' && (layer.id.startsWith('tactical_') || layer.source === 'tactical-symbols')) {
           if (!layer.layout) layer.layout = {};
-          if (!layer.layout['text-field']) layer.layout['text-field'] = ['case', ['has', 'name'], ['get', 'name'], ''];
-          if (!layer.layout['text-font']) layer.layout['text-font'] = ['Noto Sans Regular', 'Arial Unicode MS Regular'];
+          layer.layout['text-field'] = '{name}';
+          layer.layout['text-font'] = ['Noto Sans Regular'];
+          layer.layout['text-size'] = 16;
+          layer.layout['text-offset'] = [0, 1.8];
+          layer.layout['text-anchor'] = 'top';
+          layer.layout['text-allow-overlap'] = true;
+          layer.layout['text-ignore-placement'] = true;
+
           if (!layer.paint) layer.paint = {};
-          if (!layer.paint['text-color']) layer.paint['text-color'] = '#222222';
-          if (!layer.paint['text-halo-color']) layer.paint['text-halo-color'] = '#ffffff';
-          if (!layer.paint['text-halo-width']) layer.paint['text-halo-width'] = 1.5;
+          layer.paint['text-color'] = '#000000';
+          layer.paint['text-halo-color'] = '#ffffff';
+          layer.paint['text-halo-width'] = 4.0;
         }
       }
     }
+
+    cloned.glyphs = 'https://cdn.jsdelivr.net/gh/openmaptiles/fonts@gh-pages/{fontstack}/{range}.pbf';
 
     // Сортируем слои по Z-Index: пользовательские нанесенные слои переносим в конец (наверх всех карт)
     const baseLayers: any[] = [];
@@ -766,6 +796,9 @@ export class MapExportComponent implements OnDestroy {
       if (props.symbol && !props.iconId) {
         props.iconId = props.symbol;
       }
+      if (!props.name) {
+        props.name = props.label || props.title || props.text || '';
+      }
       if (!props.color) {
         props.color = props.symbol ? '#ef4444' : '#854d0e';
       }
@@ -775,6 +808,7 @@ export class MapExportComponent implements OnDestroy {
       if (props.fillOpacity === undefined) {
         props.fillOpacity = 0.4;
       }
+      console.error(`[FEATURE LOG] Feature id=${props.id || 'unnamed'}, name="${props.name || ''}", symbol="${props.symbol || props.iconId || ''}"`);
       return feat;
     });
   }
