@@ -41,19 +41,8 @@ export class MapExportComponent implements OnDestroy {
   private resizeStartWidthMm = 0;
   private resizeStartHeightMm = 0;
 
-  // Динамически определяемый лимит WebGL
-  private readonly maxWebGLSize = (() => {
-    if (typeof window === 'undefined') return 7680;
-    try {
-      const probeCanvas = document.createElement('canvas');
-      const gl = probeCanvas.getContext('webgl2') || probeCanvas.getContext('webgl');
-      if (gl) {
-        const size = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE) as number, 16384);
-        return Math.max(4096, size - 256);
-      }
-    } catch {}
-    return 7680;
-  })();
+  // Максимальный размер растрового холста WebGL (32K полиграфическое суперразрешение благодаря тайлингу на бэкенде)
+  private readonly maxWebGLSize = 32768;
 
   @HostListener('window:resize')
   onResize() {
@@ -310,10 +299,16 @@ export class MapExportComponent implements OnDestroy {
 
       // logicalW/H привязаны к targetW/H через целевой effectiveRatio
       const effectiveRatio = Math.max(1.0, dpiVal / 96);
-      const logicalW = Math.round(targetW / effectiveRatio);
-      const logicalH = Math.round(targetH / effectiveRatio);
+      const logicalW = Math.max(1, Math.round(targetW / effectiveRatio));
+      const logicalH = Math.max(1, Math.round(targetH / effectiveRatio));
 
-      // Вычисление exportZoom из топомасштаба
+      // Точный вычисление дельты долготы левого и правого края видоискателя
+      const leftLngLat = mainMap.unproject([x1, centerY]);
+      const rightLngLat = mainMap.unproject([x2, centerY]);
+      let deltaLng = Math.abs(rightLngLat.lng - leftLngLat.lng);
+      if (deltaLng <= 0) deltaLng = 0.00001;
+
+      // Вычисление exportZoom из топомасштаба или прямого охвата видоискателя
       const selectedScale = this.exportScale();
       let exportZoom: number;
 
@@ -322,25 +317,21 @@ export class MapExportComponent implements OnDestroy {
         const metersPerMm = selectedScale / 1000;
         // Пикселей на 1 мм при целевом DPI
         const pxPerMm = dpiVal / 25.4;
-        // Метров на 1 пиксель в экспорте
+        // Метров на 1 физический пиксель в экспорте
         const metersPerPx = metersPerMm / pxPerMm;
 
         const latRad = (exportCenter[1] * Math.PI) / 180;
         const cosLat = Math.cos(latRad);
 
-        exportZoom = Math.log2((156543.03392 * cosLat) / (metersPerPx * effectiveRatio));
+        // Точный эквивалент зума для нативного полотна при ratio = 1
+        exportZoom = Math.log2((156543.03392 * cosLat) / metersPerPx) - Math.log2(effectiveRatio);
 
-        // ВАЖНО: Если safeScale < 1.0 (изображение сжато по лимитам GPU),
-        // корректируем зум, чтобы сохранить исходный географический охват рамки
         if (safeScale < 1.0) {
           exportZoom += Math.log2(safeScale);
         }
       } else {
-        // Авто: сохранить zoom основной карты, но скорректировать на разницу размеров
-        const mainZoom = mainMap.getZoom();
-        const scaleRatio = logicalW / (vfRect.width > 0 ? vfRect.width : container.clientWidth);
-        // Коррекция зума на -0.1375 уровня (~10% отдаления) для компенсации среза краев
-        exportZoom = mainZoom + Math.log2(scaleRatio) - 0.1375;
+        // Авто: абсолютная геодезическая математика совпадения ширины targetW с шириной видоискателя
+        exportZoom = Math.log2((targetW / 512) * (360 / deltaLng));
       }
 
       this.generationProgress.set('Подготовка тактических условных знаков...');
@@ -363,8 +354,14 @@ export class MapExportComponent implements OnDestroy {
             const origW = parseFloat(svgEl.getAttribute('width') || '24');
             const origH = parseFloat(svgEl.getAttribute('height') || '24');
 
-            const targetWidth = origW * sizeMultiplier;
-            const targetHeight = origH * sizeMultiplier;
+            let targetWidth = origW * sizeMultiplier;
+            let targetHeight = origH * sizeMultiplier;
+
+            if (targetWidth > 1024 || targetHeight > 1024) {
+              const scale = Math.min(1024 / targetWidth, 1024 / targetHeight);
+              targetWidth = Math.floor(targetWidth * scale);
+              targetHeight = Math.floor(targetHeight * scale);
+            }
 
             clonedSvg.setAttribute('width', targetWidth.toString());
             clonedSvg.setAttribute('height', targetHeight.toString());
@@ -386,7 +383,7 @@ export class MapExportComponent implements OnDestroy {
                   const base64Data = canvas.toDataURL('image/png');
                   exportImages[key] = {
                     url: base64Data,
-                    pixelRatio: effectiveRatio,
+                    pixelRatio: 1.0, // Для ratio=1 иконка рисуется в ее крупном физическом размере targetWidth
                     sdf: isSdf
                   };
                 } catch (e) {
@@ -401,24 +398,24 @@ export class MapExportComponent implements OnDestroy {
               res();
             };
           } else {
-            const atlasImage = img.data;
-            if (atlasImage && atlasImage.width && atlasImage.height) {
-              const canvas = document.createElement('canvas');
-              canvas.width = atlasImage.width;
-              canvas.height = atlasImage.height;
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                const imgData = ctx.createImageData(atlasImage.width, atlasImage.height);
-                imgData.data.set(atlasImage.data);
-                ctx.putImageData(imgData, 0, 0);
+            const extracted = this.getStyleImageDataUrl(img);
+            if (extracted) {
+              const origW = extracted.width;
+              const origH = extracted.height;
 
-                const origW = atlasImage.width;
-                const origH = atlasImage.height;
+              const sizeMultiplier = effectiveRatio;
+              let targetWidth = origW * sizeMultiplier;
+              let targetHeight = origH * sizeMultiplier;
 
-                const sizeMultiplier = effectiveRatio;
-                const targetWidth = origW * sizeMultiplier;
-                const targetHeight = origH * sizeMultiplier;
+              if (targetWidth > 1024 || targetHeight > 1024) {
+                const scale = Math.min(1024 / targetWidth, 1024 / targetHeight);
+                targetWidth = Math.floor(targetWidth * scale);
+                targetHeight = Math.floor(targetHeight * scale);
+              }
 
+              const imgObj = new Image();
+              imgObj.src = extracted.url;
+              imgObj.onload = () => {
                 const resCanvas = document.createElement('canvas');
                 resCanvas.width = targetWidth;
                 resCanvas.height = targetHeight;
@@ -427,18 +424,21 @@ export class MapExportComponent implements OnDestroy {
                 if (resCtx) {
                   resCtx.imageSmoothingEnabled = true;
                   resCtx.imageSmoothingQuality = 'high';
-                  resCtx.drawImage(canvas, 0, 0, origW, origH, 0, 0, targetWidth, targetHeight);
+                  resCtx.drawImage(imgObj, 0, 0, origW, origH, 0, 0, targetWidth, targetHeight);
                   try {
                     const base64Data = resCanvas.toDataURL('image/png');
                     exportImages[key] = {
                       url: base64Data,
-                      pixelRatio: effectiveRatio,
+                      pixelRatio: 1.0, // Для ratio=1 иконка рисуется в ее крупном физическом размере targetWidth
                       sdf: isSdf
                     };
-                  } catch {}
+                  } catch (e) {
+                    console.error('Ошибка экспорта изображения:', e);
+                  }
                 }
-              }
-              res();
+                res();
+              };
+              imgObj.onerror = () => res();
             } else {
               res();
             }
@@ -452,13 +452,46 @@ export class MapExportComponent implements OnDestroy {
 
       this.generationProgress.set('Выполнение рендеринга на бэкенде...');
 
-      const styleObj = mainMap.getStyle();
+      this.generationProgress.set('Выполнение рендеринга на бэкенде...');
+
+      const rawStyle = mainMap.getStyle();
+      const styleObj = this.sanitizeStyleForNative(rawStyle);
+      
+      const placedSymbols = this.vm.placedSymbols();
+      const enrichedPlacedSymbols = this.enrichFeaturesArrayForNative(placedSymbols);
+
+      if (styleObj.sources) {
+        for (const sourceId of Object.keys(styleObj.sources)) {
+          const sourceSpec = styleObj.sources[sourceId];
+          if (sourceSpec.type === 'geojson') {
+            if (sourceId === 'tactical-symbols') {
+              sourceSpec.data = {
+                type: 'FeatureCollection',
+                features: enrichedPlacedSymbols
+              };
+            } else {
+              const mapSource = mainMap.getSource(sourceId) as any;
+              let rawData = null;
+              if (mapSource) {
+                rawData = mapSource._data || (mapSource._options && mapSource._options.data) || mapSource.data;
+              }
+              if (rawData) {
+                sourceSpec.data = this.enrichGeoJsonForNative(rawData);
+              } else if (!sourceSpec.data || typeof sourceSpec.data !== 'object' || !sourceSpec.data.type) {
+                sourceSpec.data = { type: 'FeatureCollection', features: [] };
+              }
+            }
+          }
+        }
+      }
+      
       const styleJson = JSON.stringify(styleObj);
 
-      const tacticalSource = mainMap.getSource('tactical-symbols') as any;
-      const geojsonData = tacticalSource && tacticalSource._data 
-        ? JSON.stringify(tacticalSource._data) 
-        : '{}';
+      const tacticalCollection = {
+        type: 'FeatureCollection',
+        features: enrichedPlacedSymbols
+      };
+      const geojsonData = JSON.stringify(tacticalCollection);
 
       const scaleTag = selectedScale > 0 ? `1-${selectedScale}` : 'auto';
       const filename = `map_export_${printMm.width}x${printMm.height}mm_${scaleTag}_${dpiVal}dpi_${new Date().toISOString().slice(0, 10)}.png`;
@@ -476,9 +509,9 @@ export class MapExportComponent implements OnDestroy {
           height_mm: printMm.height,
           dpi: dpiVal,
           scale: selectedScale,
-          logical_width: logicalW,
-          logical_height: logicalH,
-          ratio: effectiveRatio,
+          logical_width: targetW,
+          logical_height: targetH,
+          ratio: 1,
           filename: filename
         }, styleJson, geojsonData, JSON.stringify(exportImages));
 
@@ -495,5 +528,254 @@ export class MapExportComponent implements OnDestroy {
     } finally {
       this.isGenerating.set(false);
     }
+  }
+
+  /**
+   * Преобразует стилевые выражения MapLibre (такие как coalesce) в базовые выражение get,
+   * поддерживаемые нативным C++ рендерером MapLibre GL Native.
+   */
+  private sanitizeStyleForNative(styleObj: any): any {
+    if (!styleObj || !Array.isArray(styleObj.layers)) return styleObj;
+    const cloned = JSON.parse(JSON.stringify(styleObj));
+
+    const sanitizeExpr = (expr: any): any => {
+      if (!Array.isArray(expr)) return expr;
+
+      // Преобразование ['coalesce', ['get', 'size'], 0.08] -> ['case', ['has', 'size'], ['get', 'size'], 0.08]
+      if (expr[0] === 'coalesce') {
+        const getArg = expr.slice(1).find((arg: any) => Array.isArray(arg) && arg[0] === 'get');
+        const defaultVal = expr.slice(1).find((arg: any) => typeof arg === 'number' || typeof arg === 'string' || typeof arg === 'boolean');
+        if (getArg && getArg[1] && defaultVal !== undefined) {
+          return ['case', ['has', getArg[1]], ['get', getArg[1]], defaultVal];
+        }
+        if (getArg) {
+          return sanitizeExpr(getArg);
+        }
+        const primitive = expr.slice(1).find((arg: any) => !Array.isArray(arg));
+        if (primitive !== undefined) {
+          return primitive;
+        }
+        return expr[1] ? sanitizeExpr(expr[1]) : expr;
+      }
+
+      return expr.map((item: any) => sanitizeExpr(item));
+    };
+
+    for (const layer of cloned.layers) {
+      if (layer.paint) {
+        // C++ MapLibre GL Native НЕ поддерживает выражения в line-dasharray, line-pattern, fill-pattern
+        if (layer.paint['line-dasharray'] && Array.isArray(layer.paint['line-dasharray'])) {
+          const isDataDriven = JSON.stringify(layer.paint['line-dasharray']).includes('"get"');
+          if (isDataDriven) {
+            delete layer.paint['line-dasharray'];
+          }
+        }
+        if (layer.paint['line-pattern'] && Array.isArray(layer.paint['line-pattern'])) {
+          delete layer.paint['line-pattern'];
+        }
+        if (layer.paint['fill-pattern'] && Array.isArray(layer.paint['fill-pattern'])) {
+          delete layer.paint['fill-pattern'];
+        }
+
+        for (const prop of Object.keys(layer.paint)) {
+          layer.paint[prop] = sanitizeExpr(layer.paint[prop]);
+        }
+      }
+
+      if (layer.layout) {
+        for (const prop of Object.keys(layer.layout)) {
+          layer.layout[prop] = sanitizeExpr(layer.layout[prop]);
+        }
+
+        // Для слоев типа symbol безопасно обогащаем текстовые свойства при их отсутствии
+        if (layer.type === 'symbol' && (layer.id.startsWith('tactical_') || layer.source === 'tactical-symbols')) {
+          if (!layer.layout) layer.layout = {};
+          if (!layer.layout['text-field']) layer.layout['text-field'] = ['case', ['has', 'name'], ['get', 'name'], ''];
+          if (!layer.layout['text-font']) layer.layout['text-font'] = ['Noto Sans Regular', 'Arial Unicode MS Regular'];
+          if (!layer.paint) layer.paint = {};
+          if (!layer.paint['text-color']) layer.paint['text-color'] = '#222222';
+          if (!layer.paint['text-halo-color']) layer.paint['text-halo-color'] = '#ffffff';
+          if (!layer.paint['text-halo-width']) layer.paint['text-halo-width'] = 1.5;
+        }
+      }
+    }
+
+    // Сортируем слои по Z-Index: пользовательские нанесенные слои переносим в конец (наверх всех карт)
+    const baseLayers: any[] = [];
+    const overlayLayers: any[] = [];
+
+    const isOverlayLayer = (l: any) => {
+      if (!l || !l.id) return false;
+      const id = l.id;
+      const src = l.source || '';
+      return id.startsWith('tactical_') || 
+             id.startsWith('measurement-') || 
+             id.startsWith('range-rings-') || 
+             id.startsWith('drawing-') || 
+             id.startsWith('march-') || 
+             id.startsWith('viewshed-') || 
+             src === 'tactical-symbols' || 
+             src === 'measurement-data' || 
+             src === 'range-rings-data' || 
+             src === 'viewshed-data' || 
+             src === 'drawing-preview';
+    };
+
+    for (const layer of cloned.layers) {
+      if (isOverlayLayer(layer)) {
+        overlayLayers.push(layer);
+      } else {
+        baseLayers.push(layer);
+      }
+    }
+
+    cloned.layers = [...baseLayers, ...overlayLayers];
+
+    return cloned;
+  }
+
+  /**
+   * Обогащает фичи GeoJSON явными свойствами (iconId, color, lineWidth и т.д.),
+   * чтобы C++ рендерер гарантированно считывал их без сбоев.
+   */
+  private enrichGeoJsonForNative(data: any): any {
+    if (!data || typeof data !== 'object') return data;
+    const cloned = JSON.parse(JSON.stringify(data));
+
+    if (cloned.type === 'FeatureCollection' && Array.isArray(cloned.features)) {
+      for (const feature of cloned.features) {
+        if (!feature.properties) feature.properties = {};
+        const props = feature.properties;
+
+        // Если есть symbol, но нет iconId — проставляем iconId
+        if (props.symbol && !props.iconId) {
+          props.iconId = props.symbol;
+        }
+        // Дефолтный цвет для линий/полигонов
+        if (!props.color) {
+          props.color = props.symbol ? '#ef4444' : '#854d0e';
+        }
+        if (props.lineWidth === undefined) {
+          props.lineWidth = 3.5;
+        }
+        if (props.fillOpacity === undefined) {
+          props.fillOpacity = 0.4;
+        }
+      }
+    }
+
+    return cloned;
+  }
+
+  /**
+   * Извлекает размеры и пиксельные данные из любого объекта StyleImage MapLibre GL JS,
+   * конвертируя их в готовый PNG Data URL для передачи на бэкенд.
+   */
+  private getStyleImageDataUrl(img: any): { url: string; width: number; height: number } | null {
+    if (!img) return null;
+
+    // 1. Проверяем наличие нативного Canvas / HTMLImage / ImageBitmap
+    const htmlElem = img.userImage?.display || img.userImage || img;
+    if (htmlElem && typeof htmlElem.getContext === 'function') {
+      try {
+        return {
+          url: htmlElem.toDataURL('image/png'),
+          width: htmlElem.width,
+          height: htmlElem.height
+        };
+      } catch {}
+    }
+
+    if (htmlElem instanceof HTMLImageElement || (typeof ImageBitmap !== 'undefined' && htmlElem instanceof ImageBitmap)) {
+      try {
+        const w = htmlElem.width;
+        const h = htmlElem.height;
+        if (w > 0 && h > 0) {
+          const cvs = document.createElement('canvas');
+          cvs.width = w;
+          cvs.height = h;
+          const ctx = cvs.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(htmlElem, 0, 0);
+            return { url: cvs.toDataURL('image/png'), width: w, height: h };
+          }
+        }
+      } catch {}
+    }
+
+    // 2. Ищем сырые пиксельные данные (RGBAArray)
+    let width = 0;
+    let height = 0;
+    let rawBuffer: Uint8Array | Uint8ClampedArray | null = null;
+
+    if (img.userImage) {
+      width = img.userImage.width || 0;
+      height = img.userImage.height || 0;
+      if (img.userImage.data) {
+        rawBuffer = img.userImage.data.data || img.userImage.data;
+      }
+    }
+
+    if (!width || !height || !rawBuffer) {
+      if (img.data) {
+        width = img.data.width || img.width || 0;
+        height = img.data.height || img.height || 0;
+        if (img.data instanceof Uint8Array || img.data instanceof Uint8ClampedArray) {
+          rawBuffer = img.data;
+        } else if (img.data.data) {
+          rawBuffer = img.data.data;
+        }
+      }
+    }
+
+    if (!width || !height) {
+      width = img.width || 0;
+      height = img.height || 0;
+    }
+
+    if (width > 0 && height > 0 && rawBuffer && rawBuffer.length >= width * height * 4) {
+      try {
+        const cvs = document.createElement('canvas');
+        cvs.width = width;
+        cvs.height = height;
+        const ctx = cvs.getContext('2d');
+        if (ctx) {
+          const imgData = ctx.createImageData(width, height);
+          imgData.data.set(rawBuffer.subarray(0, width * height * 4));
+          ctx.putImageData(imgData, 0, 0);
+          return { url: cvs.toDataURL('image/png'), width, height };
+        }
+      } catch (e) {
+        console.error('Error converting raw pixels for style image:', e);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Обогащает массив фичей явными свойствами iconId, color, lineWidth для C++ MapLibre GL Native.
+   */
+  private enrichFeaturesArrayForNative(features: any[]): any[] {
+    if (!Array.isArray(features)) return [];
+    return features.map(f => {
+      const feat = JSON.parse(JSON.stringify(f));
+      if (!feat.properties) feat.properties = {};
+      const props = feat.properties;
+
+      if (props.symbol && !props.iconId) {
+        props.iconId = props.symbol;
+      }
+      if (!props.color) {
+        props.color = props.symbol ? '#ef4444' : '#854d0e';
+      }
+      if (props.lineWidth === undefined) {
+        props.lineWidth = 3.5;
+      }
+      if (props.fillOpacity === undefined) {
+        props.fillOpacity = 0.4;
+      }
+      return feat;
+    });
   }
 }
