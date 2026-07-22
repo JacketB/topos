@@ -3,16 +3,13 @@ import maplibregl from 'maplibre-gl';
 import { TacticalSymbol } from '../consts/tactical-symbols.const';
 import { TrenchGeometryService } from './trench-geometry.service';
 import { TerrainService } from './terrain.service';
+import { TacticalDrawingService, TacticalLineMode } from './tactical-drawing.service';
+import { TacticalSymbolsManagerService } from './tactical-symbols-manager.service';
+import { MapInteractionMode, ObjectGroup } from '../models/tactical-map.types';
+
+export type { MapInteractionMode, ObjectGroup };
 
 type SymbolLoadCallback = () => void;
-
-export type MapInteractionMode = 'pan' | 'edit' | 'select';
-
-export interface ObjectGroup {
-  id: string;
-  name: string;
-  elementIds: number[];
-}
 
 @Injectable({
   providedIn: 'root'
@@ -20,7 +17,18 @@ export interface ObjectGroup {
 export class TacticalMapService {
   public trenchGeometryService = inject(TrenchGeometryService);
   public terrainService = inject(TerrainService);
+  public drawingService = inject(TacticalDrawingService);
+  public symbolsManager = inject(TacticalSymbolsManagerService);
+
   readonly placedSymbols = signal<any[]>(this.loadFromStorage());
+
+  get activeLineMode() {
+    return this.drawingService.activeLineMode;
+  }
+
+  get drawingLineCoords() {
+    return this.drawingService.drawingLineCoords;
+  }
 
   constructor() {
     effect(() => {

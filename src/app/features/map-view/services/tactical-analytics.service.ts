@@ -33,7 +33,6 @@ export class TacticalAnalyticsService {
       try {
         if (!map.isStyleLoaded()) return;
 
-        // Range Rings Source
         if (!map.getSource('range-rings-data')) {
           map.addSource('range-rings-data', {
             type: 'geojson',
@@ -78,7 +77,6 @@ export class TacticalAnalyticsService {
           });
         }
 
-        // Viewshed Source
         if (!map.getSource('viewshed-data')) {
           map.addSource('viewshed-data', {
             type: 'geojson',
@@ -172,7 +170,6 @@ export class TacticalAnalyticsService {
     this.defaultRings.forEach(ring => {
       const circleCoords = this.createCirclePolygon(center, ring.radiusMeters);
       
-      // Line feature for circle
       features.push({
         type: 'Feature',
         properties: { color: ring.color },
@@ -182,7 +179,6 @@ export class TacticalAnalyticsService {
         }
       });
 
-      // Label feature at top point of ring
       const topPoint = circleCoords[0];
       features.push({
         type: 'Feature',
@@ -207,8 +203,8 @@ export class TacticalAnalyticsService {
 
     const baseElev = this.terrainService.getElevationAt(center[0], center[1]) || 0;
     const obsElev = baseElev + this.observerHeightM();
-    const maxRadius = 3000; // 3 км аналитический радиус
-    const numRays = 36; // 10 градусов на луч
+    const maxRadius = 3000;
+    const numRays = 36;
     const stepsPerRay = 15;
 
     const visibleSectors: any[] = [];
@@ -221,7 +217,6 @@ export class TacticalAnalyticsService {
       let maxSlope = -Infinity;
       let isVisible = true;
 
-      // Анализ луча по серединному азимуту
       const midAngle = (angleDeg1 + angleDeg2) / 2;
       for (let step = 1; step <= stepsPerRay; step++) {
         const dist = (step / stepsPerRay) * maxRadius;

@@ -1,7 +1,7 @@
 export class MapExportSanitizerUtils {
   static sanitizeStyleForNative(styleObj: any): any {
     if (!styleObj || !Array.isArray(styleObj.layers)) return styleObj;
-    const cloned = JSON.parse(JSON.stringify(styleObj));
+    const cloned = structuredClone(styleObj);
 
     const sanitizeExpr = (expr: any): any => {
       if (!expr) return expr;
@@ -99,7 +99,7 @@ export class MapExportSanitizerUtils {
 
   static enrichGeoJsonForNative(data: any): any {
     if (!data || typeof data !== 'object') return data;
-    const cloned = JSON.parse(JSON.stringify(data));
+    const cloned = structuredClone(data);
 
     if (cloned.type === 'FeatureCollection' && Array.isArray(cloned.features)) {
       for (const feature of cloned.features) {
@@ -131,7 +131,7 @@ export class MapExportSanitizerUtils {
   static enrichFeaturesArrayForNative(features: any[]): any[] {
     if (!Array.isArray(features)) return [];
     return features.map(f => {
-      const feat = JSON.parse(JSON.stringify(f));
+      const feat = structuredClone(f);
       if (!feat.properties) feat.properties = {};
       const props = feat.properties;
 

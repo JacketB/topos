@@ -44,6 +44,11 @@
   align-items: center;
 }
 
+.ds-title-icon {
+  color: #466bf7;
+  margin-right: 6px;
+}
+
 .ds-close-btn {
   background: transparent;
   border: none;
@@ -88,6 +93,30 @@
   outline: none;
 }
 
+.ds-empty-wrapper {
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.ds-empty-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin: 8px 0 0 0;
+  color: #475569;
+}
+
+.ds-empty-subtitle {
+  font-size: 11px;
+  margin: 4px 0 0 0;
+  color: #64748b;
+  max-width: 320px;
+}
+
 .ds-summary-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -102,6 +131,18 @@
   padding: 10px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
+
+.ds-card-earth { border-left: 3px solid #2563eb; }
+.ds-card-labor { border-left: 3px solid #16a34a; }
+.ds-card-wood { border-left: 3px solid #d97706; }
+.ds-card-mach { border-left: 3px solid #0284c7; }
+.ds-card-wire { border-left: 3px solid #dc2626; }
+
+.ds-pill-earth { background-color: #eff6ff; color: #2563eb; }
+.ds-pill-labor { background-color: #f0fdf4; color: #16a34a; }
+.ds-pill-wood { background-color: #fffbeb; color: #d97706; }
+.ds-pill-mach { background-color: #f0f9ff; color: #0284c7; }
+.ds-pill-wire { background-color: #fef2f2; color: #dc2626; }
 
 .ds-summary-card-header {
   display: flex;
@@ -136,6 +177,83 @@
   font-weight: 600;
   color: #64748b;
   margin-left: 2px;
+}
+
+.ds-details-grid {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.ds-details-grid.flex-col {
+  flex-direction: column;
+  gap: 6px;
+}
+
+.text-right { text-align: right; }
+.font-bold { font-weight: 700; }
+.nowrap { white-space: nowrap; }
+.text-blue { color: #2563eb; }
+.text-green { color: #10b981; }
+
+.ds-item-name {
+  color: #64748b;
+  font-style: italic;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-item-notes {
+  color: #475569;
+  font-size: 11px;
+}
+
+.ds-notes-sub {
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 4px;
+  line-height: 1.4;
+  font-family: monospace;
+}
+
+.ds-info-block {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.ds-info-block.flex-1 { flex: 1; }
+.ds-info-block.flex-1-5 { flex: 1.5; }
+
+.ds-block-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  margin: 0 0 8px 0;
+  letter-spacing: 0.5px;
+}
+
+.ds-info-list {
+  font-size: 11px;
+  margin: 0;
+  padding-left: 16px;
+  color: #1e293b;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style-type: square;
+}
+
+.ds-materials-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 11px;
+  color: #1e293b;
 }
 
 .ds-details-title {
