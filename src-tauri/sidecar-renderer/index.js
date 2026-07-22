@@ -72,6 +72,40 @@ const requestMock = function(options, callback) {
     return realRequest(options, callback);
   }
 
+  if (url.includes('.pbf') && (url.includes('font') || url.includes('glyphs') || url.includes('openmaptiles'))) {
+    const pbfMatch = url.match(/\/([^\/]+)\/([0-9]+-[0-9]+)\.pbf/);
+    if (pbfMatch) {
+      const fontRange = pbfMatch[2];
+      const rawStack = decodeURIComponent(pbfMatch[1]);
+      const cdnUrl = `https://cdn.jsdelivr.net/gh/openmaptiles/fonts@gh-pages/${encodeURIComponent(rawStack)}/${fontRange}.pbf`;
+      const fallbackUrl = `https://cdn.jsdelivr.net/gh/openmaptiles/fonts@gh-pages/Noto%20Sans%20Regular/${fontRange}.pbf`;
+      
+      const fetchFont = (targetUrl, isRetry = false) => {
+        const fontReqOpts = {
+          url: targetUrl,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          },
+          timeout: 10000,
+          encoding: null
+        };
+        realRequest(fontReqOpts, (err, res, body) => {
+          if (!err && res && res.statusCode === 200 && body && body.length > 0) {
+            console.error(`[FONT LOG] OK (200) for ${url} -> fetched ${body.length} bytes from ${targetUrl}`);
+            return callback(null, { statusCode: 200, request: { uri: { href: url } } }, body);
+          }
+          console.error(`[FONT LOG] FAIL (${res ? res.statusCode : (err ? err.message : 'no body')}) for ${url} from ${targetUrl}`);
+          if (!isRetry) {
+            return fetchFont(fallbackUrl, true);
+          }
+          return callback(null, { statusCode: 204, request: { uri: { href: url } } }, Buffer.alloc(0));
+        });
+      };
+
+      return fetchFont(cdnUrl);
+    }
+  }
+
   // Перехватываем относительные пути (начинающиеся со слэша или не содержащие протокола)
   const isAbsolute = url.includes('://') || /^[a-zA-Z]:\\/.test(url);
   if (!isAbsolute) {
@@ -104,28 +138,6 @@ const requestMock = function(options, callback) {
 
     // Если локальный файл не найден, возвращаем 200 с пустым буфером, чтобы mbgl-renderer не прерывал рендеринг
     return callback(null, { statusCode: 200, request: { uri: { href: url } } }, Buffer.alloc(0));
-  }
-
-  // Перехватываем запросы PBF глифов шрифтов (fonts/{fontstack}/{range}.pbf)
-  if (url.includes('/font/') || url.includes('/fonts/')) {
-    const fontMatch = url.match(/\/fonts?\/([^\/]+)\/([^\/]+)\.pbf/);
-    if (fontMatch) {
-      const fontRange = fontMatch[2];
-      const cdnUrl = `https://demotiles.maplibre.org/font/Noto Sans Regular,Arial Unicode MS Regular/${fontRange}.pbf`;
-      const fontReqOpts = {
-        url: cdnUrl,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        },
-        timeout: 10000
-      };
-      return realRequest(fontReqOpts, (err, res, body) => {
-        if (!err && res && res.statusCode === 200 && body && body.length > 0) {
-          return callback(null, { statusCode: 200, request: { uri: { href: url } } }, body);
-        }
-        return callback(null, { statusCode: 204, request: { uri: { href: url } } }, Buffer.alloc(0));
-      });
-    }
   }
 
   // 1. Перехватываем contours.geojson / military.geojson
@@ -302,6 +314,9 @@ async function renderTiled(cleanedStyle, options) {
   const centerMerc = projectMercator(centerLng, centerLat, zoom);
   const compositeInputs = [];
 
+  const totalTiles = rows * cols;
+  let completedTiles = 0;
+
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const tileLeft = c * MAX_CHUNK_PX;
@@ -336,7 +351,68 @@ async function renderTiled(cleanedStyle, options) {
         left: tileLeft,
         top: tileTop
       });
+
+      completedTiles++;
+      const percent = Math.min(90, Math.round((completedTiles / totalTiles) * 90));
+      process.stdout.write(JSON.stringify({ type: 'progress', percent }) + '\n');
     }
+  }
+
+  process.stdout.write(JSON.stringify({ type: 'progress', percent: 95 }) + '\n');
+
+  let labelsSvgBuffer = null;
+  try {
+    const feats = cleanedStyle.sources?.['tactical-symbols']?.data?.features || [];
+    const pointFeats = feats.filter(f => f.geometry?.type === 'Point' && f.properties && (f.properties.name || f.properties.label || f.properties.title));
+    if (pointFeats.length > 0) {
+      const fontSizePx = Math.max(14, Math.round(14 * ratio));
+      const strokeWidthPx = Math.max(3, Math.round(3.5 * ratio));
+
+      let textElements = '';
+      for (const f of pointFeats) {
+        const textVal = String(f.properties.name || f.properties.label || f.properties.title || '').trim();
+        if (!textVal) continue;
+        const coords = f.geometry.coordinates;
+        const pointMerc = projectMercator(coords[0], coords[1], zoom);
+        const pxX = totalPxWidth / 2 + (pointMerc.x - centerMerc.x) * ratio;
+        const pxY = totalPxHeight / 2 + (pointMerc.y - centerMerc.y) * ratio + Math.round(24 * ratio);
+
+        const escaped = textVal.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        textElements += `<text x="${pxX.toFixed(1)}" y="${pxY.toFixed(1)}" class="map-label">${escaped}</text>\n`;
+      }
+
+      if (textElements) {
+        const svgContent = `<svg width="${totalPxWidth}" height="${totalPxHeight}" xmlns="http://www.w3.org/2000/svg">
+          <style>
+            .map-label {
+              font-family: "Segoe UI", Arial, sans-serif;
+              font-weight: 700;
+              font-size: ${fontSizePx}px;
+              fill: #0f172a;
+              paint-order: stroke fill;
+              stroke: #ffffff;
+              stroke-width: ${strokeWidthPx}px;
+              stroke-linejoin: round;
+              stroke-linecap: round;
+              text-anchor: middle;
+              dominant-baseline: hanging;
+            }
+          </style>
+          ${textElements}
+        </svg>`;
+        labelsSvgBuffer = Buffer.from(svgContent);
+      }
+    }
+  } catch (e) {
+    console.error('Ошибка создания SVG-оверлея надписей:', e);
+  }
+
+  if (labelsSvgBuffer) {
+    compositeInputs.push({
+      input: labelsSvgBuffer,
+      left: 0,
+      top: 0
+    });
   }
 
   const stitchedBuffer = await sharp({
@@ -373,6 +449,25 @@ process.stdin.on('end', () => {
       let styleStr = JSON.stringify(config.style);
       styleStr = styleStr.replace(/pmtiles:\/\/http:\/\//g, 'http://');
       cleanedStyle = JSON.parse(styleStr);
+    }
+
+    if (cleanedStyle) {
+      console.error(`[STYLE LOG] Glyphs URL: ${cleanedStyle.glyphs}`);
+      const symbolLayers = (cleanedStyle.layers || []).filter(l => l.type === 'symbol');
+      console.error(`[STYLE LOG] Total symbol layers count: ${symbolLayers.length}`);
+      symbolLayers.forEach(l => {
+        console.error(`[STYLE LOG] Layer '${l.id}': text-field = ${JSON.stringify(l.layout?.['text-field'])}, text-font = ${JSON.stringify(l.layout?.['text-font'])}`);
+      });
+
+      if (cleanedStyle.sources && cleanedStyle.sources['tactical-symbols']) {
+        const feats = cleanedStyle.sources['tactical-symbols']?.data?.features || [];
+        console.error(`[GEOJSON LOG] tactical-symbols total count: ${feats.length}`);
+        const pointFeats = feats.filter(f => !f.properties?.isLinear);
+        console.error(`[GEOJSON LOG] point symbols count: ${pointFeats.length}`);
+        pointFeats.slice(0, 5).forEach((f, idx) => {
+          console.error(`[GEOJSON LOG] Point Feature #${idx} properties: ${JSON.stringify(f.properties)}`);
+        });
+      }
     }
     
     const options = {
