@@ -5,15 +5,13 @@ export interface MapImageOverlay {
   id: string;
   name: string;
   url: string;
-  coordinates: [[number, number], [number, number], [number, number], [number, number]]; // TL, TR, BR, BL
+  coordinates: [[number, number], [number, number], [number, number], [number, number]];
   opacity: number;
   locked: boolean;
-  
-  // Геометрические параметры для пропорционального масштабирования и вращения
-  center: [number, number]; // [lng, lat]
-  widthMeters: number; // ширина в метрах
-  aspectRatio: number; // отношение ширины к высоте
-  bearing: number; // угол поворота в градусах (0..360 по часовой стрелке от севера)
+  center: [number, number];
+  widthMeters: number;
+  aspectRatio: number;
+  bearing: number;
 }
 
 @Injectable({
@@ -21,20 +19,12 @@ export interface MapImageOverlay {
 })
 export class ImageOverlayService {
   private map: maplibregl.Map | null = null;
-  
-  // Реактивный список всех оверлеев
   readonly overlays = signal<MapImageOverlay[]>([]);
-  
-  // Словарь для хранения инстансов маркеров на карте по ID оверлея
   private overlayMarkers = new Map<string, maplibregl.Marker[]>();
 
-  /**
-   * Инициализация инстанса карты
-   */
   init(map: maplibregl.Map) {
     this.map = map;
     
-    // Пересоздаем оверлеи на новом инстансе карты при её смене
     const currentOverlays = this.overlays();
     if (currentOverlays.length > 0) {
       const restoreOverlays = () => {
@@ -79,9 +69,6 @@ export class ImageOverlayService {
     }
   }
 
-  /**
-   * Добавить новое изображение на карту по центру экрана
-   */
   addImageOverlay(file: File) {
     if (!this.map) return;
 
@@ -90,7 +77,6 @@ export class ImageOverlayService {
       const dataUrl = e.target?.result as string;
       if (!dataUrl) return;
 
-      // Сначала асинхронно считываем реальный Aspect Ratio изображения
       const img = new Image();
       img.src = dataUrl;
       img.onload = () => {
@@ -98,21 +84,18 @@ export class ImageOverlayService {
         const id = 'img-overlay-' + Date.now();
         const name = file.name || 'Изображение-' + (this.overlays().length + 1);
 
-        // Рассчитываем начальные координаты в центре экрана
         const bounds = this.map!.getBounds();
         const sw = bounds.getSouthWest();
         const ne = bounds.getNorthEast();
         const centerLngLat = this.map!.getCenter();
         const center: [number, number] = [centerLngLat.lng, centerLngLat.lat];
 
-        // Определяем начальную ширину в метрах на основе размера экрана
         const widthLng = ne.lng - sw.lng;
         const latRad = center[1] * Math.PI / 180;
         const metersPerLngDegree = 111320 * Math.cos(latRad);
         
-        // Начальная ширина изображения = 25% от ширины текущего экрана карты
         const initialWidthMeters = Math.max(100, widthLng * 0.25 * metersPerLngDegree);
-        const bearing = 0; // По умолчанию поворот отсутствует
+        const bearing = 0;
 
         const coordinates = this.calculateCoordinates(center, initialWidthMeters, aspectRatio, bearing);
 
@@ -132,14 +115,12 @@ export class ImageOverlayService {
         const addAction = () => {
           if (!this.map) return;
 
-          // Добавляем источник на карту
           this.map.addSource('src-' + id, {
             type: 'image',
             url: dataUrl,
             coordinates: coordinates
           });
 
-          // Добавляем растровый слой
           const beforeId = this.map.getLayer('military-fill') ? 'military-fill' : undefined;
           this.map.addLayer({
             id: 'layer-' + id,
@@ -150,10 +131,8 @@ export class ImageOverlayService {
             }
           }, beforeId);
 
-          // Обновляем список оверлеев
           this.overlays.update(arr => [...arr, newOverlay]);
 
-          // Создаем маркеры управления
           this.createMarkers(newOverlay);
         };
 
@@ -170,9 +149,6 @@ export class ImageOverlayService {
     reader.readAsDataURL(file);
   }
 
-  /**
-   * Удалить оверлей с карты
-   */
   removeOverlay(id: string) {
     if (!this.map) return;
 
@@ -202,9 +178,6 @@ export class ImageOverlayService {
     this.overlays.update(arr => arr.map(o => o.id === id ? { ...o, opacity } : o));
   }
 
-  /**
-   * Закрепить / открепить оверлей на карте
-   */
   setLocked(id: string, locked: boolean) {
     this.overlays.update(arr => arr.map(o => o.id === id ? { ...o, locked } : o));
 
@@ -218,9 +191,6 @@ export class ImageOverlayService {
     }
   }
 
-  /**
-   * Удаление маркеров управления для конкретного оверлея
-   */
   private removeMarkers(id: string) {
     const markers = this.overlayMarkers.get(id);
     if (markers) {
@@ -229,9 +199,6 @@ export class ImageOverlayService {
     }
   }
 
-  /**
-   * Создание интерактивных маркеров для пропорционального масштабирования, вращения и сдвига
-   */
   private createMarkers(overlay: MapImageOverlay) {
     if (!this.map || overlay.locked) return;
 
@@ -240,7 +207,6 @@ export class ImageOverlayService {
     const cornerMarkers: maplibregl.Marker[] = [];
     const id = overlay.id;
 
-    // 1. Создаем 4 угловых маркера (TL, TR, BR, BL)
     overlay.coordinates.forEach((coord, index) => {
       const el = document.createElement('div');
       el.className = 'overlay-corner-handle';
@@ -259,20 +225,16 @@ export class ImageOverlayService {
       .setLngLat(coord)
       .addTo(this.map!);
 
-      // Событие пропорционального масштабирования
       marker.on('drag', () => {
         const newLngLat = marker.getLngLat();
         const currentOverlay = this.overlays().find(o => o.id === id);
         if (!currentOverlay) return;
 
-        // Вычисляем расстояние от центра до курсора в метрах
         const halfDiagMeters = this.getDistanceMeters(currentOverlay.center, [newLngLat.lng, newLngLat.lat]);
         const diagMeters = halfDiagMeters * 2;
 
-        // Рассчитываем новую ширину по формуле диагонали с сохранением Aspect Ratio
         const newWidthMeters = diagMeters / Math.sqrt(1 + 1 / (currentOverlay.aspectRatio * currentOverlay.aspectRatio));
 
-        // Вычисляем новые координаты углов
         const newCoords = this.calculateCoordinates(
           currentOverlay.center,
           newWidthMeters,
@@ -280,27 +242,23 @@ export class ImageOverlayService {
           currentOverlay.bearing
         );
 
-        // Обновляем оверлей на карте
         const src = this.map!.getSource('src-' + id) as maplibregl.ImageSource;
         if (src) {
           src.setCoordinates(newCoords);
         }
 
-        // Обновляем состояние
         this.overlays.update(arr => arr.map(o => o.id === id ? { 
           ...o, 
           widthMeters: newWidthMeters, 
           coordinates: newCoords 
         } : o));
 
-        // Обновляем позиции других маркеров
         this.updateAllOverlayMarkers(id, centerMarker, rotateMarker);
       });
 
       cornerMarkers.push(marker);
     });
 
-    // 2. Создаем центральный маркер для перемещения
     const centerEl = document.createElement('div');
     centerEl.className = 'overlay-center-handle';
     centerEl.style.width = '20px';
@@ -337,7 +295,6 @@ export class ImageOverlayService {
       const currentCenterLngLat = centerMarker.getLngLat();
       const newCenter: [number, number] = [currentCenterLngLat.lng, currentCenterLngLat.lat];
 
-      // Вычисляем новые координаты углов от нового центра
       const newCoords = this.calculateCoordinates(
         newCenter,
         currentOverlay.widthMeters,
@@ -345,20 +302,17 @@ export class ImageOverlayService {
         currentOverlay.bearing
       );
 
-      // Обновляем оверлей на карте
       const src = this.map!.getSource('src-' + id) as maplibregl.ImageSource;
       if (src) {
         src.setCoordinates(newCoords);
       }
 
-      // Обновляем состояние
       this.overlays.update(arr => arr.map(o => o.id === id ? { 
         ...o, 
         center: newCenter, 
         coordinates: newCoords 
       } : o));
 
-      // Сдвигаем угловые маркеры и маркер поворота
       cornerMarkers.forEach((m, idx) => {
         m.setLngLat(newCoords[idx]);
       });
@@ -368,11 +322,10 @@ export class ImageOverlayService {
       rotateMarker.setLngLat([topCenterLng, topCenterLat]);
     });
 
-    // 3. Создаем маркер вращения (зеленый кружок с визуальной ножкой)
     const rotateEl = document.createElement('div');
     rotateEl.className = 'overlay-rotate-handle';
     rotateEl.style.width = '20px';
-    rotateEl.style.height = '35px'; // 20px ножка + 15px кружок
+    rotateEl.style.height = '35px';
     rotateEl.style.display = 'flex';
     rotateEl.style.flexDirection = 'column';
     rotateEl.style.alignItems = 'center';
@@ -382,7 +335,7 @@ export class ImageOverlayService {
     circle.style.width = '14px';
     circle.style.height = '14px';
     circle.style.borderRadius = '50%';
-    circle.style.background = '#10b981'; // Зеленый цвет поворота
+    circle.style.background = '#10b981';
     circle.style.border = '2px solid #ffffff';
     circle.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
     circle.style.cursor = 'grab';
@@ -395,14 +348,13 @@ export class ImageOverlayService {
     rotateEl.appendChild(circle);
     rotateEl.appendChild(line);
 
-    // Начальная координата - середина верхней грани оверлея
     const initialTopCenterLng = (overlay.coordinates[0][0] + overlay.coordinates[1][0]) / 2;
     const initialTopCenterLat = (overlay.coordinates[0][1] + overlay.coordinates[1][1]) / 2;
 
     const rotateMarker = new maplibregl.Marker({
       element: rotateEl,
       draggable: true,
-      anchor: 'bottom' // Фиксирует нижний край ножки на верхней грани
+      anchor: 'bottom'
     })
     .setLngLat([initialTopCenterLng, initialTopCenterLat])
     .addTo(this.map!);
@@ -418,15 +370,12 @@ export class ImageOverlayService {
       const metersPerLngDegree = 111320 * Math.cos(latRad);
       const metersPerLatDegree = 111132;
 
-      // Вычисляем вектор от центра к курсору
       const dx = (cursorLngLat.lng - center[0]) * metersPerLngDegree;
       const dy = (cursorLngLat.lat - center[1]) * metersPerLatDegree;
 
-      // Вычисляем угол в градусах (0..360 по часовой стрелке от севера)
       let newBearing = Math.atan2(dx, dy) * 180 / Math.PI;
       newBearing = (newBearing + 360) % 360;
 
-      // Рассчитываем новые координаты
       const newCoords = this.calculateCoordinates(
         center,
         currentOverlay.widthMeters,
@@ -434,31 +383,24 @@ export class ImageOverlayService {
         newBearing
       );
 
-      // Обновляем оверлей на карте
       const src = this.map!.getSource('src-' + id) as maplibregl.ImageSource;
       if (src) {
         src.setCoordinates(newCoords);
       }
 
-      // Обновляем состояние
       this.overlays.update(arr => arr.map(o => o.id === id ? { 
         ...o, 
         bearing: newBearing, 
         coordinates: newCoords 
       } : o));
 
-      // Обновляем все маркеры на карте
       this.updateAllOverlayMarkers(id, centerMarker, rotateMarker);
     });
 
-    // Сохраняем ссылки на все маркеры для последующего удаления
     const allMarkers = [...cornerMarkers, centerMarker, rotateMarker];
     this.overlayMarkers.set(id, allMarkers);
   }
 
-  /**
-   * Обновить положение всех маркеров оверлея на карте в соответствии с текущим состоянием
-   */
   private updateAllOverlayMarkers(id: string, centerMarker: maplibregl.Marker, rotateMarker: maplibregl.Marker) {
     const overlay = this.overlays().find(o => o.id === id);
     if (!overlay) return;
@@ -466,23 +408,17 @@ export class ImageOverlayService {
     const markers = this.overlayMarkers.get(id);
     if (!markers) return;
 
-    // Первые 4 маркера - угловые
     for (let i = 0; i < 4; i++) {
       markers[i].setLngLat(overlay.coordinates[i]);
     }
 
-    // 5-й маркер - центр
     centerMarker.setLngLat(overlay.center);
 
-    // 6-й маркер - поворот (середина верхней грани)
     const topCenterLng = (overlay.coordinates[0][0] + overlay.coordinates[1][0]) / 2;
     const topCenterLat = (overlay.coordinates[0][1] + overlay.coordinates[1][1]) / 2;
     rotateMarker.setLngLat([topCenterLng, topCenterLat]);
   }
 
-  /**
-   * Вспомогательный метод расчета 4 угловых координат на основе центра, размеров и угла
-   */
   private calculateCoordinates(
     center: [number, number],
     widthMeters: number,
@@ -504,17 +440,14 @@ export class ImageOverlayService {
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
 
-    // Локальные декартовы смещения углов в метрах относительно центра
-    // TL, TR, BR, BL
     const localCoords = [
-      [-halfWidth, halfHeight],  // TL
-      [halfWidth, halfHeight],   // TR
-      [halfWidth, -halfHeight],  // BR
-      [-halfWidth, -halfHeight]  // BL
+      [-halfWidth, halfHeight],
+      [halfWidth, halfHeight],
+      [halfWidth, -halfHeight],
+      [-halfWidth, -halfHeight]
     ];
 
     return localCoords.map(lc => {
-      // Поворот по часовой стрелке
       const rx = lc[0] * cos + lc[1] * sin;
       const ry = -lc[0] * sin + lc[1] * cos;
       return [
@@ -524,9 +457,6 @@ export class ImageOverlayService {
     }) as [[number, number], [number, number], [number, number], [number, number]];
   }
 
-  /**
-   * Вспомогательный метод расчета расстояния в метрах между точками с поправкой на широту
-   */
   private getDistanceMeters(p1: [number, number], p2: [number, number]): number {
     const latRad = ((p1[1] + p2[1]) / 2) * Math.PI / 180;
     const cosLat = Math.cos(latRad);

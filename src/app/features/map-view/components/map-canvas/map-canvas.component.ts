@@ -48,11 +48,9 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       });
     });
 
-    // Реактивно отслеживаем изменения выбранного знака для перерисовки рамки
     effect(() => {
       const feature = this.selectedIconFeature();
       if (feature) {
-        // Чтение свойств для триггера эффекта при их обновлении
         const size = feature.properties?.['size'];
         const angle = feature.properties?.['angle'];
         setTimeout(() => this.updateTransformBoxPosition(), 0);
@@ -61,7 +59,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       }
     });
 
-    // Реактивно ресайзим карту при изменении размеров или видимости сайдбаров
     effect(() => {
       this.vm.sidebarWidth();
       this.vm.tacticalMapService.selectedPlacedSymbol();
@@ -70,7 +67,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       
       untracked(() => {
         if (this.map) {
-          // Вызываем resize дважды: в начале анимации сдвига (50мс) и по ее завершению (350мс)
           setTimeout(() => {
             if (this.map) {
               this.map.resize();
@@ -88,7 +84,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       });
     });
 
-    // Реактивно меняем курсор карты при смене режима взаимодействия
     effect(() => {
       const mode = this.vm.tacticalMapService.interactionMode();
       const lineMode = this.vm.activeLineMode();
@@ -110,7 +105,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
-    // Гарантируем первоначальный рендеринг карты при разрешении viewChild
     const container = this.mapContainer();
     if (container && !this.map) {
       const targetMap = this.mapsUrls[this.vm.activeMapId()];
@@ -343,7 +337,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       const size = feature.properties['size'] || 0.08;
       const angle = feature.properties['angle'] || 0;
       
-      // Базовый размер иконки на экране (в пикселях)
       const boxSize = 512 * size;
 
       this.transformBoxStyle.set({

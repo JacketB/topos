@@ -14,12 +14,10 @@ import { ObjectGroup } from '../../services/tactical-map.service';
 export class MapLayersPanelComponent {
   readonly vm = inject(MapViewModel);
 
-  // Локальные сигналы для UI
   newGroupName = signal<string>('');
   isCreatingGroup = signal<boolean>(false);
   selectedTargetGroupId = signal<string>('');
   
-  // Чекбоксы для ручной группировки в списке
   checkedElementIds = signal<Record<number, boolean>>({});
 
   toggleElementCheck(id: number) {
@@ -43,7 +41,6 @@ export class MapLayersPanelComponent {
     this.newGroupName.set('');
     this.isCreatingGroup.set(false);
     
-    // Если есть выделенные чекбоксы, сразу переносим их в созданную группу
     const checked = this.getCheckedIdsList();
     if (checked.length > 0) {
       this.vm.tacticalMapService.addElementsToGroup(group.id, checked);
@@ -68,7 +65,6 @@ export class MapLayersPanelComponent {
     }
   }
 
-  // Добавление отмеченных чекбоксами элементов в группу
   addCheckedToGroup(groupId: string) {
     if (!groupId) return;
     const checked = this.getCheckedIdsList();
@@ -78,16 +74,13 @@ export class MapLayersPanelComponent {
     }
   }
 
-  // Добавление выделенных на карте элементов в выбранную группу
   addSelectedOnMapToGroup(groupId: string) {
     if (!groupId) return;
     const selectedIds = this.vm.selectedPlacedSymbols().map((s: any) => s.properties.id);
     if (selectedIds.length > 0) {
       this.vm.tacticalMapService.addElementsToGroup(groupId, selectedIds);
-      // Сбрасываем выбор на карте
       this.vm.tacticalMapService.selectedPlacedSymbols.set([]);
       this.vm.tacticalMapService.selectedPlacedSymbol.set(null);
-      // Сбрасываем выбранный ID группы в селекте
       this.selectedTargetGroupId.set('');
     }
   }
@@ -99,7 +92,6 @@ export class MapLayersPanelComponent {
 
   selectElement(element: any) {
     this.vm.tacticalMapService.selectPlacedSymbol(element);
-    // Отцентруем карту на координатах объекта, если есть инстанс карты
     const map = (this.vm as any).mapInstance || (this.vm.tacticalMapService as any).mapInstance;
     if (map && element.geometry) {
       let coords: [number, number] | null = null;
@@ -114,12 +106,10 @@ export class MapLayersPanelComponent {
     }
   }
 
-  // Получить объект по ID
   findElementById(id: number): any {
     return this.vm.placedSymbols().find((s: any) => s.properties?.id === id);
   }
 
-  // Получить список несгруппированных объектов
   getUngroupedElements(): any[] {
     const placed = this.vm.placedSymbols();
     const groups = this.vm.objectGroups();

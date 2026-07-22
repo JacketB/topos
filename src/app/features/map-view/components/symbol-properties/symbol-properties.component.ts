@@ -70,7 +70,6 @@ export class SymbolPropertiesComponent {
     const profile = select.value;
     this.vm.updatePlacedSymbolProperty('fortProfile', profile);
     
-    // Автоматически синхронизируем ширину и глубину при смене профиля
     const depth = profile === 'full' ? 150 : 110;
     const width = profile === 'full' ? 110 : 90;
     this.vm.updatePlacedSymbolProperty('fortDepth', depth);

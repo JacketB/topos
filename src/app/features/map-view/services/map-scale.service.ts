@@ -7,7 +7,7 @@ import { SCALE_PRESETS, ScaleBarSection, ScalePreset } from '../consts/map-scale
 })
 export class MapScaleService {
   readonly scaleBarSections = signal<ScaleBarSection[]>([]);
-  readonly selectedScaleOption = signal<ScalePreset>(SCALE_PRESETS[6]); // По умолчанию 1:200 000
+  readonly selectedScaleOption = signal<ScalePreset>(SCALE_PRESETS[6]);
 
   updateScaleInfo(map: maplibregl.Map | null, containerWidth: number) {
     if (!map) return;
@@ -48,7 +48,7 @@ export class MapScaleService {
 
   getCurrentScale(zoom: number, lat: number = 53.9): number {
     const metersPerPixel = (156543.033928 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
-    const pixelsPerMeter = 96 / 0.0254; // ~3779.52755 px/m для стандартных 96 DPI
+    const pixelsPerMeter = 96 / 0.0254;
     return Math.round(metersPerPixel * pixelsPerMeter);
   }
 

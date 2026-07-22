@@ -239,7 +239,6 @@ export class TacticalMapService {
 
     const features: any[] = [];
 
-    // 1. Сначала добавляем точки из всех сохраненных на карте маршрутов
     this.placedSymbols().forEach(s => {
       if (s.properties && s.properties['lineType'] === 'march_route') {
         const origCoords = s.properties['origCoords'] as [number, number][];
@@ -261,7 +260,6 @@ export class TacticalMapService {
       }
     });
 
-    // 2. Если сейчас интерактивно рисуется/редактируется маршрут, добавляем его точки
     if (activeCoords && activeCoords.length > 0) {
       activeCoords.forEach((coord, idx) => {
         features.push({
@@ -531,7 +529,6 @@ export class TacticalMapService {
       });
     }
 
-    // Предзагрузка красного автомобиля для плеера симуляции
     this.ensureSymbolColorImageLoadedForId('avto1', '#ef4444', 'avto1_c_ef4444', () => {});
 
     this.placedSymbols().forEach(s => {
@@ -1349,7 +1346,7 @@ export class TacticalMapService {
     let isSelecting = false;
 
     map.on('mousedown', (e: any) => {
-      this.justSelectedBox = false; // Всегда сбрасываем при новом клике
+      this.justSelectedBox = false;
       const isSelectMode = this.interactionMode() === 'select';
       const isShiftDrag = e.originalEvent && e.originalEvent.shiftKey && e.originalEvent.button === 0;
       const isNormalSelectDrag = isSelectMode && e.originalEvent && e.originalEvent.button === 0;
@@ -1411,7 +1408,7 @@ export class TacticalMapService {
           const maxY = Math.max(startPoint.y, endPoint.y);
 
           if (maxX - minX > 4 || maxY - minY > 4) {
-            this.justSelectedBox = true; // Указываем, что только что выделили рамкой
+            this.justSelectedBox = true;
             const features = map.queryRenderedFeatures(
               [[minX, minY], [maxX, maxY]],
               {
@@ -1549,7 +1546,6 @@ export class TacticalMapService {
       }
     }
 
-    // Предзагрузка картинок импортированных символов
     symbols.forEach((s: any) => {
       const symbolId = s.properties['symbol'];
       const iconId = s.properties['iconId'] || symbolId;

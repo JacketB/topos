@@ -20,7 +20,6 @@ export class MapMeasurementService {
   readonly measurementResult = signal<string | null>(null);
   readonly geodesyInfo = signal<GeodesyMeasurementInfo | null>(null);
 
-  // Среднее магнитное склонение по умолчанию (+8° для восточноевропейского региона)
   private readonly magneticDeclination = 8.0;
   private measurementPoints: [number, number][] = [];
 
@@ -141,7 +140,6 @@ export class MapMeasurementService {
     const dist = this.calculateTotalDistance(points);
     const distStr = dist > 1000 ? `${(dist / 1000).toFixed(2)} км` : `${Math.round(dist)} м`;
 
-    // Азимут от первой до последней точки
     const p1 = points[0];
     const p2 = points[points.length - 1];
     const bearingTrue = this.calculateBearing(p1, p2);
@@ -189,7 +187,7 @@ export class MapMeasurementService {
 
   calculatePolygonArea(points: [number, number][]): number {
     if (points.length < 3) return 0;
-    const R = 6378137; // Радиус Земли в метрах
+    const R = 6378137;
     let area = 0;
 
     for (let i = 0; i < points.length; i++) {

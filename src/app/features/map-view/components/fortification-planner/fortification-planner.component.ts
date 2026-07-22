@@ -6,32 +6,32 @@ import { FortificationCalculationService } from '../../services/fortification-ca
 
 export interface VopTask {
   id: number;
-  phase: number; // 1 - I очередь, 2 - II очередь
+  phase: number;
   name: string;
   objectName: string;
   unit: string;
   qty: number;
-  laborNorm: number; // чел.-ч на единицу
-  machNorm: number;  // маш.-ч на единицу
-  machType: string;  // ID выбранной техники из списка machDevices
-  earthNorm?: number; // объем грунта на единицу
-  woodNorm?: number;  // расход круглого леса на единицу (м³)
-  boardsNorm?: number; // расход досок на единицу (м³)
-  wireViazNorm?: number; // расход вязальной проволоки на единицу (кг)
-  masNetNorm?: number; // расход маскировочных сетей на единицу (м²)
-  trapsNorm?: number; // расход трапов на единицу (п.м.)
-  doorsNorm?: number; // расход дверей БД-50 на единицу (шт)
-  stovesNorm?: number; // расход печей на единицу (шт)
-  machQty?: number; // количество единиц техники (по умолчанию 1)
+  laborNorm: number;
+  machNorm: number;
+  machType: string;
+  earthNorm?: number;
+  woodNorm?: number;
+  boardsNorm?: number;
+  wireViazNorm?: number;
+  masNetNorm?: number;
+  trapsNorm?: number;
+  doorsNorm?: number;
+  stovesNorm?: number;
+  machQty?: number;
 }
 
 export interface MachDevice {
   id: string;
   name: string;
-  type: string; // 'eov' | 'pzm' | 'mdk' | 'bu' | 'none'
-  basePerf: number; // базовая производительность, м³/ч
-  currentPerf: number; // текущая производительность, м³/ч
-  efficiency: number; // КТГ (0.1 - 1.0)
+  type: string;
+  basePerf: number;
+  currentPerf: number;
+  efficiency: number;
   notes: string;
 }
 
@@ -55,7 +55,6 @@ export class FortificationPlannerComponent {
   readonly vm = inject(MapViewModel);
   readonly fortCalcService = inject(FortificationCalculationService);
 
-  // Вспомогательные методы сохранения/загрузки
   private loadNumber(key: string, def: number): number {
     try {
       const val = localStorage.getItem(key);
@@ -97,10 +96,8 @@ export class FortificationPlannerComponent {
     ];
   }
 
-  // Спойлер параметров расчета
   readonly isParamsExpanded = signal<boolean>(false);
 
-  // Параметры расчета
   readonly manpower = signal<number>(this.loadNumber('topos_planner_manpower', 20));
   readonly shifts = signal<number>(this.loadNumber('topos_planner_shifts', 2));
   readonly soilType = signal<number>(this.loadNumber('topos_planner_soilType', 1.0));
@@ -117,10 +114,7 @@ export class FortificationPlannerComponent {
     } catch {}
   }
 
-  // Очереди задач
   readonly vopTasks = signal<VopTask[]>(this.loadTasks());
-
-  // Парк доступной техники
   readonly machDevices = signal<MachDevice[]>(this.loadDevices());
 
   constructor() {
@@ -149,7 +143,6 @@ export class FortificationPlannerComponent {
       localStorage.setItem('topos_planner_devices', JSON.stringify(this.machDevices()));
     });
 
-    // Реактивный эффект автосинхронизации стандартных задач в планировщике при обновлении сооружений на карте ГИС
     effect(() => {
       const mapItems = this.vm.placedFortifications();
       
@@ -339,7 +332,6 @@ export class FortificationPlannerComponent {
     });
   }
 
-  // Добавление новой машины в парк
   addDevice() {
     const current = this.machDevices();
     const nextId = 'custom_' + Date.now();
@@ -355,13 +347,11 @@ export class FortificationPlannerComponent {
     this.machDevices.set([...current, newDev]);
   }
 
-  // Удаление машины из парка
   removeDevice(id: string) {
     if (id === 'none') return;
     this.machDevices.set(this.machDevices().filter(d => d.id !== id));
   }
 
-  // Обновление полей машины
   updateDeviceField(id: string, field: keyof MachDevice, event: Event) {
     const selectOrInput = event.target as any;
     let val = selectOrInput.value;
@@ -371,7 +361,6 @@ export class FortificationPlannerComponent {
     const list = this.machDevices().map(d => {
       if (d.id === id) {
         const updated = { ...d, [field]: val };
-        // При смене базового типа устанавливаем базовые производительности
         if (field === 'type') {
           const basePerfs: Record<string, number> = { eov: 60, pzm: 100, mdk: 120, bu: 30, none: 1.5 };
           updated.basePerf = basePerfs[val as string] || 60;
@@ -384,12 +373,10 @@ export class FortificationPlannerComponent {
     this.machDevices.set(list);
   }
 
-  // Вспомогательная функция разбиения работы на ежедневные сегменты
   private getSegments(startWork: number, endWork: number, dayLimit: number): GanttSegment[] {
     const segments: GanttSegment[] = [];
     if (endWork <= startWork) return segments;
 
-    // Если рабочий день равен или больше 24 часов, работа идет без разрывов
     if (dayLimit >= 24) {
       segments.push({
         startCal: startWork,
@@ -423,7 +410,6 @@ export class FortificationPlannerComponent {
     return segments;
   }
 
-  // Добавление новой задачи в очередь
   addTask(phase: number) {
     const list = [...this.vopTasks()];
     const newId = list.length > 0 ? Math.max(...list.map(t => t.id)) + 1 : 1;
@@ -444,13 +430,11 @@ export class FortificationPlannerComponent {
     this.vopTasks.set(list);
   }
 
-  // Удаление задачи из очереди
   removeTask(id: number) {
     const list = this.vopTasks().filter(t => t.id !== id);
     this.vopTasks.set(list);
   }
 
-  // Изменение полей задачи
   updateTaskField(id: number, field: string, event: Event) {
     const selectOrInput = event.target as any;
     let val = selectOrInput.value;
@@ -466,7 +450,6 @@ export class FortificationPlannerComponent {
     this.vopTasks.set(list);
   }
 
-  // Загрузка объектов с карты ГИС
   loadFromMap() {
     const mapItems = this.vm.placedFortifications();
     if (mapItems.length === 0) {
@@ -536,7 +519,6 @@ export class FortificationPlannerComponent {
     });
 
     const cellTaskName = 'Устройство одиночных стрелковых ячеек';
-    // Если на карте есть траншеи, но ячейки точечно не расставлены, по умолчанию в план вставляется 100 ячеек по ТЗ
     const finalCellCount = cellCount > 0 ? cellCount : (trenchLength > 0 ? 100 : 0);
 
     const bmpEarthNorm = bmpCount > 0 ? (bmpEarth / bmpCount) : 35;
@@ -650,7 +632,6 @@ export class FortificationPlannerComponent {
     this.vopTasks.set(tasks.filter(t => t.qty > 0));
   }
 
-  // Изменение количества через кнопки по ID сооружения
   changeQty(id: number, delta: number) {
     const list = this.vopTasks().map(item => {
       if (item.id === id) {
@@ -708,7 +689,6 @@ export class FortificationPlannerComponent {
     container.scrollLeft = this.scrollLeftStart - walk;
   }
 
-  // Интегральные расчеты ВОП
   readonly vopCalculations = computed(() => {
     const tasks = this.vopTasks();
     const manpowerVal = this.manpower();
@@ -727,13 +707,11 @@ export class FortificationPlannerComponent {
     let currentMachTimeWork = 0;
     let phase1EndManTimeWork = 0;
 
-    // Преобразуем список техники в словарь по id
     const devices = devicesList.reduce((acc, d) => {
       acc[d.id] = d;
       return acc;
     }, {} as Record<string, MachDevice>);
 
-    // Вспомогательная функция перевода в календарные часы
     const toCal = (w: number) => {
       if (dayLimit >= 24) return w;
       const days = Math.floor(w / dayLimit);
@@ -741,26 +719,21 @@ export class FortificationPlannerComponent {
       return days * 24 + remainder;
     };
 
-    // Считаем I очередь
     tasks.forEach(task => {
       if (task.phase !== 1) return;
       
       const dev = devices[task.machType] || devices['none'] || { id: 'none', basePerf: 1.5, currentPerf: 1.5, efficiency: 1.00 };
       
-      // Коэффициент производительности (базовая / реальная)
       const perfFactor = dev.currentPerf > 0 ? (dev.basePerf / dev.currentPerf) : 1;
       
       const mQty = Math.max(1, task.machQty || 1);
 
-      // Машинное время (суммарный ресурс в м.-ч) с учетом КТГ и производительности (если это не ручной труд)
       const machTotal = dev.id !== 'none'
         ? (task.qty * task.machNorm * perfFactor / dev.efficiency)
         : 0;
 
-      // Календарная продолжительность работы техники при параллельной работе mQty машин
       const machDurationCal = dev.id !== 'none' ? (machTotal / mQty) : 0;
 
-      // Ручной труд л/с
       const laborTotal = task.qty * task.laborNorm * soil * conditions;
       
       const machStartWork = currentMachTimeWork;
@@ -799,7 +772,6 @@ export class FortificationPlannerComponent {
     phase1EndManTimeWork = Math.max(...rowsCalculations.filter(r => r.phase === 1).map(r => r.manEndWork), 0);
     currentMachTimeWork = Math.max(currentMachTimeWork, phase1EndManTimeWork);
 
-    // Считаем II очередь
     tasks.forEach(task => {
       if (task.phase !== 2) return;
 
@@ -850,12 +822,10 @@ export class FortificationPlannerComponent {
       });
     });
 
-    // Присваиваем сквозной порядковый номер (displayIndex) для красивой нумерации
     rowsCalculations.forEach((row, idx) => {
       row.displayIndex = idx + 1;
     });
 
-    // Сводные объемы и календарные времена
     const totalEarth = rowsCalculations.reduce((sum, r) => {
       const earthNorm = r.earthNorm !== undefined ? r.earthNorm : (
         r.name.toLowerCase().includes('окоп') ? 35 : (
@@ -888,18 +858,15 @@ export class FortificationPlannerComponent {
     const totalDurationCal = Math.max(...rowsCalculations.map(r => r.manEndCal), 0);
     const phase1DurationCal = Math.max(...rowsCalculations.filter(r => r.phase === 1).map(r => r.manEndCal), 0);
 
-    // Динамический расчет суток на выполнение работ (минимум 2 суток)
     const rawDays = Math.max(2, Math.ceil(totalDurationCal / 24));
     const isWeeklyMode = rawDays > 7;
     
     let daysNeeded = rawDays;
     if (isWeeklyMode) {
-      // Округляем вверх до кратного 6 (неделя = 6 рабочих дней)
       daysNeeded = Math.ceil(rawDays / 6) * 6;
     }
     const maxCalendarTime = daysNeeded * 24;
 
-    // Расчет сводных расходных материалов по задачам
     const totalBoards = rowsCalculations.reduce((sum, r) => sum + (r.qty * (r.boardsNorm || 0)), 0);
     const totalWireViaz = rowsCalculations.reduce((sum, r) => sum + (r.qty * (r.wireViazNorm || 0)), 0);
     const totalMasNet = rowsCalculations.reduce((sum, r) => sum + (r.qty * (r.masNetNorm || 0)), 0);
@@ -907,7 +874,6 @@ export class FortificationPlannerComponent {
     const totalDoors = rowsCalculations.reduce((sum, r) => sum + (r.qty * (r.doorsNorm || 0)), 0);
     const totalStoves = rowsCalculations.reduce((sum, r) => sum + (r.qty * (r.stovesNorm || 0)), 0);
 
-    // Распределение ресурсов по дням (суткам)
     const woodPerDay = new Array(daysNeeded).fill(0);
     const boardsPerDay = new Array(daysNeeded).fill(0);
     const masNetPerDay = new Array(daysNeeded).fill(0);
@@ -919,7 +885,6 @@ export class FortificationPlannerComponent {
       const taskMasNet = r.qty * (r.masNetNorm || 0);
       const taskWireViaz = r.qty * (r.wireViazNorm || 0);
 
-      // Считаем общую продолжительность ручной работы (в часах)
       const manDuration = r.manEndWork - r.manStartWork;
       if (manDuration > 0) {
         r.manSegments.forEach((seg: any) => {
@@ -933,7 +898,6 @@ export class FortificationPlannerComponent {
           }
         });
       } else {
-        // Если ручной работы нет, но есть машинная работа
         const machDuration = r.machEndWork - r.machStartWork;
         if (machDuration > 0) {
           r.machSegments.forEach((seg: any) => {
@@ -950,13 +914,11 @@ export class FortificationPlannerComponent {
       }
     });
 
-    // Округляем массивы до 1 знака после запятой
     const woodPerDayRounded = woodPerDay.map(v => parseFloat(v.toFixed(1)));
     const boardsPerDayRounded = boardsPerDay.map(v => parseFloat(v.toFixed(1)));
     const masNetPerDayRounded = masNetPerDay.map(v => Math.round(v));
     const wireViazPerDayRounded = wireViazPerDay.map(v => parseFloat(v.toFixed(1)));
 
-    // Суммирование по периодам Ганта (для колонок в HTML)
     const getPeriodValues = (arr: number[]) => {
       if (!isWeeklyMode) {
         return arr;
@@ -996,7 +958,6 @@ export class FortificationPlannerComponent {
     };
   });
 
-  // Динамические индексы дней и периодов для верстки HTML
   readonly dayIndices = computed(() => {
     const calc = this.vopCalculations();
     if (calc.isWeeklyMode) {
@@ -1017,7 +978,6 @@ export class FortificationPlannerComponent {
     }
   });
 
-  // Сводный график - computed точки SVG
   readonly chartPoints = computed(() => {
     const res = this.vopCalculations();
     const totalTime = res.totalDurationCal;
@@ -1069,7 +1029,6 @@ export class FortificationPlannerComponent {
     };
   });
 
-  // Предупреждения ВОП
   readonly timelineWarning = computed(() => {
     const res = this.vopCalculations();
     if (res.phase1DurationCal > 12) {

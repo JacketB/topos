@@ -5,13 +5,13 @@ import * as maplibregl from 'maplibre-gl';
 export type ColumnType = 'wheel' | 'caterpillar' | 'mixed' | 'foot';
 
 export interface MarchSegment {
-  from: [number, number]; // [lng, lat]
-  to: [number, number];   // [lng, lat]
+  from: [number, number];
+  to: [number, number];
   distanceKm: number;
   roadType: string;
-  elevationSlope: number; // уклон в %
-  speedKmH: number;       // скорость км/ч (0 если недоступно)
-  durationHrs: number;    // время в часах (0 если недоступно)
+  elevationSlope: number;
+  speedKmH: number;
+  durationHrs: number;
 }
 
 export interface MarchRoute {
@@ -65,11 +65,8 @@ export class MarchRouteService {
     }
   };
 
-  /**
-   * Вычисление геодезического расстояния по формуле гаверсинуса (км)
-   */
   getDistance(p1: [number, number], p2: [number, number]): number {
-    const R = 6371; // Радиус Земли в км
+    const R = 6371;
     const dLat = (p2[1] - p1[1]) * Math.PI / 180;
     const dLon = (p2[0] - p1[0]) * Math.PI / 180;
     const a =
@@ -80,9 +77,6 @@ export class MarchRouteService {
     return R * c;
   }
 
-  /**
-   * Определение типа дороги под точкой с помощью queryRenderedFeatures
-   */
   getRoadTypeFromMap(map: maplibregl.Map, coord: [number, number]): string {
     try {
       const point = map.project(coord);
@@ -99,7 +93,6 @@ export class MarchRouteService {
         const feat = features[0];
         const roadClass = feat.properties?.['class'] || '';
         
-        // Маппинг классов дорог OpenMapTiles к нормативам
         if (roadClass === 'motorway' || roadClass === 'trunk') return 'motorway';
         if (roadClass === 'primary') return 'primary';
         if (roadClass === 'secondary') return 'secondary';
@@ -111,12 +104,9 @@ export class MarchRouteService {
     } catch (e) {
       console.warn('Ошибка при определении типа дороги:', e);
     }
-    return 'minor'; // По умолчанию
+    return 'minor';
   }
 
-  /**
-   * Расчет полной статистики маршрута марша
-   */
   async calculateRouteStats(
     map: maplibregl.Map,
     coords: [number, number][],
@@ -135,40 +125,33 @@ export class MarchRouteService {
       const p1 = coords[i];
       const p2 = coords[i + 1];
 
-      // 1. Расстояние
       const distanceKm = this.getDistance(p1, p2);
       totalDistanceKm += distanceKm;
 
-      // 2. Тип дороги в середине сегмента
       const midpoint: [number, number] = [
         (p1[0] + p2[0]) / 2,
         (p1[1] + p2[1]) / 2
       ];
       const roadType = this.getRoadTypeFromMap(map, midpoint);
 
-      // 3. Уклон рельефа
       const h1 = await this.terrainService.getApproxElevation(p1[0], p1[1]);
       const h2 = await this.terrainService.getApproxElevation(p2[0], p2[1]);
       const distMeters = distanceKm * 1000;
       const elevationDiff = Math.abs(h1 - h2);
       const elevationSlope = distMeters > 0 ? (elevationDiff / distMeters) * 100 : 0;
 
-      // 4. Расчет скорости по нормативам
       const baseSpeed = this.SPEED_LIMITS[columnType][roadType] || 0;
       let speedKmH = baseSpeed;
 
       if (speedKmH > 0) {
-        // Ночной коэффициент
         if (isNight) {
           speedKmH *= 0.7;
         }
-        // Коэффициент уклона (>8% -> *0.6)
         if (elevationSlope > 8) {
           speedKmH *= 0.6;
         }
       }
 
-      // 5. Время прохождения сегмента
       const durationHrs = speedKmH > 0 ? distanceKm / speedKmH : 0;
       totalDurationHrs += durationHrs;
 

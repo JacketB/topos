@@ -57,7 +57,6 @@ export class ElevationProfileComponent implements OnChanges {
     let minE = Infinity;
     let maxE = -Infinity;
 
-    // Сэмплирование высот рельефа DEM с шагом 50 метров вдоль профиля
     const stepM = 50;
     let lastPt: [number, number] | null = null;
     let lastElev: number | null = null;
@@ -131,7 +130,6 @@ export class ElevationProfileComponent implements OnChanges {
     const maxE = this.maxElevation + 10;
     const rangeE = maxE - minE || 1;
 
-    // Сетка фоновых линий
     ctx.strokeStyle = '#e2e8f0';
     ctx.lineWidth = 1;
 
@@ -150,7 +148,6 @@ export class ElevationProfileComponent implements OnChanges {
       ctx.fillText(`${elevVal}м`, paddingLeft - 6, y + 3);
     }
 
-    // Заполнение области под графиком
     const gradient = ctx.createLinearGradient(0, paddingTop, 0, height - paddingBottom);
     gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
     gradient.addColorStop(1, 'rgba(59, 130, 246, 0.02)');
@@ -169,7 +166,6 @@ export class ElevationProfileComponent implements OnChanges {
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Линия графика профиля
     ctx.beginPath();
     this.profilePoints.forEach((pt, idx) => {
       const x = paddingLeft + (pt.distanceM / this.totalDistanceM) * graphW;
@@ -181,7 +177,6 @@ export class ElevationProfileComponent implements OnChanges {
     ctx.lineWidth = 2.5;
     ctx.stroke();
 
-    // Интерактивная визирная линия при наведении
     if (this.hoveredPoint) {
       const hx = paddingLeft + (this.hoveredPoint.distanceM / this.totalDistanceM) * graphW;
       const hy = paddingTop + (1 - (this.hoveredPoint.elevationM - minE) / rangeE) * graphH;
@@ -196,7 +191,6 @@ export class ElevationProfileComponent implements OnChanges {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Точка на линии
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
       ctx.arc(hx, hy, 4.5, 0, Math.PI * 2);
