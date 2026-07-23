@@ -155,6 +155,7 @@ export class MapViewModel {
 
   readonly marchColumnType = signal<ColumnType>('wheel');
   readonly marchIsNight = signal<boolean>(false);
+  readonly isSnapToRoadEnabled = signal<boolean>(true);
   readonly selectedMarchRouteStats = signal<MarchRoute | null>(null);
 
   readonly playbackSpeed = this.playbackService.speedMultiplier;

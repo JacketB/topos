@@ -6,12 +6,76 @@
           <line x1="5" y1="12" x2="19" y2="12"></line>
           <polyline points="12 5 19 12 12 19"></polyline>
         </svg>
-        Схема походного порядка подразделения на марше
+        Схема походного порядка и оперативно-тактический расчет марша
       </span>
       <button class="mo-close-btn" (click)="vm.toggleMarchOrder()">✕</button>
     </div>
 
     <div class="mo-body">
+      @let res = advancedResult();
+
+      <div style="background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
+          <div style="font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Всего техники</div>
+          <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 2px;">{{ res.totalVehicles }} <span style="font-size: 10px; color: #64748b;">ед.</span></div>
+          <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Глубина: {{ res.totalDepthKm | number:'1.2-2' }} км</div>
+        </div>
+
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
+          <div style="font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Исходный Рубеж (ИР)</div>
+          <div style="font-size: 16px; font-weight: 800; color: #2563eb; margin-top: 2px;">{{ res.irDistanceKm }} <span style="font-size: 10px; color: #64748b;">км</span></div>
+          <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Выход к ИР: {{ res.timeToIrMin | number:'1.1-1' }} мин</div>
+        </div>
+
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
+          <div style="font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Вытягивание колонны</div>
+          <div style="font-size: 16px; font-weight: 800; color: #0284c7; margin-top: 2px;">{{ res.timeStretchMin | number:'1.1-1' }} <span style="font-size: 10px; color: #64748b;">мин</span></div>
+          <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Прохождение одной точки</div>
+        </div>
+
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
+          <div style="font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Задержки на барьерах</div>
+          <div style="font-size: 16px; font-weight: 800; color: #d97706; margin-top: 2px;">{{ res.barrierDelayFormatted }}</div>
+          <div style="font-size: 9px; color: #64748b; margin-top: 2px;">{{ barrierCount() }} узкостей / мостов</div>
+        </div>
+
+        <div style="background: white; border: 1.5px solid #16a34a; border-radius: 6px; padding: 8px 10px;">
+          <div style="font-size: 9.5px; font-weight: 800; color: #16a34a; text-transform: uppercase;">Общее время марша</div>
+          <div style="font-size: 16px; font-weight: 800; color: #15803d; margin-top: 2px;">{{ res.totalMarchTimeFormatted }}</div>
+          <div style="font-size: 9px; color: #16a34a; font-weight: 600; margin-top: 2px;">Ходовое: {{ res.pureTravelTimeMin }} мин</div>
+        </div>
+      </div>
+
+      <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 10.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Параметры и нормативы движения</div>
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; font-size: 11px;">
+          <label style="display: flex; flex-direction: column; gap: 2px; color: #475569; font-weight: 600;">
+            <span>Маршрут (км):</span>
+            <input type="number" class="vs-input" [ngModel]="routeLengthKm()" (ngModelChange)="routeLengthKm.set($event)" min="1" style="font-size: 11px; padding: 2px 6px;" />
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 2px; color: #475569; font-weight: 600;">
+            <span>Марш. скор. (км/ч):</span>
+            <input type="number" class="vs-input" [ngModel]="marchSpeedKmh()" (ngModelChange)="marchSpeedKmh.set($event)" min="5" style="font-size: 11px; padding: 2px 6px;" />
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 2px; color: #475569; font-weight: 600;">
+            <span>Скор. до ИР (км/ч):</span>
+            <input type="number" class="vs-input" [ngModel]="speedToIrKmh()" (ngModelChange)="speedToIrKmh.set($event)" min="5" style="font-size: 11px; padding: 2px 6px;" />
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 2px; color: #475569; font-weight: 600;">
+            <span>Барьеры (шт):</span>
+            <input type="number" class="vs-input" [ngModel]="barrierCount()" (ngModelChange)="barrierCount.set($event)" min="0" style="font-size: 11px; padding: 2px 6px;" />
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 2px; color: #475569; font-weight: 600;">
+            <span>Скор. барьера (км/ч):</span>
+            <input type="number" class="vs-input" [ngModel]="barrierSpeedKmh()" (ngModelChange)="barrierSpeedKmh.set($event)" min="1" style="font-size: 11px; padding: 2px 6px;" />
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 2px; color: #475569; font-weight: 600;">
+            <span>Привалы (мин):</span>
+            <input type="number" class="vs-input" [ngModel]="restTimeMin()" (ngModelChange)="restTimeMin.set($event)" min="0" style="font-size: 11px; padding: 2px 6px;" />
+          </label>
+        </div>
+      </div>
+
       <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
         <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center;">
           <span>Схема движения походной колонны (Голова колонны слева)</span>
@@ -94,7 +158,7 @@
           <div 
             cdkDropList
             (cdkDropListDropped)="onCdkDrop($event)"
-            style="display: flex; flex-direction: column; max-height: 320px; overflow-y: auto;"
+            style="display: flex; flex-direction: column; max-height: 240px; overflow-y: auto;"
           >
             @for (el of vm.marchOrderElements(); track el.id; let idx = $index; let first = $first; let last = $last) {
               <div 
@@ -239,8 +303,9 @@
     </div>
 
     <div class="mo-footer">
-      <div style="font-size: 11px; color: #475569;">
-        Общая глубина походной колонны: <strong style="font-size: 12.5px; color: #2563eb;">{{ vm.getMarchOrderTotalLengthKm() | number:'1.1-2' }} км</strong>
+      <div style="font-size: 11px; color: #475569; display: flex; gap: 16px; align-items: center;">
+        <span>Глубина колонны: <strong style="font-size: 12px; color: #2563eb;">{{ res.totalDepthKm | number:'1.2-2' }} км ({{ res.totalDepthM }} м)</strong></span>
+        <span>Расчетное время: <strong style="font-size: 13px; color: #15803d;">{{ res.totalMarchTimeFormatted }}</strong></span>
       </div>
       <button class="fort-btn secondary" (click)="vm.toggleMarchOrder()">Закрыть</button>
     </div>

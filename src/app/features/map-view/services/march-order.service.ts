@@ -79,4 +79,65 @@ export class MarchOrderService {
     });
     return totalKm;
   }
+
+  calculateAdvancedMarch(params: {
+    avgVehicleLengthM: number;
+    distBetweenVehiclesM: number;
+    distBetweenUnitsM: number;
+    speedToIrKmh: number;
+    routeLengthKm: number;
+    marchSpeedKmh: number;
+    restTimeMin: number;
+    barrierCount: number;
+    barrierSpeedKmh: number;
+  }) {
+    const list = this.elements();
+    const totalVehicles = list.reduce((sum, el) => sum + el.vehicleCount, 0);
+
+    let totalDepthM = 0;
+    list.forEach((el, idx) => {
+      const isLast = idx === list.length - 1;
+      const unitDepthM = (el.vehicleCount * (el.vehicleLength || params.avgVehicleLengthM)) +
+        (Math.max(0, el.vehicleCount - 1) * (el.vehicleDistanceUnit === 'km' ? el.vehicleDistance * 1000 : (el.vehicleDistance || params.distBetweenVehiclesM)));
+      
+      const interUnitDistM = isLast ? 0 : (el.distanceToNext ? (el.distanceUnit === 'km' ? el.distanceToNext * 1000 : el.distanceToNext) : params.distBetweenUnitsM);
+      
+      totalDepthM += unitDepthM + interUnitDistM;
+    });
+
+    const totalDepthKm = totalDepthM / 1000;
+    const irDistanceKm = Math.ceil(totalDepthKm * 10) / 10;
+    
+    const timeToIrMin = params.speedToIrKmh > 0 ? (irDistanceKm / params.speedToIrKmh) * 60 : 0;
+    const timeStretchMin = params.marchSpeedKmh > 0 ? (totalDepthKm / params.marchSpeedKmh) * 60 : 0;
+    const pureTravelTimeMin = params.marchSpeedKmh > 0 ? (params.routeLengthKm / params.marchSpeedKmh) * 60 : 0;
+
+    let barrierDelayMin = 0;
+    if (params.barrierSpeedKmh > 0 && params.barrierSpeedKmh < params.marchSpeedKmh) {
+      const timeOnBarrierMin = (totalDepthKm / params.barrierSpeedKmh) * 60;
+      barrierDelayMin = (timeOnBarrierMin - timeStretchMin) * params.barrierCount;
+    }
+
+    const totalMarchTimeMin = pureTravelTimeMin + params.restTimeMin + barrierDelayMin + timeStretchMin;
+
+    const formatTime = (totalMinutes: number) => {
+      const hrs = Math.floor(totalMinutes / 60);
+      const mins = Math.round(totalMinutes % 60);
+      return `${hrs} ч. ${mins} мин.`;
+    };
+
+    return {
+      totalVehicles,
+      totalDepthM,
+      totalDepthKm,
+      irDistanceKm,
+      timeToIrMin,
+      timeStretchMin,
+      pureTravelTimeMin,
+      barrierDelayMin,
+      totalMarchTimeMin,
+      totalMarchTimeFormatted: formatTime(totalMarchTimeMin),
+      barrierDelayFormatted: formatTime(barrierDelayMin)
+    };
+  }
 }

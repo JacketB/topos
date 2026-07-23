@@ -134,3 +134,29 @@ export interface GanttSegment {
   endCal: number;
   duration: number;
 }
+
+export interface MarchCalculationParams {
+  avgVehicleLengthM: number;
+  distBetweenVehiclesM: number;
+  distBetweenUnitsM: number;
+  speedToIrKmh: number;
+  routeLengthKm: number;
+  marchSpeedKmh: number;
+  restTimeMin: number;
+  barrierCount: number;
+  barrierSpeedKmh: number;
+}
+
+export interface MarchCalculationResult {
+  totalVehicles: number;
+  totalDepthM: number;
+  totalDepthKm: number;
+  irDistanceKm: number;
+  timeToIrMin: number;
+  timeStretchMin: number;
+  pureTravelTimeMin: number;
+  barrierDelayMin: number;
+  totalMarchTimeMin: number;
+  totalMarchTimeFormatted: string;
+  barrierDelayFormatted: string;
+}
