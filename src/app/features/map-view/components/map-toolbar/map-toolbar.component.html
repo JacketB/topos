@@ -458,6 +458,21 @@
         </svg>
       </button>
 
+      <!-- Справочный центр (F1) -->
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.isHelpModalOpen()" 
+        (click)="vm.toggleHelpModal()" 
+        title="Справочный центр и руководство пользователя [Клавиша: F1]"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <kbd class="key-hint">F1</kbd>
+      </button>
+
       <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 4px;"></div>
 
       <!-- Кнопка Экспорта Сценария TPS -->

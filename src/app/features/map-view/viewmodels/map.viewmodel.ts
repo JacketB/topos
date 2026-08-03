@@ -33,6 +33,7 @@ export class MapViewModel {
 
   readonly scalePresets = SCALE_PRESETS;
   readonly isMapExportOpen = signal(false);
+  readonly isHelpModalOpen = signal(false);
 
   readonly isAppReady = signal<boolean>(false);
   readonly sidebarWidth = signal<number>(340);
@@ -1149,5 +1150,17 @@ export class MapViewModel {
 
   openMapExport() {
     this.isMapExportOpen.set(true);
+  }
+
+  toggleHelpModal() {
+    this.isHelpModalOpen.update(v => !v);
+  }
+
+  openHelpModal() {
+    this.isHelpModalOpen.set(true);
+  }
+
+  closeHelpModal() {
+    this.isHelpModalOpen.set(false);
   }
 }

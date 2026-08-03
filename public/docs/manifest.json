@@ -1,0 +1,37 @@
+[
+  {
+    "id": "introduction",
+    "title": "1. Введение и интерфейс",
+    "file": "docs/01_introduction.md"
+  },
+  {
+    "id": "map-layers",
+    "title": "2. Картоснова и слои",
+    "file": "docs/02_map_layers.md"
+  },
+  {
+    "id": "tactical-symbols",
+    "title": "3. Тактическая обстановка",
+    "file": "docs/03_tactical_symbols.md"
+  },
+  {
+    "id": "analysis-tools",
+    "title": "4. Измерения и анализ",
+    "file": "docs/04_analysis_tools.md"
+  },
+  {
+    "id": "march-planner",
+    "title": "5. Расчет марша и походного порядка",
+    "file": "docs/05_march_planner.md"
+  },
+  {
+    "id": "fortification",
+    "title": "6. Калькулятор фортификации",
+    "file": "docs/06_fortification.md"
+  },
+  {
+    "id": "export-print",
+    "title": "7. Экспорт и печать карт",
+    "file": "docs/07_export_print.md"
+  }
+]

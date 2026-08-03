@@ -17,6 +17,7 @@ import { MapToolbarComponent } from './components/map-toolbar/map-toolbar.compon
 import { MarchOrderModalComponent } from './components/march-order-modal/march-order-modal.component';
 import { MarchRouteModalComponent } from './components/march-route-modal/march-route-modal.component';
 import { DistrictSummaryModalComponent } from './components/district-summary-modal/district-summary-modal.component';
+import { HelpModalComponent } from './components/help-modal/help-modal.component';
 
 @Component({
   selector: 'app-map-view',
@@ -36,7 +37,8 @@ import { DistrictSummaryModalComponent } from './components/district-summary-mod
     MapToolbarComponent,
     MarchOrderModalComponent,
     MarchRouteModalComponent,
-    DistrictSummaryModalComponent
+    DistrictSummaryModalComponent,
+    HelpModalComponent
   ],
   templateUrl: './map-view.html',
   styleUrl: './map-view.css',
@@ -48,6 +50,12 @@ export class MapView {
 
   @HostListener('window:keydown', ['$event'])
   handleGlobalHotkeys(event: KeyboardEvent) {
+    if (event.key === 'F1') {
+      event.preventDefault();
+      this.vm.toggleHelpModal();
+      return;
+    }
+
     const target = event.target as HTMLElement;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
       return;
