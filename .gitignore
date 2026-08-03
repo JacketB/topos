@@ -54,5 +54,10 @@ Thumbs.db
 /log.md
 /plan.md
 *.pmtiles
+*.pbf
+/scripts/temp
+/scripts/temp/*
+public/assets/belarus_graph.json
+src-tauri/assets/belarus_graph.json
 
 

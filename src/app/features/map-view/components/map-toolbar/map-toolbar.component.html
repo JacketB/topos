@@ -66,9 +66,9 @@
 
       <button 
         class="tool-btn" 
-        [class.active]="vm.activeLineMode() === 'march_route'" 
-        (click)="vm.activeLineMode() === 'march_route' ? vm.cancelDrawingLine() : vm.startDrawingLine('march_route')" 
-        title="Проложить маршрут марша [Клавиша: R]"
+        [class.active]="vm.isRoutePlannerOpen()" 
+        (click)="vm.toggleRoutePlanner()" 
+        title="Планировщик маршрута марша [Клавиша: R]"
       >
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 19c2-3 5-3 8-1c3 2 6 2 8-2" />
@@ -242,6 +242,10 @@
           <circle cx="12" cy="12" r="3"></circle>
         </svg>
       </button>
+
+      <div class="toolbar-separator" style="width: 1px; height: 18px; background-color: #e2e8f0; margin: 0 8px; display: inline-block; vertical-align: middle;"></div>
+
+      <app-place-search (selectPlace)="onPlaceSelected($event)"></app-place-search>
     </div>
 
     <!-- 4. Библиотека тактических знаков -->

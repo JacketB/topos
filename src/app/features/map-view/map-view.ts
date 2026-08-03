@@ -15,9 +15,9 @@ import { MapExportComponent } from './components/map-export/map-export.component
 
 import { MapToolbarComponent } from './components/map-toolbar/map-toolbar.component';
 import { MarchOrderModalComponent } from './components/march-order-modal/march-order-modal.component';
-import { MarchRouteModalComponent } from './components/march-route-modal/march-route-modal.component';
 import { DistrictSummaryModalComponent } from './components/district-summary-modal/district-summary-modal.component';
 import { HelpModalComponent } from './components/help-modal/help-modal.component';
+import { RoutePlannerPanelComponent } from './components/route-planner-panel/route-planner-panel.component';
 
 @Component({
   selector: 'app-map-view',
@@ -36,9 +36,9 @@ import { HelpModalComponent } from './components/help-modal/help-modal.component
     FormsModule,
     MapToolbarComponent,
     MarchOrderModalComponent,
-    MarchRouteModalComponent,
     DistrictSummaryModalComponent,
-    HelpModalComponent
+    HelpModalComponent,
+    RoutePlannerPanelComponent
   ],
   templateUrl: './map-view.html',
   styleUrl: './map-view.css',
@@ -114,7 +114,7 @@ export class MapView {
         this.vm.activeLineMode() === 'point' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('point');
         break;
       case 'r': case 'к':
-        this.vm.activeLineMode() === 'march_route' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('march_route');
+        this.vm.toggleRoutePlanner();
         break;
       case 'a': case 'ф':
         this.vm.activeLineMode() === 'arrow_attack' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('arrow_attack');

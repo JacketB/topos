@@ -196,9 +196,6 @@
         <app-march-order-modal />
       }
 
-      <!-- Маршрутная карточка марша с плеером симуляции -->
-      <app-march-route-modal />
-
       <!-- Панель слоев и районов (районов расчетов) справа -->
       <app-map-layers-panel 
         [class.open]="vm.isLayersPanelOpen()" 
@@ -258,6 +255,9 @@
     </div>
   </footer>
 </div>
+
+<!-- Панель Яндекс/Google стиля планирования маршрутов -->
+<app-route-planner-panel />
 
 <!-- Модальное окно планировщика Ганта фортификации -->
 @if (vm.isFortPlannerOpen()) {
