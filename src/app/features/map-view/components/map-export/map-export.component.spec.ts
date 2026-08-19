@@ -1,14 +1,14 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { Injector, runInInjectionContext, signal } from '@angular/core';
 import { MapExportComponent } from './map-export.component';
 import { MapViewModel } from '../../viewmodels/map.viewmodel';
-import { signal } from '@angular/core';
+import { NativeMapExportService } from '../../services/native-map-export.service';
 
 describe('MapExportComponent', () => {
   let component: MapExportComponent;
-  let fixture: ComponentFixture<MapExportComponent>;
   let mockMapViewModel: any;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     mockMapViewModel = {
       isMapExportOpen: signal(false),
       getMapInstance: () => mockMapViewModel.mapInstance,
@@ -25,16 +25,14 @@ describe('MapExportComponent', () => {
       }
     };
 
-    await TestBed.configureTestingModule({
-      imports: [MapExportComponent],
+    const injector = Injector.create({
       providers: [
-        { provide: MapViewModel, useValue: mockMapViewModel }
+        { provide: MapViewModel, useValue: mockMapViewModel },
+        { provide: NativeMapExportService, useValue: {} }
       ]
-    }).compileComponents();
+    });
 
-    fixture = TestBed.createComponent(MapExportComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    component = runInInjectionContext(injector, () => new MapExportComponent());
   });
 
   it('should create map export component', () => {
@@ -48,7 +46,6 @@ describe('MapExportComponent', () => {
     const size = component.viewfinderSize();
     expect(size.width).toBeGreaterThan(0);
     expect(size.height).toBeGreaterThan(0);
-    // Проверяем соотношение сторон
     expect(Math.abs((size.width / size.height) - (200 / 150))).toBeLessThan(0.01);
   });
 

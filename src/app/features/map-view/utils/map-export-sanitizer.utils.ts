@@ -69,11 +69,17 @@ export class MapExportSanitizerUtils {
     const isOverlayLayer = (l: any) => {
       const id = l.id || '';
       const src = l.source || '';
+      const type = l.type || '';
       return id.startsWith('tactical_') || 
              id.startsWith('measurement-') || 
              id.startsWith('range-rings-') || 
              id.startsWith('drawing-') || 
              id.startsWith('viewshed-') || 
+             id.startsWith('layer-img-overlay-') ||
+             id.startsWith('layer-') ||
+             src.startsWith('src-img-overlay-') ||
+             src.startsWith('src-') ||
+             type === 'raster' ||
              src === 'tactical-symbols' || 
              src === 'tactical-lines' || 
              src === 'tactical-polygons' || 

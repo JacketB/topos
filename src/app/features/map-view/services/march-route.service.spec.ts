@@ -1,7 +1,6 @@
-import { TestBed } from '@angular/core/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MarchRouteService } from './march-route.service';
 import { TerrainService } from './terrain.service';
-import { vi } from 'vitest';
 import * as maplibregl from 'maplibre-gl';
 
 describe('MarchRouteService', () => {
@@ -13,13 +12,7 @@ describe('MarchRouteService', () => {
       getApproxElevation: vi.fn().mockResolvedValue(100)
     };
 
-    TestBed.configureTestingModule({
-      providers: [
-        MarchRouteService,
-        { provide: TerrainService, useValue: terrainMock }
-      ]
-    });
-    service = TestBed.inject(MarchRouteService);
+    service = new MarchRouteService(terrainMock as unknown as TerrainService);
   });
 
   it('should be created', () => {
@@ -48,7 +41,6 @@ describe('MarchRouteService', () => {
     
     expect(stats.segments.length).toBe(1);
     expect(stats.totalDistanceKm).toBeCloseTo(0.1, 2);
-    // Для wheel на primary скорость 35 км/ч
     expect(stats.segments[0].speedKmH).toBe(35);
     expect(stats.totalDurationHrs).toBeCloseTo(stats.totalDistanceKm / 35, 4);
   });
@@ -70,7 +62,7 @@ describe('MarchRouteService', () => {
   });
 
   it('should apply slope factor (x0.6) for slope > 8%', async () => {
-    // h1 = 100м, h2 = 120м на расстоянии 100м (уклон 20% > 8%)
+    terrainMock.getApproxElevation.mockReset();
     terrainMock.getApproxElevation.mockResolvedValueOnce(100).mockResolvedValueOnce(120);
 
     const mockMap = {

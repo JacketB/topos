@@ -56,6 +56,29 @@ function initPMTiles(config) {
   }
 }
 
+const sharp = require('sharp');
+
+const returnImageBuffer = (url, buffer, callback) => {
+  if (!buffer || buffer.length === 0) {
+    return callback(null, { statusCode: 204, request: { uri: { href: url } } }, Buffer.alloc(0));
+  }
+  const isPng = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47;
+  const isJpg = buffer[0] === 0xFF && buffer[1] === 0xD8;
+  if (!isPng && !isJpg) {
+    sharp(buffer, { limitInputPixels: false, unlimited: true })
+      .png()
+      .toBuffer()
+      .then(pngBuf => {
+        callback(null, { statusCode: 200, request: { uri: { href: url } } }, pngBuf);
+      })
+      .catch(err => {
+        callback(null, { statusCode: 200, request: { uri: { href: url } } }, buffer);
+      });
+  } else {
+    callback(null, { statusCode: 200, request: { uri: { href: url } } }, buffer);
+  }
+};
+
 const requestMock = function(options, callback) {
   if (!options) {
     return realRequest(options, callback);
@@ -68,6 +91,43 @@ const requestMock = function(options, callback) {
 
   if (!url) {
     return realRequest(options, callback);
+  }
+
+  if (url.startsWith('data:')) {
+    try {
+      const commaIdx = url.indexOf(',');
+      if (commaIdx !== -1) {
+        const header = url.substring(0, commaIdx);
+        const dataStr = url.substring(commaIdx + 1);
+        const isBase64 = header.includes(';base64');
+        const buffer = isBase64 
+          ? Buffer.from(dataStr, 'base64') 
+          : Buffer.from(decodeURIComponent(dataStr));
+        return returnImageBuffer(url, buffer, callback);
+      }
+    } catch (err) {}
+    return callback(null, { statusCode: 204, request: { uri: { href: url } } }, Buffer.alloc(0));
+  }
+
+  if (url.startsWith('file://')) {
+    try {
+      let filePath = url.replace(/^file:\/\/\//, '').replace(/^file:\/\//, '');
+      filePath = decodeURIComponent(filePath);
+      if (fs.existsSync(filePath) && !fs.lstatSync(filePath).isDirectory()) {
+        const data = fs.readFileSync(filePath);
+        return returnImageBuffer(url, data, callback);
+      }
+    } catch (err) {}
+    return callback(null, { statusCode: 204, request: { uri: { href: url } } }, Buffer.alloc(0));
+  }
+
+  if ((/^[a-zA-Z]:[\\\/]/.test(url) || (url.startsWith('/') && !url.startsWith('//'))) && fs.existsSync(url)) {
+    try {
+      if (!fs.lstatSync(url).isDirectory()) {
+        const data = fs.readFileSync(url);
+        return returnImageBuffer(url, data, callback);
+      }
+    } catch (err) {}
   }
 
   if (url.includes('.pbf') && (url.includes('font') || url.includes('glyphs') || url.includes('openmaptiles'))) {
@@ -126,14 +186,13 @@ const requestMock = function(options, callback) {
       if (fs.existsSync(p) && !fs.lstatSync(p).isDirectory()) {
         try {
           const data = fs.readFileSync(p);
-          return callback(null, { statusCode: 200, request: { uri: { href: url } } }, data);
+          return returnImageBuffer(url, data, callback);
         } catch (err) {
           return callback(err);
         }
       }
     }
 
-    // Если локальный файл не найден, возвращаем 200 с пустым буфером, чтобы mbgl-renderer не прерывал рендеринг
     return callback(null, { statusCode: 200, request: { uri: { href: url } } }, Buffer.alloc(0));
   }
 
@@ -270,7 +329,6 @@ const requestMock = function(options, callback) {
 
 require.cache[require.resolve('request')].exports = requestMock;
 
-const sharp = require('sharp');
 const mbglRenderer = require('mbgl-renderer');
 const render = mbglRenderer.default || mbglRenderer;
 
@@ -346,7 +404,9 @@ async function renderTiled(cleanedStyle, options) {
       compositeInputs.push({
         input: tileBuffer,
         left: tileLeft,
-        top: tileTop
+        top: tileTop,
+        limitInputPixels: false,
+        unlimited: true
       });
 
       completedTiles++;
@@ -408,7 +468,9 @@ async function renderTiled(cleanedStyle, options) {
     compositeInputs.push({
       input: labelsSvgBuffer,
       left: 0,
-      top: 0
+      top: 0,
+      limitInputPixels: false,
+      unlimited: true
     });
   }
 
@@ -419,7 +481,8 @@ async function renderTiled(cleanedStyle, options) {
       channels: 4,
       background: { r: 255, g: 255, b: 255, alpha: 1 }
     },
-    limitInputPixels: false
+    limitInputPixels: false,
+    unlimited: true
   })
   .composite(compositeInputs)
   .png()

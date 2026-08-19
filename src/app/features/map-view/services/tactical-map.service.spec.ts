@@ -1,24 +1,66 @@
-import { TestBed } from '@angular/core/testing';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { Injector, runInInjectionContext, signal, ɵChangeDetectionScheduler, ɵEffectScheduler } from '@angular/core';
 import { TacticalMapService } from './tactical-map.service';
-import { TacticalSymbolsService } from './tactical-symbols.service';
-import { vi, describe, beforeEach, afterEach, it, expect } from 'vitest';
+import { TrenchGeometryService } from './trench-geometry.service';
+import { TerrainService } from './terrain.service';
+import { TacticalDrawingService } from './tactical-drawing.service';
+import { TacticalSymbolsManagerService } from './tactical-symbols-manager.service';
+
+const storageMap: Record<string, string> = {};
+const mockLocalStorage = {
+  getItem: (k: string) => storageMap[k] ?? null,
+  setItem: (k: string, v: string) => { storageMap[k] = String(v); },
+  removeItem: (k: string) => { delete storageMap[k]; },
+  clear: () => { Object.keys(storageMap).forEach(k => delete storageMap[k]); }
+};
+
+if (typeof globalThis.localStorage === 'undefined' || !globalThis.localStorage.setItem) {
+  globalThis.localStorage = mockLocalStorage as any;
+}
+
+const mockScheduler = {
+  notify: () => {},
+  runningTick: false,
+  schedule: () => {},
+  add: () => ({ destroy: () => {} }),
+  remove: () => {}
+};
 
 describe('TacticalMapService - Export/Import Scenario', () => {
   let service: TacticalMapService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({
+    mockLocalStorage.clear();
+    const injector = Injector.create({
       providers: [
-        TacticalMapService,
-        { provide: TacticalSymbolsService, useValue: {} }
+        { provide: ɵChangeDetectionScheduler, useValue: mockScheduler },
+        { provide: ɵEffectScheduler, useValue: mockScheduler },
+        {
+          provide: TrenchGeometryService,
+          useValue: {
+            buildSmoothedTrench: (c: any) => c,
+            buildObstacleTicks: () => []
+          }
+        },
+        { provide: TerrainService, useValue: {} },
+        {
+          provide: TacticalDrawingService,
+          useValue: {
+            activeLineMode: signal(null),
+            drawingLineCoords: signal([]),
+            snapPointToRoute: (p: any) => p,
+            finishDrawing: () => {}
+          }
+        },
+        { provide: TacticalSymbolsManagerService, useValue: {} }
       ]
     });
-    service = TestBed.inject(TacticalMapService);
-    localStorage.clear();
+
+    service = runInInjectionContext(injector, () => new TacticalMapService());
   });
 
   afterEach(() => {
-    localStorage.clear();
+    mockLocalStorage.clear();
   });
 
   it('should export current placed symbols and object groups and planner settings', () => {
@@ -31,10 +73,10 @@ describe('TacticalMapService - Export/Import Scenario', () => {
     service.placedSymbols.set(mockSymbols);
     service.objectGroups.set(mockGroups);
 
-    localStorage.setItem('topos_planner_tasks', JSON.stringify([{ id: 'task1', name: 'Task 1' }]));
-    localStorage.setItem('topos_planner_devices', JSON.stringify([{ type: 'excavator', qty: 2 }]));
-    localStorage.setItem('topos_planner_manpower', '45');
-    localStorage.setItem('topos_planner_soilType', 'sand');
+    mockLocalStorage.setItem('topos_planner_tasks', JSON.stringify([{ id: 'task1', name: 'Task 1' }]));
+    mockLocalStorage.setItem('topos_planner_devices', JSON.stringify([{ type: 'excavator', qty: 2 }]));
+    mockLocalStorage.setItem('topos_planner_manpower', '45');
+    mockLocalStorage.setItem('topos_planner_soilType', 'sand');
 
     const scenario = service.exportScenarioData();
 
@@ -85,11 +127,11 @@ describe('TacticalMapService - Export/Import Scenario', () => {
     expect(service.placedSymbols()).toEqual(mockScenario.placedSymbols);
     expect(service.objectGroups()).toEqual(mockScenario.objectGroups);
 
-    expect(JSON.parse(localStorage.getItem('topos_planner_tasks') || '[]')).toEqual(mockScenario.plannerTasks);
-    expect(JSON.parse(localStorage.getItem('topos_planner_devices') || '[]')).toEqual(mockScenario.plannerDevices);
-    expect(localStorage.getItem('topos_planner_manpower')).toBe('50');
-    expect(localStorage.getItem('topos_planner_soilType')).toBe('clay');
-    expect(localStorage.getItem('topos_map_position')).toBe(JSON.stringify(mockScenario.mapPosition));
+    expect(JSON.parse(mockLocalStorage.getItem('topos_planner_tasks') || '[]')).toEqual(mockScenario.plannerTasks);
+    expect(JSON.parse(mockLocalStorage.getItem('topos_planner_devices') || '[]')).toEqual(mockScenario.plannerDevices);
+    expect(mockLocalStorage.getItem('topos_planner_manpower')).toBe('50');
+    expect(mockLocalStorage.getItem('topos_planner_soilType')).toBe('clay');
+    expect(mockLocalStorage.getItem('topos_map_position')).toBe(JSON.stringify(mockScenario.mapPosition));
     expect(spyUpdate).toHaveBeenCalled();
   });
 });

@@ -1,19 +1,18 @@
-import { TestBed } from '@angular/core/testing';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { Injector, runInInjectionContext } from '@angular/core';
 import { FortificationCalculationService } from './fortification-calculation.service';
 import { TacticalMapService } from './tactical-map.service';
-import { vi } from 'vitest';
 
 describe('FortificationCalculationService', () => {
   let service: FortificationCalculationService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({
+    const injector = Injector.create({
       providers: [
-        FortificationCalculationService,
         { provide: TacticalMapService, useValue: {} }
       ]
     });
-    service = TestBed.inject(FortificationCalculationService);
+    service = runInInjectionContext(injector, () => new FortificationCalculationService());
   });
 
   it('should be created', () => {
@@ -72,7 +71,6 @@ describe('FortificationCalculationService', () => {
 
     const norms = service.calculateFeatureNorms(feature);
     expect(norms).toBeTruthy();
-    // При дощатой одежде должен рассчитываться woodVol > 0
     expect(norms!.woodVol).toBeGreaterThan(0);
   });
 
@@ -142,10 +140,6 @@ describe('FortificationCalculationService', () => {
 
     const norms = service.calculateFeatureNorms(feature);
     expect(norms).toBeTruthy();
-    // W_bottom = 2.0м, D = 3.0м, m = 0.25 (без укрепления)
-    // W_top = 2.0 + 2 * 0.25 * 3.0 = 3.5м
-    // S = (3.5 + 2.0) / 2 * 3.0 = 8.25 м²
-    // Объем = 8.25 * 1911 = 15765.75 м³ -> округление 15765.8 м³
     expect(norms!.earthVolume).toBeCloseTo(15765.8, 1);
 
     lengthSpy.mockRestore();

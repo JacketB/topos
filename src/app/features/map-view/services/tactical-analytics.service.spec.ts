@@ -1,15 +1,21 @@
-import { TestBed } from '@angular/core/testing';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { Injector, runInInjectionContext } from '@angular/core';
 import { TacticalAnalyticsService } from './tactical-analytics.service';
 import { MapMeasurementService } from './map-measurement.service';
+import { TerrainService } from './terrain.service';
 
 describe('Milestone 3 Analytics & Geodesy Services', () => {
   let analyticsService: TacticalAnalyticsService;
   let measurementService: MapMeasurementService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
-    analyticsService = TestBed.inject(TacticalAnalyticsService);
-    measurementService = TestBed.inject(MapMeasurementService);
+    measurementService = new MapMeasurementService();
+    const injector = Injector.create({
+      providers: [
+        { provide: TerrainService, useValue: { getApproxElevation: async () => 100 } }
+      ]
+    });
+    analyticsService = runInInjectionContext(injector, () => new TacticalAnalyticsService());
   });
 
   it('should create services', () => {

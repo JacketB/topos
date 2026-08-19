@@ -1,14 +1,11 @@
-import { TestBed } from '@angular/core/testing';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { MarchOrderService, MarchOrderElement } from './march-order.service';
 
 describe('MarchOrderService', () => {
   let service: MarchOrderService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [MarchOrderService]
-    });
-    service = TestBed.inject(MarchOrderService);
+    service = new MarchOrderService();
   });
 
   it('should be created', () => {
@@ -18,7 +15,6 @@ describe('MarchOrderService', () => {
   it('should add, update and remove elements correctly', () => {
     expect(service.elements().length).toBe(0);
 
-    // Добавляем элемент
     service.addElement({
       name: 'ГД',
       icon: 'bmp_svoy1',
@@ -38,11 +34,9 @@ describe('MarchOrderService', () => {
 
     const elementId = elements[0].id;
 
-    // Обновляем элемент
     service.updateElement(elementId, { vehicleCount: 5 });
     expect(service.elements()[0].vehicleCount).toBe(5);
 
-    // Удаляем элемент
     service.removeElement(elementId);
     expect(service.elements().length).toBe(0);
   });
@@ -54,8 +48,8 @@ describe('MarchOrderService', () => {
       icon: 'bmp_svoy1',
       composition: '3 БМП',
       vehicleCount: 3,
-      vehicleLength: 10, // 10 метров
-      vehicleDistance: 50, // 50 метров
+      vehicleLength: 10,
+      vehicleDistance: 50,
       vehicleDistanceUnit: 'm',
       distanceToNext: 100,
       distanceUnit: 'm'
@@ -68,9 +62,6 @@ describe('MarchOrderService', () => {
   });
 
   it('should calculate correct total column length', () => {
-    // Добавим 2 элемента
-    // Элемент 1: 3 БМП по 10м с дистанцией 50м (глубина 130м = 0.13км). Дистанция до следующего: 100м = 0.1км.
-    // Элемент 2: 2 танка по 10м с дистанцией 100м (глубина 120м = 0.12км). Дистанция до следующего: 0.
     service.addElement({
       name: 'Подразделение 1',
       icon: 'bmp_svoy1',
@@ -95,7 +86,6 @@ describe('MarchOrderService', () => {
       distanceUnit: 'm'
     });
 
-    // Общая длина = 0.13км (эл1) + 0.1км (дистанция до эл2) + 0.12км (эл2) = 0.35км
     const totalLength = service.calculateTotalLengthKm();
     expect(totalLength).toBeCloseTo(0.35, 3);
   });
