@@ -82,25 +82,15 @@ export class TerrainService {
     return [ax + t * dx, ay + t * dy];
   }
 
-  private findNearestContour(lng: number, lat: number, data: any): { 
-    point: [number, number], 
-    distance: number, 
-    elevation: number, 
-    dx: number, 
-    dy: number 
-  } | null {
-    if (!data || !data.features) return null;
-    let minDistance = Infinity;
-    let closestPoint: [number, number] = [lng, lat];
-    let closestElevation = 0;
-    let closestDx = 0;
-    let closestDy = 0;
-
-    const threshold = 0.02; // ~2km bounding box search buffer
+  private findNearestContours(lng: number, lat: number, data: any): { elevation: number, distance: number, dx: number, dy: number }[] {
+    if (!data || !data.features) return [];
+    
+    const threshold = 0.03;
+    const candidates: { elevation: number, distance: number, dx: number, dy: number }[] = [];
 
     for (const feature of data.features) {
       if (!feature.bbox) continue;
-      
+
       if (lng < feature.bbox[0] - threshold || lng > feature.bbox[2] + threshold ||
           lat < feature.bbox[1] - threshold || lat > feature.bbox[3] + threshold) {
         continue;
@@ -109,24 +99,25 @@ export class TerrainService {
       const ele = feature.properties.ele || 0;
       const geomType = feature.geometry.type;
 
+      let minDistForFeature = Infinity;
+      let featDx = 0;
+      let featDy = 0;
+
       if (geomType === 'LineString') {
         const coords = feature.geometry.coordinates;
         for (let i = 0; i < coords.length - 1; i++) {
           const a = coords[i];
-          const b = coords[i+1];
+          const b = coords[i + 1];
           const dist = this.distanceToSegment(lng, lat, a[0], a[1], b[0], b[1]);
-          if (dist < minDistance) {
-            minDistance = dist;
-            closestPoint = this.getClosestPointOnSegment(lng, lat, a[0], a[1], b[0], b[1]);
-            closestElevation = ele;
-            closestDx = b[0] - a[0];
-            closestDy = b[1] - a[1];
+          if (dist < minDistForFeature) {
+            minDistForFeature = dist;
+            featDx = b[0] - a[0];
+            featDy = b[1] - a[1];
           }
         }
       } else if (geomType === 'MultiLineString') {
         const lines = feature.geometry.coordinates;
         for (const coords of lines) {
-          // Local bounding box check for individual LineString inside MultiLineString
           let minX = Infinity, minY = Infinity;
           let maxX = -Infinity, maxY = -Infinity;
           for (const pt of coords) {
@@ -142,51 +133,85 @@ export class TerrainService {
 
           for (let i = 0; i < coords.length - 1; i++) {
             const a = coords[i];
-            const b = coords[i+1];
+            const b = coords[i + 1];
             const dist = this.distanceToSegment(lng, lat, a[0], a[1], b[0], b[1]);
-            if (dist < minDistance) {
-              minDistance = dist;
-              closestPoint = this.getClosestPointOnSegment(lng, lat, a[0], a[1], b[0], b[1]);
-              closestElevation = ele;
-              closestDx = b[0] - a[0];
-              closestDy = b[1] - a[1];
+            if (dist < minDistForFeature) {
+              minDistForFeature = dist;
+              featDx = b[0] - a[0];
+              featDy = b[1] - a[1];
             }
           }
         }
       }
+
+      if (minDistForFeature < Infinity) {
+        candidates.push({
+          elevation: ele,
+          distance: minDistForFeature,
+          dx: featDx,
+          dy: featDy
+        });
+      }
     }
 
-    if (minDistance === Infinity) return null;
-    return {
-      point: closestPoint,
-      distance: minDistance,
-      elevation: closestElevation,
-      dx: closestDx,
-      dy: closestDy
-    };
+    candidates.sort((a, b) => a.distance - b.distance);
+    return candidates;
+  }
+
+  getInterpolatedElevation(lng: number, lat: number): number {
+    if (!this.contoursData) return 150.0;
+    const candidates = this.findNearestContours(lng, lat, this.contoursData);
+    if (candidates.length === 0) return 150.0;
+
+    const first = candidates[0];
+    if (first.distance < 0.00001) return parseFloat(first.elevation.toFixed(1));
+
+    const distinct: { elevation: number, distance: number }[] = [];
+    const seenElevations = new Set<number>();
+
+    for (const item of candidates) {
+      if (!seenElevations.has(item.elevation)) {
+        seenElevations.add(item.elevation);
+        distinct.push({ elevation: item.elevation, distance: item.distance });
+        if (distinct.length >= 3) break;
+      }
+    }
+
+    if (distinct.length === 1) {
+      return parseFloat(distinct[0].elevation.toFixed(1));
+    }
+
+    let weightSum = 0;
+    let valueSum = 0;
+
+    for (const item of distinct) {
+      const w = 1.0 / Math.pow(item.distance + 0.000001, 2);
+      weightSum += w;
+      valueSum += w * item.elevation;
+    }
+
+    const interpolated = valueSum / weightSum;
+    return parseFloat(interpolated.toFixed(1));
   }
 
   getElevationAt(lng: number, lat: number): number {
-    if (!this.contoursData) return 150;
-    const nearest = this.findNearestContour(lng, lat, this.contoursData);
-    return nearest ? nearest.elevation : 150;
+    return this.getInterpolatedElevation(lng, lat);
   }
 
   async getApproxElevation(lng: number, lat: number): Promise<number> {
     const data = await this.loadContours();
-    if (!data) return 150;
-    const nearest = this.findNearestContour(lng, lat, data);
-    return nearest ? nearest.elevation : 150;
+    if (!data) return 150.0;
+    return this.getInterpolatedElevation(lng, lat);
   }
-
 
   async getSlopeBearing(lng: number, lat: number): Promise<number | null> {
     const data = await this.loadContours();
     if (!data) return null;
 
-    const nearest = this.findNearestContour(lng, lat, data);
-    if (!nearest) return null;
+    const candidates = this.findNearestContours(lng, lat, data);
+    if (candidates.length === 0) return null;
 
+    const nearest = candidates[0];
     const dx = nearest.dx;
     const dy = nearest.dy;
     const len = Math.hypot(dx, dy);
@@ -195,34 +220,24 @@ export class TerrainService {
     const nx = -dy / len;
     const ny = dx / len;
 
-    const delta = 0.0005; // ~50m
+    const delta = 0.0005;
     const p1_lng = lng + nx * delta;
     const p1_lat = lat + ny * delta;
     const p2_lng = lng - nx * delta;
     const p2_lat = lat - ny * delta;
 
-    const n1 = this.findNearestContour(p1_lng, p1_lat, data);
-    const n2 = this.findNearestContour(p2_lng, p2_lat, data);
+    const n1_elev = this.getInterpolatedElevation(p1_lng, p1_lat);
+    const n2_elev = this.getInterpolatedElevation(p2_lng, p2_lat);
 
     let downhillX = nx;
     let downhillY = ny;
 
-    if (n1 && n2) {
-      if (n1.elevation > n2.elevation) {
-        downhillX = -nx;
-        downhillY = -ny;
-      } else if (n1.elevation < n2.elevation) {
-        downhillX = nx;
-        downhillY = ny;
-      } else {
-        if (n1.elevation < nearest.elevation) {
-          downhillX = nx;
-          downhillY = ny;
-        } else if (n2.elevation < nearest.elevation) {
-          downhillX = -nx;
-          downhillY = -ny;
-        }
-      }
+    if (n1_elev > n2_elev) {
+      downhillX = -nx;
+      downhillY = -ny;
+    } else if (n1_elev < n2_elev) {
+      downhillX = nx;
+      downhillY = ny;
     }
 
     const rad = lat * Math.PI / 180;

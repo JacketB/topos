@@ -1,0 +1,1003 @@
+[
+  {
+    "id": "minsk",
+    "name": "Минск",
+    "nameBe": "Мінск",
+    "type": "city",
+    "region": "Минская область",
+    "coords": [
+      27.5618,
+      53.9022
+    ],
+    "population": 1995000,
+    "nodeId": 0
+  },
+  {
+    "id": "borisov",
+    "name": "Борисов",
+    "nameBe": "Барысаў",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      28.5119,
+      54.2276
+    ],
+    "population": 143000,
+    "nodeId": 1
+  },
+  {
+    "id": "zhodino",
+    "name": "Жодино",
+    "nameBe": "Жодзіна",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      28.3475,
+      54.097
+    ],
+    "population": 64500,
+    "nodeId": 2
+  },
+  {
+    "id": "molodechno",
+    "name": "Молодечно",
+    "nameBe": "Маладзечна",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      26.8522,
+      54.3125
+    ],
+    "population": 95000,
+    "nodeId": 3
+  },
+  {
+    "id": "soligorsk",
+    "name": "Солигорск",
+    "nameBe": "Салігорск",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      27.5408,
+      52.7876
+    ],
+    "population": 106000,
+    "nodeId": 4
+  },
+  {
+    "id": "slutsk",
+    "name": "Слуцк",
+    "nameBe": "Слуцк",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      27.5458,
+      53.0274
+    ],
+    "population": 62000,
+    "nodeId": 5
+  },
+  {
+    "id": "dzerzhinsk",
+    "name": "Дзержинск",
+    "nameBe": "Дзяржынск",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      27.1384,
+      53.6842
+    ],
+    "population": 29800,
+    "nodeId": 6
+  },
+  {
+    "id": "vileyka",
+    "name": "Вилейка",
+    "nameBe": "Вілейка",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      26.9114,
+      54.4914
+    ],
+    "population": 26800,
+    "nodeId": 7
+  },
+  {
+    "id": "nesvizh",
+    "name": "Несвиж",
+    "nameBe": "Нясвіж",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      26.6681,
+      53.2198
+    ],
+    "population": 15500,
+    "nodeId": 8
+  },
+  {
+    "id": "marina_gorka",
+    "name": "Марьина Горка",
+    "nameBe": "Мар’іна Горка",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      28.1528,
+      53.5097
+    ],
+    "population": 21000,
+    "nodeId": 9
+  },
+  {
+    "id": "stolbtsy",
+    "name": "Столбцы",
+    "nameBe": "Стаўбцы",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      26.7778,
+      53.4839
+    ],
+    "population": 17000,
+    "nodeId": 10
+  },
+  {
+    "id": "zaslavl",
+    "name": "Заславль",
+    "nameBe": "Заслаўе",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      27.2886,
+      54.0044
+    ],
+    "population": 15700,
+    "nodeId": 11
+  },
+  {
+    "id": "krupki",
+    "name": "Крупки",
+    "nameBe": "Крупкі",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      29.1377,
+      54.3217
+    ],
+    "population": 8600,
+    "nodeId": 12
+  },
+  {
+    "id": "volozhin",
+    "name": "Воложин",
+    "nameBe": "Валожын",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      26.5264,
+      54.0886
+    ],
+    "population": 10300,
+    "nodeId": 13
+  },
+  {
+    "id": "kopyl",
+    "name": "Копыль",
+    "nameBe": "Капыль",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      27.0911,
+      53.1519
+    ],
+    "population": 9500,
+    "nodeId": 14
+  },
+  {
+    "id": "uzda",
+    "name": "Узда",
+    "nameBe": "Узда",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      27.2144,
+      53.4633
+    ],
+    "population": 10100,
+    "nodeId": 15
+  },
+  {
+    "id": "berezino",
+    "name": "Березино",
+    "nameBe": "Беразіно",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      28.9864,
+      53.8344
+    ],
+    "population": 11800,
+    "nodeId": 16
+  },
+  {
+    "id": "starye_dorogi",
+    "name": "Старые Дороги",
+    "nameBe": "Старыя Дарогі",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      28.2831,
+      53.0389
+    ],
+    "population": 11000,
+    "nodeId": 17
+  },
+  {
+    "id": "lyuban",
+    "name": "Любань",
+    "nameBe": "Любань",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      28.0039,
+      52.7986
+    ],
+    "population": 11000,
+    "nodeId": 18
+  },
+  {
+    "id": "logoisk",
+    "name": "Логойск",
+    "nameBe": "Лагойск",
+    "type": "town",
+    "region": "Минская область",
+    "coords": [
+      27.8425,
+      54.2047
+    ],
+    "population": 13000,
+    "nodeId": 19
+  },
+  {
+    "id": "brest",
+    "name": "Брест",
+    "nameBe": "Брэст",
+    "type": "city",
+    "region": "Брестская область",
+    "coords": [
+      23.7,
+      52.0976
+    ],
+    "population": 340000,
+    "nodeId": 20
+  },
+  {
+    "id": "baranovichi",
+    "name": "Барановичи",
+    "nameBe": "Баранавічы",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      26.0139,
+      53.1327
+    ],
+    "population": 175000,
+    "nodeId": 21
+  },
+  {
+    "id": "pinsk",
+    "name": "Пинск",
+    "nameBe": "Пінск",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      26.0967,
+      52.1154
+    ],
+    "population": 126000,
+    "nodeId": 22
+  },
+  {
+    "id": "kobrin",
+    "name": "Кобрин",
+    "nameBe": "Кобрын",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      24.3564,
+      52.2139
+    ],
+    "population": 52000,
+    "nodeId": 23
+  },
+  {
+    "id": "bereza",
+    "name": "Береза",
+    "nameBe": "Бяроза",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      24.9786,
+      52.5336
+    ],
+    "population": 29000,
+    "nodeId": 24
+  },
+  {
+    "id": "ivatsevichi",
+    "name": "Ивацевичи",
+    "nameBe": "Івацэвічы",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      25.34,
+      52.7128
+    ],
+    "population": 23000,
+    "nodeId": 25
+  },
+  {
+    "id": "luninets",
+    "name": "Лунинец",
+    "nameBe": "Лунінец",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      26.8,
+      52.2472
+    ],
+    "population": 24000,
+    "nodeId": 26
+  },
+  {
+    "id": "pruzhany",
+    "name": "Пружаны",
+    "nameBe": "Пружаны",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      24.4561,
+      52.5561
+    ],
+    "population": 19000,
+    "nodeId": 27
+  },
+  {
+    "id": "gantsevichi",
+    "name": "Ганцевичи",
+    "nameBe": "Ганцавічы",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      26.4328,
+      52.7583
+    ],
+    "population": 13800,
+    "nodeId": 28
+  },
+  {
+    "id": "drogichin",
+    "name": "Дрогичин",
+    "nameBe": "Драгічын",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      25.15,
+      52.1833
+    ],
+    "population": 14800,
+    "nodeId": 29
+  },
+  {
+    "id": "zhabinka",
+    "name": "Жабинка",
+    "nameBe": "Жабінка",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      24.0167,
+      52.2
+    ],
+    "population": 13200,
+    "nodeId": 30
+  },
+  {
+    "id": "stolin",
+    "name": "Столин",
+    "nameBe": "Столін",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      26.85,
+      51.8833
+    ],
+    "population": 13000,
+    "nodeId": 31
+  },
+  {
+    "id": "ivanovo",
+    "name": "Иваново",
+    "nameBe": "Іванава",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      25.5333,
+      52.15
+    ],
+    "population": 16000,
+    "nodeId": 32
+  },
+  {
+    "id": "lyakhovichi",
+    "name": "Ляховичи",
+    "nameBe": "Ляхавічы",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      26.2667,
+      53.0333
+    ],
+    "population": 10900,
+    "nodeId": 33
+  },
+  {
+    "id": "kamenets",
+    "name": "Каменец",
+    "nameBe": "Каменец",
+    "type": "town",
+    "region": "Брестская область",
+    "coords": [
+      23.8167,
+      52.4
+    ],
+    "population": 8400,
+    "nodeId": 34
+  },
+  {
+    "id": "vitebsk",
+    "name": "Витебск",
+    "nameBe": "Віцебск",
+    "type": "city",
+    "region": "Витебская область",
+    "coords": [
+      30.2049,
+      55.1904
+    ],
+    "population": 362000,
+    "nodeId": 35
+  },
+  {
+    "id": "orsha",
+    "name": "Орша",
+    "nameBe": "Ворша",
+    "type": "town",
+    "region": "Витебская область",
+    "coords": [
+      30.4186,
+      54.5086
+    ],
+    "population": 108000,
+    "nodeId": 36
+  },
+  {
+    "id": "novopolotsk",
+    "name": "Новополоцк",
+    "nameBe": "Наваполацк",
+    "type": "town",
+    "region": "Витебская область",
+    "coords": [
+      28.6586,
+      55.5322
+    ],
+    "population": 98000,
+    "nodeId": 37
+  },
+  {
+    "id": "polotsk",
+    "name": "Полоцк",
+    "nameBe": "Полацк",
+    "type": "town",
+    "region": "Витебская область",
+    "coords": [
+      28.7847,
+      55.4856
+    ],
+    "population": 80000,
+    "nodeId": 38
+  },
+  {
+    "id": "postavy",
+    "name": "Поставы",
+    "nameBe": "Паставы",
+    "type": "town",
+    "region": "Витебская область",
+    "coords": [
+      26.8389,
+      55.1161
+    ],
+    "population": 19000,
+    "nodeId": 39
+  },
+  {
+    "id": "glubokoe",
+    "name": "Глубокое",
+    "nameBe": "Глыбокае",
+    "type": "town",
+    "region": "Витебская область",
+    "coords": [
+      27.6908,
+      55.1386
+    ],
+    "population": 18000,
+    "nodeId": 40
+  },
+  {
+    "id": "lepel",
+    "name": "Лепель",
+    "nameBe": "Лепель",
+    "type": "town",
+    "region": "Витебская область",
+    "coords": [
+      28.6975,
+      54.8833
+    ],
+    "population": 17200,
+    "nodeId": 41
+  },
+  {
+    "id": "dokshitsy",
+    "name": "Докшицы",
+    "nameBe": "Докшыцы",
+    "type": "town",
+    "region": "Витебская область",
+    "coords": [
+      27.7667,
+      54.8333
+    ],
+    "population": 6900,
+    "nodeId": 42
+  },
+  {
+    "id": "gorodok",
+    "name": "Городок",
+    "nameBe": "Гарадок",
+    "type": "town",
+    "region": "Витебская область",
+    "coords": [
+      29.9833,
+      55.4628
+    ],
+    "population": 11700,
+    "nodeId": 43
+  },
+  {
+    "id": "braslav",
+    "name": "Браслав",
+    "nameBe": "Браслаў",
+    "type": "town",
+    "region": "Витебская область",
+    "coords": [
+      27.0333,
+      55.6333
+    ],
+    "population": 9400,
+    "nodeId": 44
+  },
+  {
+    "id": "tolochin",
+    "name": "Толочин",
+    "nameBe": "Талачын",
+    "type": "town",
+    "region": "Витебская область",
+    "coords": [
+      29.7,
+      54.4167
+    ],
+    "population": 9700,
+    "nodeId": 45
+  },
+  {
+    "id": "gomel",
+    "name": "Гомель",
+    "nameBe": "Гомель",
+    "type": "city",
+    "region": "Гомельская область",
+    "coords": [
+      30.9754,
+      52.4345
+    ],
+    "population": 508000,
+    "nodeId": 46
+  },
+  {
+    "id": "mozyr",
+    "name": "Мозырь",
+    "nameBe": "Мазыр",
+    "type": "town",
+    "region": "Гомельская область",
+    "coords": [
+      29.2731,
+      52.0492
+    ],
+    "population": 111000,
+    "nodeId": 47
+  },
+  {
+    "id": "zhlobin",
+    "name": "Жлобин",
+    "nameBe": "Жлобін",
+    "type": "town",
+    "region": "Гомельская область",
+    "coords": [
+      30.0244,
+      52.8928
+    ],
+    "population": 76000,
+    "nodeId": 48
+  },
+  {
+    "id": "svetlogorsk",
+    "name": "Светлогорск",
+    "nameBe": "Светлагорск",
+    "type": "town",
+    "region": "Гомельская область",
+    "coords": [
+      29.7333,
+      52.6333
+    ],
+    "population": 67000,
+    "nodeId": 49
+  },
+  {
+    "id": "rechitsa",
+    "name": "Речица",
+    "nameBe": "Рэчыца",
+    "type": "town",
+    "region": "Гомельская область",
+    "coords": [
+      30.3667,
+      52.3667
+    ],
+    "population": 65000,
+    "nodeId": 50
+  },
+  {
+    "id": "kalinkovichi",
+    "name": "Калинковичи",
+    "nameBe": "Калінкавічы",
+    "type": "town",
+    "region": "Гомельская область",
+    "coords": [
+      29.3333,
+      52.1333
+    ],
+    "population": 38000,
+    "nodeId": 51
+  },
+  {
+    "id": "rogachev",
+    "name": "Рогачев",
+    "nameBe": "Рагачоў",
+    "type": "town",
+    "region": "Гомельская область",
+    "coords": [
+      30.05,
+      53.1
+    ],
+    "population": 34000,
+    "nodeId": 52
+  },
+  {
+    "id": "dobrush",
+    "name": "Добруш",
+    "nameBe": "Добруш",
+    "type": "town",
+    "region": "Гомельская область",
+    "coords": [
+      31.3167,
+      52.4167
+    ],
+    "population": 18000,
+    "nodeId": 53
+  },
+  {
+    "id": "zhitkovichi",
+    "name": "Житковичи",
+    "nameBe": "Жыткавічы",
+    "type": "town",
+    "region": "Гомельская область",
+    "coords": [
+      27.85,
+      52.2167
+    ],
+    "population": 16000,
+    "nodeId": 54
+  },
+  {
+    "id": "khoiniki",
+    "name": "Хойники",
+    "nameBe": "Хойнікі",
+    "type": "town",
+    "region": "Гомельская область",
+    "coords": [
+      29.9667,
+      51.8833
+    ],
+    "population": 12400,
+    "nodeId": 55
+  },
+  {
+    "id": "petrikov",
+    "name": "Петриков",
+    "nameBe": "Петрыкаў",
+    "type": "town",
+    "region": "Гомельская область",
+    "coords": [
+      28.5833,
+      52.1333
+    ],
+    "population": 10200,
+    "nodeId": 56
+  },
+  {
+    "id": "grodno",
+    "name": "Гродно",
+    "nameBe": "Гродна",
+    "type": "city",
+    "region": "Гродненская область",
+    "coords": [
+      23.8294,
+      53.6693
+    ],
+    "population": 357000,
+    "nodeId": 57
+  },
+  {
+    "id": "lida",
+    "name": "Лида",
+    "nameBe": "Ліда",
+    "type": "town",
+    "region": "Гродненская область",
+    "coords": [
+      25.3,
+      53.8833
+    ],
+    "population": 102000,
+    "nodeId": 58
+  },
+  {
+    "id": "slonim",
+    "name": "Слоним",
+    "nameBe": "Слонім",
+    "type": "town",
+    "region": "Гродненская область",
+    "coords": [
+      25.3167,
+      53.0833
+    ],
+    "population": 49000,
+    "nodeId": 59
+  },
+  {
+    "id": "volkovysk",
+    "name": "Волковыск",
+    "nameBe": "Ваўкавыск",
+    "type": "town",
+    "region": "Гродненская область",
+    "coords": [
+      24.45,
+      53.15
+    ],
+    "population": 44000,
+    "nodeId": 60
+  },
+  {
+    "id": "smorgon",
+    "name": "Сморгонь",
+    "nameBe": "Смаргонь",
+    "type": "town",
+    "region": "Гродненская область",
+    "coords": [
+      26.4,
+      54.4833
+    ],
+    "population": 36000,
+    "nodeId": 61
+  },
+  {
+    "id": "novogrudok",
+    "name": "Новогрудок",
+    "nameBe": "Навагрудак",
+    "type": "town",
+    "region": "Гродненская область",
+    "coords": [
+      25.8333,
+      53.6
+    ],
+    "population": 28000,
+    "nodeId": 62
+  },
+  {
+    "id": "mosty",
+    "name": "Мосты",
+    "nameBe": "Масты",
+    "type": "town",
+    "region": "Гродненская область",
+    "coords": [
+      24.5333,
+      53.4167
+    ],
+    "population": 15000,
+    "nodeId": 63
+  },
+  {
+    "id": "shchuchin",
+    "name": "Щучин",
+    "nameBe": "Шчучын",
+    "type": "town",
+    "region": "Гродненская область",
+    "coords": [
+      24.75,
+      53.6
+    ],
+    "population": 15500,
+    "nodeId": 64
+  },
+  {
+    "id": "oshmiany",
+    "name": "Ошмяны",
+    "nameBe": "Ашмяны",
+    "type": "town",
+    "region": "Гродненская область",
+    "coords": [
+      25.9333,
+      54.4167
+    ],
+    "population": 16800,
+    "nodeId": 65
+  },
+  {
+    "id": "ivye",
+    "name": "Ивье",
+    "nameBe": "Іўе",
+    "type": "town",
+    "region": "Гродненская область",
+    "coords": [
+      25.7667,
+      53.9333
+    ],
+    "population": 7700,
+    "nodeId": 66
+  },
+  {
+    "id": "mogilev",
+    "name": "Могилев",
+    "nameBe": "Магілёў",
+    "type": "city",
+    "region": "Могилевская область",
+    "coords": [
+      30.3325,
+      53.8981
+    ],
+    "population": 357000,
+    "nodeId": 67
+  },
+  {
+    "id": "bobruisk",
+    "name": "Бобруйск",
+    "nameBe": "Бабруйск",
+    "type": "city",
+    "region": "Могилевская область",
+    "coords": [
+      29.2333,
+      53.15
+    ],
+    "population": 212000,
+    "nodeId": 68
+  },
+  {
+    "id": "gorki",
+    "name": "Горки",
+    "nameBe": "Горкі",
+    "type": "town",
+    "region": "Могилевская область",
+    "coords": [
+      30.9833,
+      54.2833
+    ],
+    "population": 29000,
+    "nodeId": 69
+  },
+  {
+    "id": "osipovichi",
+    "name": "Осиповичи",
+    "nameBe": "Асіповічы",
+    "type": "town",
+    "region": "Могилевская область",
+    "coords": [
+      28.6333,
+      53.3
+    ],
+    "population": 30000,
+    "nodeId": 70
+  },
+  {
+    "id": "krichev",
+    "name": "Кричев",
+    "nameBe": "Крычаў",
+    "type": "town",
+    "region": "Могилевская область",
+    "coords": [
+      31.7167,
+      53.7167
+    ],
+    "population": 25000,
+    "nodeId": 71
+  },
+  {
+    "id": "bykhov",
+    "name": "Быхов",
+    "nameBe": "Быхаў",
+    "type": "town",
+    "region": "Могилевская область",
+    "coords": [
+      30.25,
+      53.5167
+    ],
+    "population": 17000,
+    "nodeId": 72
+  },
+  {
+    "id": "klimovichi",
+    "name": "Климовичи",
+    "nameBe": "Клімавічы",
+    "type": "town",
+    "region": "Могилевская область",
+    "coords": [
+      31.95,
+      53.6167
+    ],
+    "population": 16000,
+    "nodeId": 73
+  },
+  {
+    "id": "shklov",
+    "name": "Шклов",
+    "nameBe": "Шклоў",
+    "type": "town",
+    "region": "Могилевская область",
+    "coords": [
+      30.3,
+      54.2167
+    ],
+    "population": 16000,
+    "nodeId": 74
+  },
+  {
+    "id": "klichev",
+    "name": "Кличев",
+    "nameBe": "Клічаў",
+    "type": "town",
+    "region": "Могилевская область",
+    "coords": [
+      29.3333,
+      53.5833
+    ],
+    "population": 7400,
+    "nodeId": 75
+  },
+  {
+    "id": "kirovsk",
+    "name": "Кировск",
+    "nameBe": "Кіраўск",
+    "type": "town",
+    "region": "Могилевская область",
+    "coords": [
+      29.4667,
+      53.2667
+    ],
+    "population": 8400,
+    "nodeId": 76
+  }
+]

@@ -1,5 +1,4 @@
 <div class="elevation-profile-container">
-  <!-- Header -->
   <div class="elevation-profile-header">
     <div class="elevation-profile-title-group">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -8,7 +7,6 @@
       <span class="elevation-profile-title">{{ title }}</span>
     </div>
 
-    <!-- Summary Stats -->
     <div class="elevation-profile-stats">
       <div class="stat-badge">
         <span class="stat-label">Дистанция:</span>
@@ -26,13 +24,21 @@
         <span class="stat-label">Подъем:</span>
         <span class="stat-value">+{{ elevationGainM }} м</span>
       </div>
+      <div class="stat-badge loss">
+        <span class="stat-label">Спуск:</span>
+        <span class="stat-value">-{{ elevationLossM }} м</span>
+      </div>
 
       @if (hoveredPoint) {
-        <div class="stat-badge active-point">
+        <div class="stat-badge active-point" [class.steep-warning]="Math.abs(hoveredPoint.slopePercent) > 8">
           <span class="stat-label">Дист:</span>
           <span class="stat-value">{{ (hoveredPoint.distanceM / 1000) | number:'1.2-2' }} км</span>
           <span class="stat-label ml-2">Высота:</span>
           <span class="stat-value highlight">{{ hoveredPoint.elevationM }} м</span>
+          <span class="stat-label ml-2">Уклон:</span>
+          <span class="stat-value" [class.danger]="Math.abs(hoveredPoint.slopePercent) > 8">
+            {{ hoveredPoint.slopePercent > 0 ? '+' : '' }}{{ hoveredPoint.slopePercent | number:'1.1-1' }}% ({{ hoveredPoint.slopeDegrees }}°)
+          </span>
         </div>
       }
     </div>
@@ -42,7 +48,6 @@
     </button>
   </div>
 
-  <!-- Body Chart Canvas -->
   <div class="elevation-profile-body">
     <canvas 
       #profileCanvas 

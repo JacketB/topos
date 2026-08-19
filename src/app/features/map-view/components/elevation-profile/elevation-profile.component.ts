@@ -5,6 +5,8 @@ import { TerrainService } from '../../services/terrain.service';
 export interface ElevationPoint {
   distanceM: number;
   elevationM: number;
+  slopePercent: number;
+  slopeDegrees: number;
   coord: [number, number];
 }
 
@@ -16,6 +18,7 @@ export interface ElevationPoint {
   styleUrl: './elevation-profile.component.css'
 })
 export class ElevationProfileComponent implements OnChanges {
+  protected readonly Math = Math;
   private readonly terrainService = inject(TerrainService);
 
   @Input() coordinates: [number, number][] = [];
@@ -31,6 +34,8 @@ export class ElevationProfileComponent implements OnChanges {
   minElevation = 0;
   maxElevation = 0;
   elevationGainM = 0;
+  elevationLossM = 0;
+  maxSlopePercent = 0;
 
   hoveredPoint: ElevationPoint | null = null;
   hoveredX = 0;
@@ -48,18 +53,23 @@ export class ElevationProfileComponent implements OnChanges {
       this.minElevation = 0;
       this.maxElevation = 0;
       this.elevationGainM = 0;
+      this.elevationLossM = 0;
+      this.maxSlopePercent = 0;
       return;
     }
 
     const points: ElevationPoint[] = [];
     let accDist = 0;
     let gain = 0;
+    let loss = 0;
     let minE = Infinity;
     let maxE = -Infinity;
+    let maxSlope = 0;
 
-    const stepM = 50;
+    const stepM = 25;
     let lastPt: [number, number] | null = null;
     let lastElev: number | null = null;
+    let lastAccDist = 0;
 
     for (let i = 0; i < this.coordinates.length - 1; i++) {
       const p1 = this.coordinates[i];
@@ -77,10 +87,24 @@ export class ElevationProfileComponent implements OnChanges {
           accDist += this.getDistance(lastPt, pt);
         }
 
-        const elev = Math.round(this.terrainService.getElevationAt(lng, lat) || 120);
+        const rawElev = this.terrainService.getElevationAt(lng, lat) || 120;
+        const elev = Math.round(rawElev * 10) / 10;
 
-        if (lastElev !== null && elev > lastElev) {
-          gain += (elev - lastElev);
+        let slopeP = 0;
+        let slopeDeg = 0;
+
+        if (lastElev !== null) {
+          const deltaH = elev - lastElev;
+          const deltaD = Math.max(0.1, accDist - lastAccDist);
+          slopeP = (deltaH / deltaD) * 100;
+          slopeDeg = Math.atan2(deltaH, deltaD) * (180 / Math.PI);
+
+          if (deltaH > 0) gain += deltaH;
+          if (deltaH < 0) loss += Math.abs(deltaH);
+
+          if (Math.abs(slopeP) > Math.abs(maxSlope)) {
+            maxSlope = slopeP;
+          }
         }
 
         if (elev < minE) minE = elev;
@@ -89,11 +113,14 @@ export class ElevationProfileComponent implements OnChanges {
         points.push({
           distanceM: accDist,
           elevationM: elev,
+          slopePercent: parseFloat(slopeP.toFixed(1)),
+          slopeDegrees: parseFloat(slopeDeg.toFixed(1)),
           coord: pt
         });
 
         lastPt = pt;
         lastElev = elev;
+        lastAccDist = accDist;
       }
     }
 
@@ -102,6 +129,8 @@ export class ElevationProfileComponent implements OnChanges {
     this.minElevation = minE === Infinity ? 0 : minE;
     this.maxElevation = maxE === -Infinity ? 0 : maxE;
     this.elevationGainM = Math.round(gain);
+    this.elevationLossM = Math.round(loss);
+    this.maxSlopePercent = parseFloat(maxSlope.toFixed(1));
 
     setTimeout(() => this.drawProfileCanvas(), 50);
   }
@@ -126,8 +155,8 @@ export class ElevationProfileComponent implements OnChanges {
     const graphW = width - paddingLeft - paddingRight;
     const graphH = height - paddingTop - paddingBottom;
 
-    const minE = Math.max(0, this.minElevation - 10);
-    const maxE = this.maxElevation + 10;
+    const minE = Math.max(0, Math.floor(this.minElevation - 5));
+    const maxE = Math.ceil(this.maxElevation + 5);
     const rangeE = maxE - minE || 1;
 
     ctx.strokeStyle = '#e2e8f0';
@@ -149,14 +178,14 @@ export class ElevationProfileComponent implements OnChanges {
     }
 
     const gradient = ctx.createLinearGradient(0, paddingTop, 0, height - paddingBottom);
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.30)');
     gradient.addColorStop(1, 'rgba(59, 130, 246, 0.02)');
 
     ctx.beginPath();
     ctx.moveTo(paddingLeft, height - paddingBottom);
 
     this.profilePoints.forEach((pt) => {
-      const x = paddingLeft + (pt.distanceM / this.totalDistanceM) * graphW;
+      const x = paddingLeft + (pt.distanceM / (this.totalDistanceM || 1)) * graphW;
       const y = paddingTop + (1 - (pt.elevationM - minE) / rangeE) * graphH;
       ctx.lineTo(x, y);
     });
@@ -166,19 +195,27 @@ export class ElevationProfileComponent implements OnChanges {
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    ctx.beginPath();
-    this.profilePoints.forEach((pt, idx) => {
-      const x = paddingLeft + (pt.distanceM / this.totalDistanceM) * graphW;
-      const y = paddingTop + (1 - (pt.elevationM - minE) / rangeE) * graphH;
-      if (idx === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = '#2563eb';
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
+    for (let idx = 0; idx < this.profilePoints.length - 1; idx++) {
+      const p1 = this.profilePoints[idx];
+      const p2 = this.profilePoints[idx + 1];
+
+      const x1 = paddingLeft + (p1.distanceM / (this.totalDistanceM || 1)) * graphW;
+      const y1 = paddingTop + (1 - (p1.elevationM - minE) / rangeE) * graphH;
+      const x2 = paddingLeft + (p2.distanceM / (this.totalDistanceM || 1)) * graphW;
+      const y2 = paddingTop + (1 - (p2.elevationM - minE) / rangeE) * graphH;
+
+      const isSteep = Math.abs(p2.slopePercent) > 8;
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = isSteep ? '#dc2626' : '#2563eb';
+      ctx.lineWidth = isSteep ? 3.5 : 2.5;
+      ctx.stroke();
+    }
 
     if (this.hoveredPoint) {
-      const hx = paddingLeft + (this.hoveredPoint.distanceM / this.totalDistanceM) * graphW;
+      const hx = paddingLeft + (this.hoveredPoint.distanceM / (this.totalDistanceM || 1)) * graphW;
       const hy = paddingTop + (1 - (this.hoveredPoint.elevationM - minE) / rangeE) * graphH;
 
       ctx.strokeStyle = '#ef4444';
@@ -191,7 +228,7 @@ export class ElevationProfileComponent implements OnChanges {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = Math.abs(this.hoveredPoint.slopePercent) > 8 ? '#dc2626' : '#2563eb';
       ctx.beginPath();
       ctx.arc(hx, hy, 4.5, 0, Math.PI * 2);
       ctx.fill();

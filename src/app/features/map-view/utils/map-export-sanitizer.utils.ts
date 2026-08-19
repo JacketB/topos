@@ -200,13 +200,35 @@ export class MapExportSanitizerUtils {
     let rawBuffer: Uint8Array | Uint8ClampedArray | null = null;
 
     if (img.data) {
-      width = img.width || 0;
-      height = img.height || 0;
-      rawBuffer = img.data;
-    } else if (img.userImage && img.userImage.data) {
-      width = img.userImage.width || 0;
-      height = img.userImage.height || 0;
-      rawBuffer = img.userImage.data;
+      if (img.data.data && typeof img.data.width === 'number') {
+        width = img.data.width;
+        height = img.data.height;
+        rawBuffer = img.data.data;
+      } else if (img.data instanceof Uint8Array || img.data instanceof Uint8ClampedArray) {
+        width = img.width || 0;
+        height = img.height || 0;
+        rawBuffer = img.data;
+      }
+    }
+
+    if (!rawBuffer && img.userImage) {
+      if (img.userImage.data && img.userImage.data.data) {
+        width = img.userImage.data.width || img.userImage.width || 0;
+        height = img.userImage.data.height || img.userImage.height || 0;
+        rawBuffer = img.userImage.data.data;
+      } else if (img.userImage.data) {
+        width = img.userImage.width || 0;
+        height = img.userImage.height || 0;
+        rawBuffer = img.userImage.data;
+      }
+    }
+
+    if (!rawBuffer && typeof img.width === 'number' && typeof img.height === 'number') {
+      width = img.width;
+      height = img.height;
+      if (img.data instanceof Uint8Array || img.data instanceof Uint8ClampedArray) {
+        rawBuffer = img.data;
+      }
     }
 
     if (width > 0 && height > 0 && rawBuffer && rawBuffer.length >= width * height * 4) {
@@ -222,7 +244,6 @@ export class MapExportSanitizerUtils {
           return { url: cvs.toDataURL('image/png'), width, height };
         }
       } catch (e) {
-        console.error('Error converting raw pixels for style image:', e);
       }
     }
 

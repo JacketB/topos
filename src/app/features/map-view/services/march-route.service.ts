@@ -23,16 +23,361 @@ export interface MarchRoute {
   totalBarriers: number;
 }
 
+export interface BelarusPlace {
+  id: string;
+  name: string;
+  nameBe: string;
+  type: string;
+  region: string;
+  coords: [number, number];
+  population?: number;
+  nodeId?: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class MarchRouteService {
   private terrainService: TerrainService | null = null;
+  private placesCache: BelarusPlace[] = [];
 
   constructor() {
     try {
       this.terrainService = inject(TerrainService, { optional: true });
     } catch {}
+  }
+
+  async searchPlaces(query: string): Promise<BelarusPlace[]> {
+    const q = query.trim().toLowerCase();
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      return await invoke<BelarusPlace[]>('search_belarus_places', { query: q });
+    } catch {
+      if (this.placesCache.length === 0) {
+        try {
+          const res = await fetch('/assets/belarus_places.json');
+          if (res.ok) {
+            this.placesCache = await res.json();
+          }
+        } catch {}
+      }
+      if (!q) return this.placesCache.slice(0, 10);
+      return this.placesCache.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        (p.nameBe && p.nameBe.toLowerCase().includes(q)) ||
+        p.region.toLowerCase().includes(q)
+      );
+    }
+  }
+
+  async calculateGraphRoute(
+    origin: [number, number],
+    destination: [number, number],
+    waypoints: [number, number][] = [],
+    columnType: ColumnType = 'wheel'
+  ): Promise<{ coordinates: [number, number][]; routeStats: MarchRoute }> {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const res = await invoke<any>('calculate_march_route', {
+        origin,
+        destination,
+        waypoints,
+        columnType
+      });
+
+      const segments: MarchSegment[] = (res.segments || []).map((s: any) => ({
+        from: s.from,
+        to: s.to,
+        distanceKm: s.distanceKm,
+        roadType: s.roadType,
+        elevationSlope: 0,
+        speedKmH: s.speedKmH,
+        durationHrs: s.durationHrs
+      }));
+
+      return {
+        coordinates: res.coordinates || [origin, destination],
+        routeStats: {
+          segments,
+          totalDistanceKm: res.totalDistanceKm || 0,
+          totalDurationHrs: res.totalDurationHrs || 0,
+          sharpTurnCount: res.sharpTurnCount || 0,
+          bridgeCount: res.bridgeCount || 0,
+          totalBarriers: res.totalBarriers || 0
+        }
+      };
+    } catch (err) {
+      return this.calculateWebFallbackGraphRoute(origin, destination, waypoints, columnType);
+    }
+  }
+
+  private async calculateWebFallbackGraphRoute(
+    origin: [number, number],
+    destination: [number, number],
+    waypoints: [number, number][] = [],
+    columnType: ColumnType = 'wheel'
+  ): Promise<{ coordinates: [number, number][]; routeStats: MarchRoute }> {
+    try {
+      const resp = await fetch('/assets/belarus_graph.json');
+      if (resp.ok) {
+        const graphData = await resp.json();
+        const nodes: Array<{ id: number; coords: [number, number] }> = graphData.nodes || [];
+        const edges: Array<any> = graphData.edges || [];
+
+        if (nodes.length > 0 && edges.length > 0) {
+          const adj = new Map<number, any[]>();
+          edges.forEach(e => {
+            let list = adj.get(e.from);
+            if (!list) {
+              list = [];
+              adj.set(e.from, list);
+            }
+            list.push(e);
+          });
+
+          const cellSize = 0.05;
+          const spatialGrid = new Map<string, number[]>();
+          nodes.forEach(n => {
+            const cx = Math.floor(n.coords[0] / cellSize);
+            const cy = Math.floor(n.coords[1] / cellSize);
+            const key = `${cx}_${cy}`;
+            let list = spatialGrid.get(key);
+            if (!list) {
+              list = [];
+              spatialGrid.set(key, list);
+            }
+            list.push(n.id);
+          });
+
+          const findNearestNode = (pt: [number, number]): number => {
+            const cx = Math.floor(pt[0] / cellSize);
+            const cy = Math.floor(pt[1] / cellSize);
+            let minD = Infinity;
+            let bestId = 0;
+
+            for (let r = 0; r <= 3; r++) {
+              for (let dx = -r; dx <= r; dx++) {
+                for (let dy = -r; dy <= r; dy++) {
+                  const key = `${cx + dx}_${cy + dy}`;
+                  const list = spatialGrid.get(key);
+                  if (list) {
+                    for (const id of list) {
+                      const d = this.getDistance(pt, nodes[id].coords);
+                      if (d < minD) {
+                        minD = d;
+                        bestId = id;
+                      }
+                    }
+                  }
+                }
+              }
+              if (minD < Infinity) break;
+            }
+
+            if (minD === Infinity) {
+              nodes.forEach(n => {
+                const d = this.getDistance(pt, n.coords);
+                if (d < minD) {
+                  minD = d;
+                  bestId = n.id;
+                }
+              });
+            }
+            return bestId;
+          };
+
+          const pointsToVisit: [number, number][] = [origin, ...waypoints, destination];
+          const fullPathEdges: Array<{ from: number; to: number; edge: any }> = [];
+
+          for (let i = 0; i < pointsToVisit.length - 1; i++) {
+            const startNode = findNearestNode(pointsToVisit[i]);
+            const endNode = findNearestNode(pointsToVisit[i + 1]);
+
+            if (startNode === endNode) continue;
+
+            const targetCoords = nodes[endNode].coords;
+            const dists = new Map<number, number>();
+            const prev = new Map<number, { node: number; edge: any }>();
+            
+            const openHeap: Array<{ node: number; f: number }> = [];
+            const pushHeap = (item: { node: number; f: number }) => {
+              openHeap.push(item);
+              let idx = openHeap.length - 1;
+              while (idx > 0) {
+                const parentIdx = Math.floor((idx - 1) / 2);
+                if (openHeap[idx].f >= openHeap[parentIdx].f) break;
+                const temp = openHeap[idx];
+                openHeap[idx] = openHeap[parentIdx];
+                openHeap[parentIdx] = temp;
+                idx = parentIdx;
+              }
+            };
+            const popHeap = (): { node: number; f: number } | undefined => {
+              if (openHeap.length === 0) return undefined;
+              const top = openHeap[0];
+              const bottom = openHeap.pop()!;
+              if (openHeap.length > 0) {
+                openHeap[0] = bottom;
+                let idx = 0;
+                while (true) {
+                  let left = 2 * idx + 1;
+                  let right = 2 * idx + 2;
+                  let smallest = idx;
+                  if (left < openHeap.length && openHeap[left].f < openHeap[smallest].f) smallest = left;
+                  if (right < openHeap.length && openHeap[right].f < openHeap[smallest].f) smallest = right;
+                  if (smallest === idx) break;
+                  const temp = openHeap[idx];
+                  openHeap[idx] = openHeap[smallest];
+                  openHeap[smallest] = temp;
+                  idx = smallest;
+                }
+              }
+              return top;
+            };
+
+            dists.set(startNode, 0);
+            pushHeap({ node: startNode, f: this.getDistance(nodes[startNode].coords, targetCoords) / 110 });
+
+            while (openHeap.length > 0) {
+              const current = popHeap()!;
+              const u = current.node;
+              if (u === endNode) break;
+
+              const currentG = dists.get(u) ?? Infinity;
+              const currentH = this.getDistance(nodes[u].coords, targetCoords) / 110;
+              if (current.f > currentG + currentH + 0.00001) continue;
+
+              const prevNode = prev.get(u)?.node;
+              const outEdges = adj.get(u);
+
+              if (outEdges) {
+                for (const e of outEdges) {
+                  if (e.to === prevNode && outEdges.length > 1) continue;
+
+                  const speed = this.SPEED_LIMITS[columnType][e.roadType] || 35;
+                  const edgeCost = e.distanceKm / Math.max(1, speed);
+                  const alt = currentG + edgeCost;
+
+                  if (alt < (dists.get(e.to) ?? Infinity)) {
+                    dists.set(e.to, alt);
+                    prev.set(e.to, { node: u, edge: e });
+                    const h = this.getDistance(nodes[e.to].coords, targetCoords) / 110;
+                    pushHeap({ node: e.to, f: alt + h });
+                  }
+                }
+              }
+            }
+
+            const pathEdges: Array<{ from: number; to: number; edge: any }> = [];
+            let curr = endNode;
+
+            while (curr !== startNode) {
+              const p = prev.get(curr);
+              if (p) {
+                pathEdges.push({ from: p.node, to: curr, edge: p.edge });
+                curr = p.node;
+              } else {
+                break;
+              }
+            }
+
+            if (curr === startNode) {
+              pathEdges.reverse();
+              fullPathEdges.push(...pathEdges);
+            }
+          }
+
+          const nodeMap = new Map<number, [number, number]>();
+          nodes.forEach(n => nodeMap.set(n.id, n.coords));
+
+          const routeCoords: [number, number][] = [origin];
+
+          for (const pe of fullPathEdges) {
+            const edgeGeom = pe.edge?.geometry as [number, number][] | undefined;
+            if (edgeGeom && edgeGeom.length > 0) {
+              routeCoords.push(...edgeGeom.slice(1));
+            } else {
+              const toCoord = nodeMap.get(pe.to);
+              if (toCoord) routeCoords.push(toCoord);
+            }
+          }
+
+          if (routeCoords.length > 0) {
+            const last = routeCoords[routeCoords.length - 1];
+            if (this.getDistance(last, destination) > 0.001) {
+              routeCoords.push(destination);
+            }
+          } else {
+            routeCoords.push(origin, destination);
+          }
+
+          let totalDist = 0;
+          let totalDurationHrs = 0;
+          const segments: MarchSegment[] = [];
+
+          for (const pe of fullPathEdges) {
+            const fromCoord = nodeMap.get(pe.from) || routeCoords[0];
+            const toCoord = nodeMap.get(pe.to) || routeCoords[routeCoords.length - 1];
+            const segDist = pe.edge?.distanceKm ?? this.getDistance(fromCoord, toCoord);
+            const roadType = pe.edge?.roadType || 'primary';
+            const speed = this.SPEED_LIMITS[columnType][roadType] || 35;
+            const durationHrs = segDist / speed;
+
+            totalDist += segDist;
+            totalDurationHrs += durationHrs;
+
+            segments.push({
+              from: fromCoord,
+              to: toCoord,
+              distanceKm: Math.round(segDist * 100) / 100,
+              roadType,
+              elevationSlope: 0,
+              speedKmH: speed,
+              durationHrs: Math.round(durationHrs * 100) / 100
+            });
+          }
+
+          const sharpTurns = Math.max(0, Math.floor((routeCoords.length - 2) / 3));
+          const bridges = Math.floor(totalDist / 45.0);
+          const barriers = Math.floor(totalDist / 60.0);
+
+          return {
+            coordinates: routeCoords,
+            routeStats: {
+              segments,
+              totalDistanceKm: Math.round(totalDist * 100) / 100,
+              totalDurationHrs: Math.round(totalDurationHrs * 100) / 100,
+              sharpTurnCount: sharpTurns,
+              bridgeCount: bridges,
+              totalBarriers: barriers
+            }
+          };
+        }
+      }
+    } catch {
+    }
+
+    const dist = this.getDistance(origin, destination);
+    const speed = this.SPEED_LIMITS[columnType]['primary'] || 30;
+    return {
+      coordinates: [origin, ...waypoints, destination],
+      routeStats: {
+        segments: [{
+          from: origin,
+          to: destination,
+          distanceKm: dist,
+          roadType: 'primary',
+          elevationSlope: 0,
+          speedKmH: speed,
+          durationHrs: dist / speed
+        }],
+        totalDistanceKm: dist,
+        totalDurationHrs: dist / speed,
+        sharpTurnCount: 0,
+        bridgeCount: 0,
+        totalBarriers: 0
+      }
+    };
   }
 
   private readonly SPEED_LIMITS: Record<ColumnType, Record<string, number>> = {

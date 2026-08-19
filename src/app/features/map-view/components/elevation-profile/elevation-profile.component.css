@@ -58,9 +58,18 @@
   color: #059669;
 }
 
+.stat-badge.loss .stat-value {
+  color: #ea580c;
+}
+
 .stat-badge.active-point {
   background: #eff6ff;
   border-color: #bfdbfe;
+}
+
+.stat-badge.active-point.steep-warning {
+  background: #fef2f2;
+  border-color: #fca5a5;
 }
 
 .stat-label {
@@ -78,6 +87,10 @@
 
 .stat-value.highlight {
   color: #2563eb;
+}
+
+.stat-value.danger {
+  color: #dc2626;
 }
 
 .elevation-profile-close-btn {

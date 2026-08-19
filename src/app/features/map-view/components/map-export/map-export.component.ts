@@ -338,8 +338,26 @@ export class MapExportComponent implements OnDestroy {
 
       this.generationProgress.set('Подготовка тактических условных знаков...');
 
-      // Собираем все динамические картинки (топознаки) с основной карты
-      const images = (mainMap.style as any).imageManager?.images || {};
+      const styleAny = (mainMap.style as any) || {};
+      const images: { [key: string]: any } = {
+        ...(styleAny.imageManager?.images || {}),
+        ...(styleAny._imageManager?.images || {}),
+        ...(styleAny._images || {})
+      };
+      if (typeof mainMap.listImages === 'function') {
+        try {
+          const list = mainMap.listImages();
+          for (const imgId of list) {
+            if (!images[imgId] && mainMap.hasImage(imgId)) {
+              const loadedImg = styleAny.getImage ? styleAny.getImage(imgId) : (styleAny.imageManager?.getImage ? styleAny.imageManager.getImage(imgId) : null);
+              if (loadedImg) {
+                images[imgId] = loadedImg;
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
       const exportImages: { [key: string]: { url: string; pixelRatio: number; sdf: boolean } } = {};
       const addPromises: Promise<void>[] = [];
 

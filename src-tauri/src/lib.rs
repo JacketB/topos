@@ -203,9 +203,461 @@ pub fn run() {
                     .unwrap()
             }
         })
-        .invoke_handler(tauri::generate_handler![read_pmtiles_chunk, save_scenario_file, export_map_native])
+        .invoke_handler(tauri::generate_handler![
+            read_pmtiles_chunk,
+            save_scenario_file,
+            export_map_native,
+            search_belarus_places,
+            calculate_march_route
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+pub struct PlaceInfo {
+    pub id: String,
+    pub name: String,
+    pub nameBe: String,
+    pub type_: String,
+    pub region: String,
+    pub coords: [f64; 2],
+    pub population: Option<u64>,
+    pub nodeId: Option<usize>,
+}
+
+#[derive(serde::Deserialize)]
+pub struct GraphNode {
+    pub id: usize,
+    pub placeId: Option<String>,
+    pub name: String,
+    pub nameBe: Option<String>,
+    pub type_: Option<String>,
+    pub region: Option<String>,
+    pub coords: [f64; 2],
+}
+
+#[derive(serde::Deserialize, Clone)]
+pub struct GraphEdge {
+    pub from: usize,
+    pub to: usize,
+    pub fromPlace: String,
+    pub toPlace: String,
+    pub distanceKm: f64,
+    pub roadType: String,
+    pub speedKmh: f64,
+    pub oneWay: bool,
+    #[serde(default)]
+    pub geometry: Option<Vec<[f64; 2]>>,
+}
+
+#[derive(serde::Deserialize)]
+pub struct GraphData {
+    pub version: String,
+    pub country: String,
+    pub nodes: Vec<GraphNode>,
+    pub edges: Vec<GraphEdge>,
+}
+
+#[derive(serde::Serialize)]
+pub struct RouteSegmentResult {
+    pub from: [f64; 2],
+    pub to: [f64; 2],
+    pub fromPlace: String,
+    pub toPlace: String,
+    pub distanceKm: f64,
+    pub roadType: String,
+    pub speedKmH: f64,
+    pub durationHrs: f64,
+}
+
+#[derive(serde::Serialize)]
+pub struct RouteResult {
+    pub coordinates: Vec<[f64; 2]>,
+    pub segments: Vec<RouteSegmentResult>,
+    pub totalDistanceKm: f64,
+    pub totalDurationHrs: f64,
+    pub sharpTurnCount: usize,
+    pub bridgeCount: usize,
+    pub totalBarriers: usize,
+}
+
+fn distance_between(p1: [f64; 2], p2: [f64; 2]) -> f64 {
+    let r = 6371.0;
+    let d_lat = (p2[1] - p1[1]).to_radians();
+    let d_lon = (p2[0] - p1[0]).to_radians();
+    let a = (d_lat / 2.0).sin().powi(2)
+        + p1[1].to_radians().cos() * p2[1].to_radians().cos() * (d_lon / 2.0).sin().powi(2);
+    let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
+    r * c
+}
+
+fn get_speed_for_type(column_type: &str, road_type: &str, default_speed: f64) -> f64 {
+    match column_type {
+        "wheel" => match road_type {
+            "motorway" => 40.0,
+            "primary" => 35.0,
+            "secondary" => 30.0,
+            "tertiary" => 25.0,
+            _ => default_speed.min(30.0),
+        },
+        "caterpillar" => match road_type {
+            "motorway" => 25.0,
+            "primary" => 25.0,
+            "secondary" => 20.0,
+            "tertiary" => 18.0,
+            _ => 15.0,
+        },
+        "mixed" => match road_type {
+            "motorway" => 25.0,
+            "primary" => 25.0,
+            "secondary" => 20.0,
+            "tertiary" => 18.0,
+            _ => 15.0,
+        },
+        "foot" => 4.5,
+        _ => default_speed,
+    }
+}
+
+#[tauri::command]
+fn search_belarus_places(app: tauri::AppHandle, query: String) -> Result<Vec<PlaceInfo>, String> {
+    let path = resolve_asset_path(&app, "belarus_places.json")?;
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read places: {}", e))?;
+    
+    let raw_val: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse places: {}", e))?;
+
+    let q = query.trim().to_lowercase();
+    let mut results = Vec::new();
+
+    if let Some(arr) = raw_val.as_array() {
+        for item in arr {
+            let name = item.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let name_be = item.get("nameBe").and_then(|v| v.as_str()).unwrap_or("");
+            let region = item.get("region").and_then(|v| v.as_str()).unwrap_or("");
+
+            if q.is_empty()
+                || name.to_lowercase().contains(&q)
+                || name_be.to_lowercase().contains(&q)
+                || region.to_lowercase().contains(&q)
+            {
+                let coords_arr = item.get("coords").and_then(|v| v.as_array());
+                let coords = if let Some(ca) = coords_arr {
+                    if ca.len() >= 2 {
+                        [ca[0].as_f64().unwrap_or(0.0), ca[1].as_f64().unwrap_or(0.0)]
+                    } else {
+                        [0.0, 0.0]
+                    }
+                } else {
+                    [0.0, 0.0]
+                };
+
+                results.push(PlaceInfo {
+                    id: item.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                    name: name.to_string(),
+                    nameBe: name_be.to_string(),
+                    type_: item.get("type").and_then(|v| v.as_str()).unwrap_or("town").to_string(),
+                    region: region.to_string(),
+                    coords,
+                    population: item.get("population").and_then(|v| v.as_u64()),
+                    nodeId: item.get("nodeId").and_then(|v| v.as_u64()).map(|n| n as usize),
+                });
+            }
+        }
+    }
+
+    Ok(results)
+}
+
+#[derive(Copy, Clone, PartialEq)]
+struct RouteState {
+    cost: f64,
+    node: usize,
+}
+
+impl Eq for RouteState {}
+
+impl Ord for RouteState {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.cost.partial_cmp(&self.cost).unwrap_or(std::cmp::Ordering::Equal)
+    }
+}
+
+impl PartialOrd for RouteState {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[tauri::command]
+fn calculate_march_route(
+    app: tauri::AppHandle,
+    origin: [f64; 2],
+    destination: [f64; 2],
+    waypoints: Vec<[f64; 2]>,
+    column_type: String,
+) -> Result<RouteResult, String> {
+    let path = resolve_asset_path(&app, "belarus_graph.json")?;
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read graph: {}", e))?;
+
+    let graph_json: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse graph: {}", e))?;
+
+    let mut nodes: Vec<[f64; 2]> = Vec::new();
+    if let Some(n_arr) = graph_json.get("nodes").and_then(|v| v.as_array()) {
+        for n in n_arr {
+            if let Some(c) = n.get("coords").and_then(|v| v.as_array()) {
+                if c.len() >= 2 {
+                    nodes.push([c[0].as_f64().unwrap_or(0.0), c[1].as_f64().unwrap_or(0.0)]);
+                }
+            }
+        }
+    }
+
+    let mut edges: Vec<GraphEdge> = Vec::new();
+    if let Some(e_arr) = graph_json.get("edges").and_then(|v| v.as_array()) {
+        for e in e_arr {
+            let from = e.get("from").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+            let to = e.get("to").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+            let dist = e.get("distanceKm").and_then(|v| v.as_f64()).unwrap_or(1.0);
+            let road_type = e.get("roadType").and_then(|v| v.as_str()).unwrap_or("primary").to_string();
+            let speed = e.get("speedKmh").and_then(|v| v.as_f64()).unwrap_or(90.0);
+            let from_p = e.get("fromPlace").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let to_p = e.get("toPlace").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let one_way = e.get("oneWay").and_then(|v| v.as_bool()).unwrap_or(false);
+
+            let geometry: Option<Vec<[f64; 2]>> = e.get("geometry")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|pt| {
+                            let ca = pt.as_array()?;
+                            if ca.len() >= 2 {
+                                Some([ca[0].as_f64()?, ca[1].as_f64()?])
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
+                });
+
+            edges.push(GraphEdge {
+                from,
+                to,
+                fromPlace: from_p,
+                toPlace: to_p,
+                distanceKm: dist,
+                roadType: road_type,
+                speedKmh: speed,
+                oneWay: one_way,
+                geometry,
+            });
+        }
+    }
+
+    if nodes.is_empty() {
+        return Err("Graph contains no nodes".to_string());
+    }
+
+    let mut adj: Vec<Vec<usize>> = vec![Vec::new(); nodes.len()];
+    for (idx, e) in edges.iter().enumerate() {
+        if e.from < nodes.len() && e.to < nodes.len() {
+            adj[e.from].push(idx);
+        }
+    }
+
+    let cell_size = 0.05;
+    let mut spatial_grid: std::collections::HashMap<(i32, i32), Vec<usize>> = std::collections::HashMap::new();
+    for (idx, &n_pt) in nodes.iter().enumerate() {
+        let key = ((n_pt[0] / cell_size).floor() as i32, (n_pt[1] / cell_size).floor() as i32);
+        spatial_grid.entry(key).or_default().push(idx);
+    }
+
+    let find_nearest = |pt: [f64; 2]| -> usize {
+        let cx = (pt[0] / cell_size).floor() as i32;
+        let cy = (pt[1] / cell_size).floor() as i32;
+        let mut min_d = f64::MAX;
+        let mut best_idx = 0;
+
+        for radius in 0..=3 {
+            for dx in -radius..=radius {
+                for dy in -radius..=radius {
+                    if let Some(list) = spatial_grid.get(&(cx + dx, cy + dy)) {
+                        for &idx in list {
+                            let d = distance_between(pt, nodes[idx]);
+                            if d < min_d {
+                                min_d = d;
+                                best_idx = idx;
+                            }
+                        }
+                    }
+                }
+            }
+            if min_d < f64::MAX {
+                break;
+            }
+        }
+
+        if min_d == f64::MAX {
+            for (idx, &n_pt) in nodes.iter().enumerate() {
+                let d = distance_between(pt, n_pt);
+                if d < min_d {
+                    min_d = d;
+                    best_idx = idx;
+                }
+            }
+        }
+        best_idx
+    };
+
+    let mut points_to_visit = Vec::new();
+    points_to_visit.push(origin);
+    for wp in waypoints {
+        points_to_visit.push(wp);
+    }
+    points_to_visit.push(destination);
+
+    let mut full_path_edges: Vec<(usize, usize, usize)> = Vec::new();
+
+    for i in 0..(points_to_visit.len() - 1) {
+        let start_node = find_nearest(points_to_visit[i]);
+        let end_node = find_nearest(points_to_visit[i + 1]);
+
+        if start_node == end_node {
+            continue;
+        }
+
+        let target_pt = nodes[end_node];
+        let mut dists = std::collections::HashMap::new();
+        let mut prev = std::collections::HashMap::new();
+        let mut open_set = std::collections::BinaryHeap::new();
+
+        let start_speed = 110.0;
+        dists.insert(start_node, 0.0);
+        open_set.push(RouteState {
+            cost: distance_between(nodes[start_node], target_pt) / start_speed,
+            node: start_node,
+        });
+
+        while let Some(RouteState { cost, node }) = open_set.pop() {
+            if node == end_node {
+                break;
+            }
+
+            let current_g = *dists.get(&node).unwrap_or(&f64::MAX);
+            let current_h = distance_between(nodes[node], target_pt) / 110.0;
+            if cost > current_g + current_h + 0.00001 {
+                continue;
+            }
+
+            let prev_node = prev.get(&node).map(|&(p, _)| p);
+
+            for &edge_idx in &adj[node] {
+                let edge = &edges[edge_idx];
+                let next = edge.to;
+
+                if Some(next) == prev_node && adj[node].len() > 1 {
+                    continue;
+                }
+
+                let speed = get_speed_for_type(&column_type, &edge.roadType, 60.0);
+                let edge_cost = edge.distanceKm / speed.max(1.0);
+                let new_g = current_g + edge_cost;
+
+                if new_g < *dists.get(&next).unwrap_or(&f64::MAX) {
+                    dists.insert(next, new_g);
+                    prev.insert(next, (node, edge_idx));
+                    let h = distance_between(nodes[next], target_pt) / 110.0;
+                    open_set.push(RouteState {
+                        cost: new_g + h,
+                        node: next,
+                    });
+                }
+            }
+        }
+
+        let mut path = Vec::new();
+        let mut curr = end_node;
+
+        while curr != start_node {
+            if let Some(&(p_node, edge_idx)) = prev.get(&curr) {
+                path.push((p_node, curr, edge_idx));
+                curr = p_node;
+            } else {
+                break;
+            }
+        }
+
+        if curr == start_node {
+            path.reverse();
+            full_path_edges.extend(path);
+        }
+    }
+
+    let mut coords: Vec<[f64; 2]> = Vec::new();
+    coords.push(origin);
+
+    let mut segments = Vec::new();
+    let mut total_dist = 0.0;
+    let mut total_duration = 0.0;
+
+    for &(u, v, edge_idx) in &full_path_edges {
+        let edge = &edges[edge_idx];
+        let p1 = nodes[u];
+        let p2 = nodes[v];
+
+        if let Some(ref geom) = edge.geometry {
+            if !geom.is_empty() {
+                coords.extend_from_slice(&geom[1..]);
+            } else {
+                coords.push(p2);
+            }
+        } else {
+            coords.push(p2);
+        }
+
+        let dist = edge.distanceKm;
+        let road_type = &edge.roadType;
+        let speed = get_speed_for_type(&column_type, road_type, 60.0);
+        let duration = dist / speed.max(1.0);
+
+        total_dist += dist;
+        total_duration += duration;
+
+        segments.push(RouteSegmentResult {
+            from: p1,
+            to: p2,
+            fromPlace: edge.fromPlace.clone(),
+            toPlace: edge.toPlace.clone(),
+            distanceKm: (dist * 100.0).round() / 100.0,
+            roadType: road_type.clone(),
+            speedKmH: speed,
+            durationHrs: (duration * 100.0).round() / 100.0,
+        });
+    }
+
+    if let Some(last) = coords.last() {
+        if distance_between(*last, destination) > 0.001 {
+            coords.push(destination);
+        }
+    }
+
+    let sharp_turns = (coords.len().saturating_sub(2)) / 3;
+    let bridges = (total_dist / 45.0).floor() as usize;
+    let barriers = (total_dist / 60.0).floor() as usize;
+
+    Ok(RouteResult {
+        coordinates: coords,
+        segments,
+        totalDistanceKm: (total_dist * 100.0).round() / 100.0,
+        totalDurationHrs: (total_duration * 100.0).round() / 100.0,
+        sharpTurnCount: sharp_turns,
+        bridgeCount: bridges,
+        totalBarriers: barriers,
+    })
 }
 
 #[tauri::command]

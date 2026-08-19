@@ -53,6 +53,7 @@ export class TacticalMapService {
       this.selectedPlacedSymbol();
       this.selectedPlacedSymbols();
       this.placedSymbols();
+      this.updateTacticalSymbolsSource();
       this.updateLinearVerticesSource();
       this.updateMarchWaypointsSource();
       this.updateHighlightLayers();
@@ -637,6 +638,9 @@ export class TacticalMapService {
         const feat = features[0];
         const found = this.placedSymbols().find(s => s.properties['id'] === feat.properties?.['id']);
         if (found) {
+          if (found.properties?.['lineType'] === 'march_route') {
+            return;
+          }
           this.selectPlacedSymbol(found);
           return;
         }

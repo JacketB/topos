@@ -16,7 +16,9 @@ export class TacticalAnalyticsService {
 
   readonly isRangeRingsActive = signal<boolean>(false);
   readonly isViewshedActive = signal<boolean>(false);
-  readonly observerHeightM = signal<number>(10);
+  readonly observerHeightM = signal<number>(1.8);
+  readonly targetHeightM = signal<number>(2.0);
+  readonly maxRadiusM = signal<number>(3000);
   readonly rangeRingsCenter = signal<[number, number] | null>(null);
 
   readonly defaultRings: RangeRing[] = [
@@ -92,7 +94,7 @@ export class TacticalAnalyticsService {
             filter: ['==', ['get', 'status'], 'visible'],
             paint: {
               'fill-color': '#22c55e',
-              'fill-opacity': 0.3
+              'fill-opacity': 0.35
             }
           });
         }
@@ -105,7 +107,7 @@ export class TacticalAnalyticsService {
             filter: ['==', ['get', 'status'], 'hidden'],
             paint: {
               'fill-color': '#ef4444',
-              'fill-opacity': 0.25
+              'fill-opacity': 0.30
             }
           });
         }
@@ -148,6 +150,18 @@ export class TacticalAnalyticsService {
       this.isViewshedActive.set(true);
       this.calculateAndRenderViewshed(center, map);
     }
+  }
+
+  setObserverHeight(heightM: number) {
+    this.observerHeightM.set(Math.max(0.1, heightM));
+  }
+
+  setTargetHeight(heightM: number) {
+    this.targetHeightM.set(Math.max(0.0, heightM));
+  }
+
+  setMaxRadius(radiusM: number) {
+    this.maxRadiusM.set(Math.max(100, radiusM));
   }
 
   private isSameCenter(c1: [number, number], c2: [number, number] | null): boolean {
@@ -201,62 +215,57 @@ export class TacticalAnalyticsService {
     const source = map.getSource('viewshed-data') as maplibregl.GeoJSONSource;
     if (!source) return;
 
-    const baseElev = this.terrainService.getElevationAt(center[0], center[1]) || 0;
-    const obsElev = baseElev + this.observerHeightM();
-    const maxRadius = 3000;
-    const numRays = 36;
-    const stepsPerRay = 15;
+    const baseElev = this.terrainService.getElevationAt(center[0], center[1]) || 150;
+    const obsTotalElev = baseElev + this.observerHeightM();
+    const targetH = this.targetHeightM();
+    const maxRadius = this.maxRadiusM();
 
-    const visibleSectors: any[] = [];
-    const hiddenSectors: any[] = [];
+    const numRays = 180;
+    const stepsPerRay = 30;
+
+    const features: any[] = [];
 
     for (let r = 0; r < numRays; r++) {
-      const angleDeg1 = r * 10;
-      const angleDeg2 = (r + 1) * 10;
+      const angle1 = r * (360 / numRays);
+      const angle2 = (r + 1) * (360 / numRays);
+      const midAngle = (angle1 + angle2) / 2;
 
       let maxSlope = -Infinity;
-      let isVisible = true;
 
-      const midAngle = (angleDeg1 + angleDeg2) / 2;
-      for (let step = 1; step <= stepsPerRay; step++) {
-        const dist = (step / stepsPerRay) * maxRadius;
-        const pt = this.destinationPoint(center, dist, midAngle);
-        const ptElev = this.terrainService.getElevationAt(pt[0], pt[1]) || 0;
+      for (let s = 1; s <= stepsPerRay; s++) {
+        const d1 = ((s - 1) / stepsPerRay) * maxRadius;
+        const d2 = (s / stepsPerRay) * maxRadius;
 
-        const slope = (ptElev - obsElev) / dist;
-        if (slope < maxSlope) {
-          isVisible = false;
-        } else {
+        const ptMid = this.destinationPoint(center, d2, midAngle);
+        const ptElev = this.terrainService.getElevationAt(ptMid[0], ptMid[1]) || 150;
+        const targetTotalElev = ptElev + targetH;
+
+        const slope = (targetTotalElev - obsTotalElev) / d2;
+        const isVisible = (slope >= maxSlope);
+
+        if (slope > maxSlope) {
           maxSlope = slope;
         }
-      }
 
-      const polyCoords = [
-        center,
-        this.destinationPoint(center, maxRadius, angleDeg1),
-        this.destinationPoint(center, maxRadius, angleDeg2),
-        center
-      ];
+        const p1 = d1 === 0 ? center : this.destinationPoint(center, d1, angle1);
+        const p2 = this.destinationPoint(center, d2, angle1);
+        const p3 = this.destinationPoint(center, d2, angle2);
+        const p4 = d1 === 0 ? center : this.destinationPoint(center, d1, angle2);
 
-      const feature = {
-        type: 'Feature',
-        properties: { status: isVisible ? 'visible' : 'hidden' },
-        geometry: {
-          type: 'Polygon',
-          coordinates: [polyCoords]
-        }
-      };
-
-      if (isVisible) {
-        visibleSectors.push(feature);
-      } else {
-        hiddenSectors.push(feature);
+        features.push({
+          type: 'Feature',
+          properties: { status: isVisible ? 'visible' : 'hidden' },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[p1, p2, p3, p4, p1]]
+          }
+        });
       }
     }
 
     source.setData({
       type: 'FeatureCollection',
-      features: [...visibleSectors, ...hiddenSectors]
+      features
     });
   }
 

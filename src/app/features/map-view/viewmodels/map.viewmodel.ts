@@ -33,6 +33,7 @@ export class MapViewModel {
 
   readonly scalePresets = SCALE_PRESETS;
   readonly isMapExportOpen = signal(false);
+  readonly isHelpModalOpen = signal(false);
 
   readonly isAppReady = signal<boolean>(false);
   readonly sidebarWidth = signal<number>(340);
@@ -259,9 +260,10 @@ export class MapViewModel {
     });
   }
 
-  closeAllPopupsExcept(except?: 'areaReport' | 'marchOrder' | 'fortPlanner' | 'imageOverlay' | 'categoryDropdown' | 'quickLayers' | 'toggleMap' | 'scale' | 'elevationProfile') {
+  closeAllPopupsExcept(except?: 'areaReport' | 'marchOrder' | 'routePlanner' | 'fortPlanner' | 'imageOverlay' | 'categoryDropdown' | 'quickLayers' | 'toggleMap' | 'scale' | 'elevationProfile') {
     if (except !== 'areaReport') this.isAreaReportOpen.set(false);
     if (except !== 'marchOrder') this.isMarchOrderOpen.set(false);
+    if (except !== 'routePlanner') this.isRoutePlannerOpen.set(false);
     if (except !== 'fortPlanner') this.isFortPlannerOpen.set(false);
     if (except !== 'imageOverlay') this.isImageOverlayPanelOpen.set(false);
     if (except !== 'categoryDropdown') this.activeCategoryDropdown.set(null);
@@ -378,12 +380,100 @@ export class MapViewModel {
   }
 
   readonly isMarchOrderOpen = signal<boolean>(false);
+  readonly isRoutePlannerOpen = signal<boolean>(false);
+
+  readonly activeColumnType = signal<ColumnType>('wheel');
+  readonly isNightMarch = signal<boolean>(false);
+  readonly originPoint = signal<{ id: string; label: string; name: string; coords: [number, number] | null; type: string }>({
+    id: 'origin',
+    label: 'A',
+    name: 'Исходный пункт (ИСП)',
+    coords: null,
+    type: 'origin'
+  });
+  readonly destinationPoint = signal<{ id: string; label: string; name: string; coords: [number, number] | null; type: string }>({
+    id: 'destination',
+    label: 'B',
+    name: 'Пункт назначения (КП)',
+    coords: null,
+    type: 'destination'
+  });
+  readonly waypoints = signal<any[]>([]);
+  readonly calculatedRoute = signal<MarchRoute | null>(null);
+
+  clearMarchRoute() {
+    this.originPoint.set({
+      id: 'origin',
+      label: 'A',
+      name: 'Исходный пункт (ИСП)',
+      coords: null,
+      type: 'origin'
+    });
+    this.destinationPoint.set({
+      id: 'destination',
+      label: 'B',
+      name: 'Пункт назначения (КП)',
+      coords: null,
+      type: 'destination'
+    });
+    this.waypoints.set([]);
+    this.calculatedRoute.set(null);
+    this.selectedMarchRouteStats.set(null);
+
+    this.tacticalMapService.placedSymbols.update(prev =>
+      prev.filter((f: any) => f.properties?.lineType !== 'march_route')
+    );
+
+    try {
+      localStorage.removeItem('topos_route_planner_state');
+    } catch {}
+  }
+
+  toggleRoutePlanner() {
+    if (!this.isRoutePlannerOpen()) {
+      this.closeAllPopupsExcept('routePlanner');
+    }
+    this.isRoutePlannerOpen.update(v => !v);
+  }
 
   toggleMarchOrder() {
     if (!this.isMarchOrderOpen()) {
       this.closeAllPopupsExcept('marchOrder');
     }
     this.isMarchOrderOpen.update(v => !v);
+  }
+
+  openMarchOrderWithStats(stats: MarchRoute) {
+    this.selectedMarchRouteStats.set(stats);
+    this.closeAllPopupsExcept('marchOrder');
+    this.isMarchOrderOpen.set(true);
+  }
+
+  drawMarchRouteOnMap(coords: [number, number][], stats: MarchRoute) {
+    this.selectedMarchRouteStats.set(stats);
+    if (!coords || coords.length < 2) return;
+
+    const feature = {
+      type: 'Feature',
+      properties: {
+        id: `march_${Date.now()}`,
+        symbol: 'march_route',
+        isLinear: true,
+        lineType: 'march_route',
+        name: 'Маршрут марша',
+        color: '#466bf7',
+        width: 4
+      },
+      geometry: {
+        type: 'LineString',
+        coordinates: coords
+      }
+    };
+
+    this.tacticalMapService.placedSymbols.update(prev => [
+      ...prev.filter((f: any) => f.properties?.lineType !== 'march_route'),
+      feature as any
+    ]);
   }
 
   readonly isFortPlannerOpen = signal<boolean>(false);
@@ -1149,5 +1239,17 @@ export class MapViewModel {
 
   openMapExport() {
     this.isMapExportOpen.set(true);
+  }
+
+  toggleHelpModal() {
+    this.isHelpModalOpen.update(v => !v);
+  }
+
+  openHelpModal() {
+    this.isHelpModalOpen.set(true);
+  }
+
+  closeHelpModal() {
+    this.isHelpModalOpen.set(false);
   }
 }

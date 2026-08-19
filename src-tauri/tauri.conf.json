@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "topos",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "identifier": "com.topos.map.app",
   "build": {
     "frontendDist": "../dist/topos/browser",
@@ -37,6 +37,8 @@
     "resources": [
       "assets/belarus.pmtiles",
       "assets/belarus_topomap_200k.pmtiles",
+      "assets/belarus_graph.json",
+      "assets/belarus_places.json",
       "sidecar-renderer/**/*"
     ],
     "icon": [
