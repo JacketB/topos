@@ -1,1 +1,306 @@
+.terrain-control-btn-wrapper {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
 
+.terrain-btn {
+  position: relative;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.5px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+  width: 36px;
+  height: 44px;
+}
+
+.terrain-chevron-btn {
+  width: 16px;
+  height: 44px;
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-left: 1px solid #e2e8f0;
+  border-top-right-radius: 22px;
+  border-bottom-right-radius: 22px;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  padding: 0;
+  color: var(--color-text-muted);
+  transition: all 0.15s ease;
+}
+
+.terrain-chevron-btn:hover {
+  background-color: var(--color-bg-app);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.terrain-chevron-btn.active {
+  background-color: #eff6ff;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.terrain-3d-text {
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.terrain-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 3.5px;
+  border-radius: 6px;
+  border: 1.5px solid #ffffff;
+  line-height: 1;
+}
+
+.terrain-settings-popup {
+  position: absolute;
+  right: 64px;
+  bottom: 0;
+  width: 290px;
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 12px;
+  z-index: 120;
+  animation: terrainFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes terrainFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.terrain-popup-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.terrain-popup-title {
+  display: flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.terrain-popup-close-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+  color: #94a3b8;
+  font-weight: bold;
+  padding: 2px 4px;
+  transition: color 0.15s;
+}
+
+.terrain-popup-close-btn:hover {
+  color: #ef4444;
+}
+
+.terrain-popup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.terrain-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.terrain-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.terrain-label-main {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.terrain-label-sub {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #64748b;
+  min-width: 75px;
+}
+
+.terrain-badge-val {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--color-primary);
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.terrain-toggle-switch {
+  width: 34px;
+  height: 18px;
+  background-color: #cbd5e1;
+  border: none;
+  border-radius: 9px;
+  position: relative;
+  cursor: pointer;
+  padding: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.terrain-toggle-switch.active {
+  background-color: var(--color-primary);
+}
+
+.toggle-slider {
+  width: 14px;
+  height: 14px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  display: block;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.terrain-toggle-switch.active .toggle-slider {
+  transform: translateX(16px);
+}
+
+.terrain-chip-group {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.terrain-chip-btn {
+  flex: 1;
+  min-width: 44px;
+  padding: 3px 6px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.terrain-chip-btn:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.terrain-chip-btn.active {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+.terrain-slider-wrapper {
+  padding: 2px 0;
+}
+
+.terrain-range-input {
+  width: 100%;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  height: 4px;
+}
+
+.terrain-divider {
+  height: 1px;
+  background-color: #f1f5f9;
+  margin: 2px 0;
+}
+
+.terrain-sub-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.terrain-segmented-control {
+  display: flex;
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.terrain-seg-btn {
+  flex: 1;
+  padding: 3px 4px;
+  font-size: 10px;
+  font-weight: 500;
+  background-color: #f8fafc;
+  color: #475569;
+  border: none;
+  border-right: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.terrain-seg-btn:last-child {
+  border-right: none;
+}
+
+.terrain-seg-btn:hover:not(.active) {
+  background-color: #e2e8f0;
+}
+
+.terrain-seg-btn.active {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.terrain-action-link {
+  background: none;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background-color 0.15s;
+}
+
+.terrain-action-link:hover {
+  background-color: #eff6ff;
+  text-decoration: underline;
+}

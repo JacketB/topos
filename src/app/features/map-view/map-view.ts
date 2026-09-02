@@ -18,6 +18,7 @@ import { MarchOrderModalComponent } from './components/march-order-modal/march-o
 import { DistrictSummaryModalComponent } from './components/district-summary-modal/district-summary-modal.component';
 import { HelpModalComponent } from './components/help-modal/help-modal.component';
 import { RoutePlannerPanelComponent } from './components/route-planner-panel/route-planner-panel.component';
+import { EngineeringCalculatorModalComponent } from './components/engineering-calculator-modal/engineering-calculator-modal.component';
 
 @Component({
   selector: 'app-map-view',
@@ -38,7 +39,8 @@ import { RoutePlannerPanelComponent } from './components/route-planner-panel/rou
     MarchOrderModalComponent,
     DistrictSummaryModalComponent,
     HelpModalComponent,
-    RoutePlannerPanelComponent
+    RoutePlannerPanelComponent,
+    EngineeringCalculatorModalComponent
   ],
   templateUrl: './map-view.html',
   styleUrl: './map-view.css',
@@ -88,6 +90,8 @@ export class MapView {
         this.vm.toggleCategoryDropdown(null);
       } else if (this.vm.isFortPlannerOpen()) {
         this.vm.toggleFortPlanner();
+      } else if (this.vm.isEngineeringCalcOpen()) {
+        this.vm.toggleEngineeringCalc();
       } else if (this.vm.isAreaReportOpen()) {
         this.vm.toggleAreaReport();
       } else if (this.vm.isMarchOrderOpen()) {
@@ -110,6 +114,9 @@ export class MapView {
       case 'w': case 'ц':
         this.vm.activeLineMode() === 'wire' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('wire');
         break;
+      case 'd': case 'в':
+        this.vm.activeLineMode() === 'ditch_pt' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('ditch_pt');
+        break;
       case 'p': case 'з':
         this.vm.activeLineMode() === 'point' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('point');
         break;
@@ -118,6 +125,12 @@ export class MapView {
         break;
       case 'a': case 'ф':
         this.vm.activeLineMode() === 'arrow_attack' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('arrow_attack');
+        break;
+      case 'x': case 'ч':
+        this.vm.activeLineMode() === 'area_polygon' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('area_polygon');
+        break;
+      case 'n': case 'т':
+        this.vm.activeLineMode() === 'simple_line' ? this.vm.cancelDrawingLine() : this.vm.startDrawingLine('simple_line');
         break;
       case 's': case 'ы':
         this.vm.toggleLineSmooth();

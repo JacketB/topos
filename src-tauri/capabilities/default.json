@@ -11,6 +11,13 @@
     "fs:default",
     "allow-read-pmtiles-chunk",
     "allow-save-scenario-file",
-    "allow-export-map-native"
+    "allow-export-map-native",
+    "allow-search-belarus-places",
+    "allow-calculate-march-route",
+    "allow-get-march-overlays",
+    "allow-get-elevation-at",
+    "allow-get-slope-bearing",
+    "allow-get-elevation-profile",
+    "allow-calculate-viewshed"
   ]
 }

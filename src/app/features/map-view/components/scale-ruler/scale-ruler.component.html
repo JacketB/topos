@@ -17,3 +17,281 @@
 <button class="control-btn compass-btn" (click)="vm.resetBearing()" [style.transform]="'rotate(' + (-vm.bearing()) + 'deg)'" title="Сбросить поворот карты">
   <div class="compass-arrow"></div>
 </button>
+
+<div class="quick-layers-container">
+  @if (vm.isTerrainSettingsOpen()) {
+    <div class="quick-layers-popup terrain-settings-popup" (click)="$event.stopPropagation()">
+      <div class="quick-popup-header">
+        <div class="terrain-popup-header-row">
+          <div class="terrain-popup-title">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary); margin-right: 6px;">
+              <polygon points="12 2 2 22 22 22 12 2"/>
+              <polyline points="2 22 8.5 13 12 17 15.5 11 22 22"/>
+            </svg>
+            <span>3D-Рельеф и освещение</span>
+          </div>
+          <button class="terrain-popup-close-btn" (click)="vm.isTerrainSettingsOpen.set(false)">✕</button>
+        </div>
+      </div>
+
+      <div class="terrain-popup-body">
+        <div class="terrain-section">
+          <div class="terrain-row-between">
+            <span class="terrain-label-main">3D-Рельеф местности</span>
+            <button 
+              type="button"
+              class="terrain-toggle-switch" 
+              [class.active]="vm.is3D()" 
+              (click)="vm.toggle3D()"
+            >
+              <span class="toggle-slider"></span>
+            </button>
+          </div>
+
+          <div class="terrain-chip-group">
+            <button 
+              type="button"
+              class="terrain-chip-btn" 
+              (click)="vm.setTerrainPitch(0)"
+              title="Вид сверху (0°)"
+            >
+              0° План
+            </button>
+            <button 
+              type="button"
+              class="terrain-chip-btn" 
+              (click)="vm.setTerrainPitch(45)"
+              title="Перспективный наклон (45°)"
+            >
+              45° Наклон
+            </button>
+            <button 
+              type="button"
+              class="terrain-chip-btn" 
+              (click)="vm.setTerrainPitch(65)"
+              title="Панорамный обзор (65°)"
+            >
+              65° Панорама
+            </button>
+            <button 
+              type="button"
+              class="terrain-chip-btn" 
+              (click)="vm.setTerrainPitch(80)"
+              title="Горизонт (80°)"
+            >
+              80° Горизонт
+            </button>
+          </div>
+        </div>
+
+        <div class="terrain-divider"></div>
+
+        <div class="terrain-section">
+          <div class="terrain-row-between">
+            <span class="terrain-label-main">Преувеличение высот</span>
+            <span class="terrain-badge-val">{{ vm.terrainExaggeration() }}x</span>
+          </div>
+
+          <div class="terrain-slider-wrapper">
+            <input 
+              type="range" 
+              min="1.0" 
+              max="6.0" 
+              step="0.5" 
+              [value]="vm.terrainExaggeration()" 
+              (input)="vm.setTerrainExaggeration(+$any($event.target).value)" 
+              class="terrain-range-input"
+            />
+          </div>
+
+          <div class="terrain-chip-group">
+            <button 
+              type="button"
+              class="terrain-chip-btn" 
+              [class.active]="vm.terrainExaggeration() === 1.0" 
+              (click)="vm.setTerrainExaggeration(1.0)"
+            >
+              1.0x
+            </button>
+            <button 
+              type="button"
+              class="terrain-chip-btn" 
+              [class.active]="vm.terrainExaggeration() === 2.0" 
+              (click)="vm.setTerrainExaggeration(2.0)"
+            >
+              2.0x
+            </button>
+            <button 
+              type="button"
+              class="terrain-chip-btn" 
+              [class.active]="vm.terrainExaggeration() === 3.0" 
+              (click)="vm.setTerrainExaggeration(3.0)"
+            >
+              3.0x
+            </button>
+            <button 
+              type="button"
+              class="terrain-chip-btn" 
+              [class.active]="vm.terrainExaggeration() === 4.5" 
+              (click)="vm.setTerrainExaggeration(4.5)"
+            >
+              4.5x
+            </button>
+            <button 
+              type="button"
+              class="terrain-chip-btn" 
+              [class.active]="vm.terrainExaggeration() === 6.0" 
+              (click)="vm.setTerrainExaggeration(6.0)"
+            >
+              6.0x
+            </button>
+          </div>
+        </div>
+
+        <div class="terrain-divider"></div>
+
+        <div class="terrain-section">
+          <div class="terrain-row-between">
+            <span class="terrain-label-main">Теневая отмывка (Hillshade)</span>
+            <button 
+              type="button"
+              class="terrain-toggle-switch" 
+              [class.active]="vm.isHillshadeEnabled()" 
+              (click)="vm.toggleHillshade()"
+            >
+              <span class="toggle-slider"></span>
+            </button>
+          </div>
+
+          <div class="terrain-sub-row">
+            <span class="terrain-label-sub">Контрастность:</span>
+            <div class="terrain-segmented-control">
+              <button 
+                type="button"
+                class="terrain-seg-btn" 
+                [class.active]="vm.hillshadeIntensity() === 'soft'" 
+                (click)="vm.setHillshadeIntensity('soft')"
+              >
+                Мягкая
+              </button>
+              <button 
+                type="button"
+                class="terrain-seg-btn" 
+                [class.active]="vm.hillshadeIntensity() === 'standard'" 
+                (click)="vm.setHillshadeIntensity('standard')"
+              >
+                Стандарт
+              </button>
+              <button 
+                type="button"
+                class="terrain-seg-btn" 
+                [class.active]="vm.hillshadeIntensity() === 'contrast'" 
+                (click)="vm.setHillshadeIntensity('contrast')"
+              >
+                Контрастная
+              </button>
+            </div>
+          </div>
+
+          <div class="terrain-sub-row" style="margin-top: 6px;">
+            <span class="terrain-label-sub">Азимут солнца:</span>
+            <div class="terrain-chip-group">
+              <button 
+                type="button"
+                class="terrain-chip-btn" 
+                [class.active]="vm.hillshadeSunAngle() === 315" 
+                (click)="vm.setHillshadeSunAngle(315)"
+                title="Северо-Запад (315°) - Стандарт"
+              >
+                315° СЗ
+              </button>
+              <button 
+                type="button"
+                class="terrain-chip-btn" 
+                [class.active]="vm.hillshadeSunAngle() === 45" 
+                (click)="vm.setHillshadeSunAngle(45)"
+                title="Северо-Восток (45°)"
+              >
+                45° СВ
+              </button>
+              <button 
+                type="button"
+                class="terrain-chip-btn" 
+                [class.active]="vm.hillshadeSunAngle() === 270" 
+                (click)="vm.setHillshadeSunAngle(270)"
+                title="Запад (270°)"
+              >
+                270° З
+              </button>
+              <button 
+                type="button"
+                class="terrain-chip-btn" 
+                [class.active]="vm.hillshadeSunAngle() === 180" 
+                (click)="vm.setHillshadeSunAngle(180)"
+                title="Юг (180°)"
+              >
+                180° Ю
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="terrain-divider"></div>
+
+        <div class="terrain-section">
+          <div class="terrain-row-between">
+            <span class="terrain-label-main">3D-Здания (Объемная застройка)</span>
+            <button 
+              type="button"
+              class="terrain-toggle-switch" 
+              [class.active]="vm.is3DBuildingsEnabled()" 
+              (click)="vm.toggle3DBuildings()"
+            >
+              <span class="toggle-slider"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="terrain-divider"></div>
+
+        <div class="terrain-section">
+          <div class="terrain-row-between">
+            <span class="terrain-label-main">Горизонтали и отметки</span>
+            <button 
+              type="button"
+              class="terrain-action-link" 
+              (click)="vm.onQuickLayerToggle('elevation')"
+            >
+              Переключить
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="terrain-control-btn-wrapper">
+    <button 
+      class="control-btn terrain-btn" 
+      [class.active]="vm.is3D()" 
+      (click)="vm.toggle3D()" 
+      (contextmenu)="$event.preventDefault(); vm.toggleTerrainSettings($event)"
+      title="3D-рельеф местности (ЛКМ - переключить 3D, ПКМ - параметры)"
+    >
+      <span class="terrain-3d-text">3D</span>
+      @if (vm.is3D()) {
+        <span class="terrain-badge">{{ vm.terrainExaggeration() }}x</span>
+      }
+    </button>
+    <button 
+      class="terrain-chevron-btn" 
+      [class.active]="vm.isTerrainSettingsOpen()"
+      (click)="vm.toggleTerrainSettings($event)" 
+      title="Параметры 3D-рельефа и отмывки"
+    >
+      <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </button>
+  </div>
+</div>

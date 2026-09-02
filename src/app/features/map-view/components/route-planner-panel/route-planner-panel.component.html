@@ -1,19 +1,18 @@
-<div class="route-panel-floating" [class.collapsed]="!isOpen()">
-  <button class="route-panel-toggle-btn" (click)="togglePanel()" title="Панель планирования маршрута">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M4 19c2-3 5-3 8-1c3 2 6 2 8-2" />
-      <circle cx="4" cy="19" r="2" />
-      <circle cx="20" cy="16" r="2" />
-    </svg>
-    <span class="toggle-text">Маршрут</span>
-    <svg class="chevron-icon" [class.rotated]="isOpen()" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  </button>
+@if (isOpen()) {
+  <div class="route-panel-card">
+    <div class="route-panel-header">
+      <div class="route-panel-title">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--color-primary, #466bf7)" stroke-width="2">
+          <path d="M4 19c2-3 5-3 8-1c3 2 6 2 8-2" />
+          <circle cx="4" cy="19" r="2" fill="var(--color-primary, #466bf7)" />
+          <circle cx="20" cy="16" r="2" fill="var(--color-primary, #466bf7)" />
+        </svg>
+        <span>Планировщик маршрута</span>
+      </div>
+      <button class="route-panel-close-btn" (click)="togglePanel()" title="Закрыть панель">✕</button>
+    </div>
 
-  @if (isOpen()) {
-    <div class="route-panel-card">
-      <div class="column-type-selector">
+    <div class="column-type-selector">
         <button 
           class="column-tab" 
           [class.active]="activeColumnType() === 'wheel'" 
@@ -75,9 +74,25 @@
         <div class="input-row">
           <div class="point-badge origin-badge">A</div>
           <app-place-search 
+            [initialValue]="originPoint().name"
+            placeholder="Исходный пункт (ИСП)..."
             (selectPlace)="onOriginSelected($event)" 
             class="place-search-input"
           ></app-place-search>
+          <button 
+            class="pick-map-btn" 
+            [class.active]="pickingRoutePoint() === 'origin'" 
+            (click)="pickOnMap('origin')" 
+            title="Указать точку А на карте"
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9" />
+              <line x1="21" y1="12" x2="17" y2="12" />
+              <line x1="7" y1="12" x2="3" y2="12" />
+              <line x1="12" y1="7" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="17" />
+            </svg>
+          </button>
           <button class="swap-btn" (click)="swapOriginDestination()" title="Поменять местами ИСП и КП">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
@@ -85,28 +100,64 @@
           </button>
         </div>
 
-        @for (wp of waypoints(); track wp.id; let idx = $index) {
-          <div class="input-row waypoint-row">
-            <div class="point-badge waypoint-badge">{{ wp.label }}</div>
-            <app-place-search 
-              (selectPlace)="onWaypointSelected(idx, $event)"
-              class="place-search-input"
-            ></app-place-search>
-            <button class="remove-wp-btn" (click)="removeWaypoint(idx)" title="Удалить рубеж">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+        @if (waypoints().length > 0) {
+          <div class="waypoints-scroll-list">
+            @for (wp of waypoints(); track wp.id; let idx = $index) {
+              <div class="input-row waypoint-row">
+                <div class="point-badge waypoint-badge">{{ wp.label }}</div>
+                <app-place-search 
+                  [initialValue]="wp.name"
+                  placeholder="Пункт регулирования..."
+                  (selectPlace)="onWaypointSelected(idx, $event)"
+                  class="place-search-input"
+                ></app-place-search>
+                <button 
+                  class="pick-map-btn" 
+                  [class.active]="pickingRoutePoint() === idx" 
+                  (click)="pickOnMap(idx)" 
+                  title="Указать рубеж на карте"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="9" />
+                    <line x1="21" y1="12" x2="17" y2="12" />
+                    <line x1="7" y1="12" x2="3" y2="12" />
+                    <line x1="12" y1="7" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="17" />
+                  </svg>
+                </button>
+                <button class="remove-wp-btn" (click)="removeWaypoint(idx)" title="Удалить рубеж">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            }
           </div>
         }
 
         <div class="input-row">
           <div class="point-badge dest-badge">B</div>
           <app-place-search 
+            [initialValue]="destinationPoint().name"
+            placeholder="Пункт назначения (КП)..."
             (selectPlace)="onDestinationSelected($event)" 
             class="place-search-input"
           ></app-place-search>
+          <button 
+            class="pick-map-btn" 
+            [class.active]="pickingRoutePoint() === 'destination'" 
+            (click)="pickOnMap('destination')" 
+            title="Указать точку B на карте"
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9" />
+              <line x1="21" y1="12" x2="17" y2="12" />
+              <line x1="7" y1="12" x2="3" y2="12" />
+              <line x1="12" y1="7" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="17" />
+            </svg>
+          </button>
           <button class="add-wp-btn" (click)="addWaypoint()" title="Добавить пункт регулирования (ПР)">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -121,6 +172,20 @@
           <input type="checkbox" [ngModel]="isNightMarch()" (ngModelChange)="toggleNightMarch()" />
           <span>Ночные условия марша (скорость -30%)</span>
         </label>
+        <label class="checkbox-option">
+          <input type="checkbox" [ngModel]="showPlacesAlongRoute()" (ngModelChange)="toggleShowPlacesAlongRoute()" />
+          <span>Подписи населенных пунктов вдоль марша</span>
+        </label>
+        <div class="km-step-control">
+          <span class="km-step-label">Шаг меток километража:</span>
+          <div class="km-step-buttons">
+            <button type="button" class="km-step-btn" [class.active]="marchKilometerStepKm() === 5" (click)="setMarchKilometerStep(5)">5 км</button>
+            <button type="button" class="km-step-btn" [class.active]="marchKilometerStepKm() === 10" (click)="setMarchKilometerStep(10)">10 км</button>
+            <button type="button" class="km-step-btn" [class.active]="marchKilometerStepKm() === 20" (click)="setMarchKilometerStep(20)">20 км</button>
+            <button type="button" class="km-step-btn" [class.active]="marchKilometerStepKm() === 50" (click)="setMarchKilometerStep(50)">50 км</button>
+            <button type="button" class="km-step-btn" [class.active]="marchKilometerStepKm() === 0" (click)="setMarchKilometerStep(0)">Выкл</button>
+          </div>
+        </div>
       </div>
 
       @if (calculatedRoute(); as route) {
@@ -154,6 +219,25 @@
             </div>
           </div>
 
+          @if (marchPlacesAlongRoute().length > 0) {
+            <div class="places-along-box">
+              <div class="places-along-title">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span>Нас. пункты на маршруте ({{ marchPlacesAlongRoute().length }}):</span>
+              </div>
+              <div class="places-along-chips">
+                @for (p of marchPlacesAlongRoute(); track p.id || $index) {
+                  <span class="place-chip">
+                    {{ p.name }} <small>({{ p.distanceAlongRouteKm | number:'1.0-0' }} км)</small>
+                  </span>
+                }
+              </div>
+            </div>
+          }
+
           <button class="scheme-btn" (click)="openMarchOrderScheme()">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="5" y1="12" x2="19" y2="12" />
@@ -175,4 +259,3 @@
       </div>
     </div>
   }
-</div>

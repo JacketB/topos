@@ -86,7 +86,7 @@
 
             <div class="ds-summary-card ds-card-wire">
               <div class="ds-summary-card-header">
-                <span class="ds-summary-label">Проволока (МЗП)</span>
+                <span class="ds-summary-label">Проволока МЗП</span>
                 <div class="ds-summary-icon-pill ds-pill-wire">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M7 8l2 8M15 8l2 8"/></svg>
                 </div>
@@ -96,7 +96,7 @@
           </div>
 
           <div class="ds-details-grid">
-            @if (report.totalLengths.trench > 0 || report.totalLengths.comm_open > 0 || report.totalLengths.comm_covered > 0 || report.totalLengths.wire > 0) {
+            @if (report.totalLengths.trench > 0 || report.totalLengths.comm_open > 0 || report.totalLengths.comm_covered > 0 || report.totalLengths.wire > 0 || report.totalLengths.ditch_pt > 0 || report.totalLengths.escarp > 0 || report.totalLengths.counterscarp > 0 || report.totalLengths.abatis > 0) {
               <div class="ds-info-block flex-1">
                 <h4 class="ds-block-title">Протяженность</h4>
                 <ul class="ds-info-list">
@@ -110,7 +110,19 @@
                     <li>Перекрытые щели: <strong>{{ report.totalLengths.comm_covered }}</strong> м</li>
                   }
                   @if (report.totalLengths.wire > 0) {
-                    <li>Проволочные (МЗП): <strong>{{ report.totalLengths.wire }}</strong> м</li>
+                    <li>Проволочные заграждения: <strong>{{ report.totalLengths.wire }}</strong> м</li>
+                  }
+                  @if (report.totalLengths.ditch_pt > 0) {
+                    <li>ПТ рвы: <strong>{{ report.totalLengths.ditch_pt }}</strong> м</li>
+                  }
+                  @if (report.totalLengths.escarp > 0) {
+                    <li>Эскарпы: <strong>{{ report.totalLengths.escarp }}</strong> м</li>
+                  }
+                  @if (report.totalLengths.counterscarp > 0) {
+                    <li>Контрэскарпы: <strong>{{ report.totalLengths.counterscarp }}</strong> м</li>
+                  }
+                  @if (report.totalLengths.abatis > 0) {
+                    <li>Лесные завалы: <strong>{{ report.totalLengths.abatis }}</strong> м</li>
                   }
                 </ul>
               </div>

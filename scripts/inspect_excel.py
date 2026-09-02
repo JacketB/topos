@@ -1,15 +1,15 @@
 import openpyxl
 import sys
 
-# Настроим кодировку stdout для безопасности
 sys.stdout.reconfigure(encoding='utf-8')
 
-wb = openpyxl.load_workbook("F:/Vanya/fort_calculator.xlsx", data_only=True)
-output_path = "F:/Vanya/inspect_excel.txt"
+file_path = "C:/Users/user/Desktop/Авто-расчет.xlsx"
+wb = openpyxl.load_workbook(file_path, data_only=False)
+output_path = "F:/Vanya/auto_calc_inspect.txt"
 
 with open(output_path, "w", encoding="utf-8") as f:
-    f.write("=== INSPECT EXCEL ===\n")
-    f.write(f"Sheets in workbook: {wb.sheetnames}\n\n")
+    f.write("=== INSPECT AUTO-CALC EXCEL ===\n")
+    f.write(f"Sheets: {wb.sheetnames}\n\n")
     
     for name in wb.sheetnames:
         sheet = wb[name]
@@ -18,18 +18,14 @@ with open(output_path, "w", encoding="utf-8") as f:
         f.write(f"Dimensions: max_row={sheet.max_row}, max_column={sheet.max_column}\n")
         f.write(f"=========================================\n")
         
-        row_idx = 0
-        for row in sheet.iter_rows(values_only=False):
-            row_idx += 1
-            # Считываем ячейки (значения и формулы)
+        for r in range(1, min(sheet.max_row + 1, 100)):
             vals = []
-            for cell in row:
+            for c in range(1, min(sheet.max_column + 1, 20)):
+                cell = sheet.cell(row=r, column=c)
                 if cell.value is not None:
-                    # Запишем значение и формулу, если есть
-                    val_str = str(cell.value)
-                    vals.append(f"Col {cell.column} ({cell.coordinate}): {val_str}")
+                    vals.append(f"{cell.coordinate}: {cell.value}")
             if vals:
-                f.write(f"Row {row_idx}: " + " | ".join(vals) + "\n")
+                f.write(f"Row {r}: " + " | ".join(vals) + "\n")
         f.write("\n\n")
 
 print(f"Excel inspected. Output written to {output_path}")

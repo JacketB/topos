@@ -27,6 +27,42 @@ export class MapLayersPanelComponent {
     }));
   }
 
+  toggleGroupSelectAll(groupId: string, event: Event) {
+    event.stopPropagation();
+    const group = this.vm.objectGroups().find((g: any) => g.id === groupId);
+    if (!group) return;
+    const allSelected = this.isGroupAllSelected(groupId);
+    const newChecked = !allSelected;
+    this.checkedElementIds.update(prev => {
+      const updated = { ...prev };
+      group.elementIds.forEach((id: number) => {
+        updated[id] = newChecked;
+      });
+      return updated;
+    });
+  }
+
+  isGroupAllSelected(groupId: string): boolean {
+    const group = this.vm.objectGroups().find((g: any) => g.id === groupId);
+    if (!group || group.elementIds.length === 0) return false;
+    const record = this.checkedElementIds();
+    return group.elementIds.every((id: number) => !!record[id]);
+  }
+
+  toggleGroupVisibility(groupId: string, event: MouseEvent) {
+    event.stopPropagation();
+    this.vm.tacticalMapService.toggleGroupVisibility(groupId);
+  }
+
+  isGroupHidden(groupId: string): boolean {
+    return this.vm.tacticalMapService.isGroupHidden(groupId);
+  }
+
+  toggleElementVisibility(elementId: number, event: MouseEvent) {
+    event.stopPropagation();
+    this.vm.tacticalMapService.toggleSymbolVisibility(elementId);
+  }
+
   getCheckedIdsList(): number[] {
     const record = this.checkedElementIds();
     return Object.keys(record)
@@ -125,6 +161,10 @@ export class MapLayersPanelComponent {
       if (s.properties.lineType === 'comm_open') return 'Открытый ход сообщения';
       if (s.properties.lineType === 'comm_covered') return 'Крытый ход сообщения';
       if (s.properties.lineType === 'wire') return 'Проволочное заграждение';
+      if (s.properties.lineType === 'ditch_pt') return 'Противотанковый ров';
+      if (s.properties.lineType === 'escarp') return 'Эскарп';
+      if (s.properties.lineType === 'counterscarp') return 'Контрэскарп';
+      if (s.properties.lineType === 'abatis') return 'Лесной завал';
       return 'Линейный объект';
     }
     return 'Точечный объект';

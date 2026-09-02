@@ -76,7 +76,55 @@ describe('MarchRouteService', () => {
     ];
 
     const stats = await service.calculateRouteStats(mockMap, coords, 'wheel', false);
-    // 35 * 0.6 = 21 км/ч
     expect(stats.segments[0].speedKmH).toBeCloseTo(21, 1);
+  });
+
+  it('should find and sort places along route corridor', async () => {
+    vi.spyOn(service, 'getAllPlaces').mockResolvedValue([
+      {
+        id: 'p1',
+        name: 'Озерцо',
+        nameBe: 'Азярцо',
+        type: 'village',
+        region: 'Минский район',
+        coords: [27.5615, 53.9048]
+      },
+      {
+        id: 'p2',
+        name: 'Далекий',
+        nameBe: 'Далёкі',
+        type: 'village',
+        region: 'Минский район',
+        coords: [28.5615, 54.9048]
+      }
+    ]);
+
+    const routeCoords: [number, number][] = [
+      [27.5615, 53.9040],
+      [27.5615, 53.9060]
+    ];
+
+    const places = await service.getPlacesAlongRoute(routeCoords, 3.0);
+    expect(places.length).toBe(1);
+    expect(places[0].name).toBe('Озерцо');
+    expect(places[0].distanceFromRouteKm).toBeLessThan(0.1);
+  });
+
+  it('should calculate accurate kilometer marks including 0km start and final km end point', () => {
+    const routeCoords: [number, number][] = [
+      [27.5615, 53.9000],
+      [27.5615, 54.1000]
+    ];
+
+    const marks = service.calculateKilometerMarks(routeCoords, 5);
+    expect(marks.length).toBeGreaterThanOrEqual(3);
+    expect(marks[0].km).toBe(0);
+    expect(marks[0].label).toBe('0 км');
+    expect(marks[0].coords).toEqual(routeCoords[0]);
+
+    const lastMark = marks[marks.length - 1];
+    expect(lastMark.km).toBeGreaterThan(20);
+    expect(lastMark.label).toContain('км');
+    expect(lastMark.coords).toEqual(routeCoords[routeCoords.length - 1]);
   });
 });

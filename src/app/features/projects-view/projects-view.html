@@ -1,0 +1,154 @@
+<div class="projects-view-container">
+  
+  <!-- Header Bar -->
+  <header class="projects-view-header">
+    <div class="header-logo-block">
+      <div class="app-icon-badge">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+          <line x1="8" y1="2" x2="8" y2="18"></line>
+          <line x1="16" y1="6" x2="16" y2="22"></line>
+        </svg>
+      </div>
+      <div>
+        <h1 class="app-title-main">Topos GIS</h1>
+        <span class="app-sub-main">Геоинформационная тактическая система</span>
+      </div>
+    </div>
+
+    <div class="header-right-meta">
+      <span class="version-tag">Версия 1.1.0</span>
+    </div>
+  </header>
+
+  <!-- Main Content Body -->
+  <main class="projects-view-main">
+    
+    <!-- Left Column: Primary Actions -->
+    <section class="projects-actions-card">
+      <h2 class="section-heading">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        Начало работы
+      </h2>
+
+      <!-- Create Project Box -->
+      <div class="action-box create-box">
+        <span class="action-box-title">Новый тактический проект</span>
+        <p class="action-box-desc">Создать чистый проект и начать планирование на карте</p>
+        
+        <div class="create-input-group">
+          <input 
+            type="text" 
+            class="project-input" 
+            [ngModel]="newProjectName()" 
+            (ngModelChange)="newProjectName.set($event)" 
+            placeholder="Наименование проекта..."
+          />
+          <button class="action-btn-primary" (click)="onCreateProject()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Создать проект
+          </button>
+        </div>
+      </div>
+
+      <!-- Open from file Box -->
+      <div class="action-box open-box">
+        <span class="action-box-title">Открыть проект с диска</span>
+        <p class="action-box-desc">Загрузить файл сценария (.tps / .json) с компьютера</p>
+        
+        <button type="button" class="file-browse-label" (click)="onOpenFileClick()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          Выбрать файл сценария...
+        </button>
+        <input id="project-file-input" type="file" accept=".tps,.json" (change)="onFileSelected($event)" style="display: none;" />
+      </div>
+
+      <!-- Continue current active project -->
+      <div class="action-box continue-box" (click)="onContinueCurrent()">
+        <div class="continue-content">
+          <div>
+            <span class="action-box-title">Текущий сеанс</span>
+            <p class="action-box-desc"><strong>{{ projectService.currentProject().name }}</strong></p>
+          </div>
+          <button class="action-btn-secondary">
+            Перейти к карте →
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Recent Projects -->
+    <section class="projects-recents-card">
+      <div class="recents-header-row">
+        <h2 class="section-heading">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          Недавние проекты
+        </h2>
+        <span class="recents-badge">{{ projectService.recentProjects().length }} проектов</span>
+      </div>
+
+      <div class="recents-scroll-list">
+        @for (proj of projectService.recentProjects(); track proj.id) {
+          <div 
+            class="project-card-item" 
+            [class.active-project]="proj.id === projectService.currentProject().id"
+            (click)="onOpenProject(proj)"
+          >
+            <div class="card-left-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                <line x1="8" y1="2" x2="8" y2="18"></line>
+                <line x1="16" y1="6" x2="16" y2="22"></line>
+              </svg>
+            </div>
+
+            <div class="card-info-block">
+              <div class="card-title-row">
+                <span class="project-item-title">{{ proj.name }}</span>
+                @if (proj.id === projectService.currentProject().id) {
+                  <span class="current-label">Активный</span>
+                }
+              </div>
+              <div class="card-meta-row">
+                <span>Обновлен: {{ proj.updatedAt | date:'dd.MM.yyyy HH:mm' }}</span>
+                <span class="meta-dot">•</span>
+                <span>Знаков: <strong>{{ proj.symbolsCount }}</strong></span>
+                <span class="meta-dot">•</span>
+                <span>Линий: <strong>{{ proj.linesCount }}</strong></span>
+              </div>
+            </div>
+
+            <div class="card-actions-block">
+              <button class="card-open-btn" (click)="onOpenProject(proj)" title="Открыть проект на карте">
+                Открыть
+              </button>
+              <button class="card-del-btn" (click)="onDeleteProject(proj, $event)" title="Удалить из списка">
+                ✕
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-projects-state">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" style="color: #94a3b8; margin-bottom: 8px;">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>Нет сохраненных проектов</span>
+          </div>
+        }
+      </div>
+    </section>
+
+  </main>
+</div>

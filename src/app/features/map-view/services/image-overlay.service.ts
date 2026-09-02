@@ -19,59 +19,98 @@ export interface MapImageOverlay {
 })
 export class ImageOverlayService {
   private map: maplibregl.Map | null = null;
-  readonly overlays = signal<MapImageOverlay[]>([]);
+  readonly overlays = signal<MapImageOverlay[]>(this.loadFromStorage());
   private overlayMarkers = new Map<string, maplibregl.Marker[]>();
+
+  private loadFromStorage(): MapImageOverlay[] {
+    try {
+      const stored = localStorage.getItem('topos_image_overlays');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  private saveToStorage() {
+    try {
+      localStorage.setItem('topos_image_overlays', JSON.stringify(this.overlays()));
+    } catch (e) {}
+  }
 
   init(map: maplibregl.Map) {
     this.map = map;
     
-    const currentOverlays = this.overlays();
-    if (currentOverlays.length > 0) {
-      const restoreOverlays = () => {
+    const restoreOverlays = () => {
+      if (!this.map) return;
+      this.overlayMarkers.forEach(markers => markers.forEach(m => m.remove()));
+      this.overlayMarkers.clear();
+
+      const currentOverlays = this.overlays();
+      currentOverlays.forEach(o => {
         if (!this.map) return;
-        currentOverlays.forEach(o => {
-          this.removeMarkers(o.id);
-          if (this.map) {
-            if (!this.map.getSource('src-' + o.id)) {
-              this.map.addSource('src-' + o.id, {
-                type: 'image',
-                url: o.url,
-                coordinates: o.coordinates
-              });
-            }
+        
+        if (this.map.getLayer('layer-' + o.id)) {
+          this.map.removeLayer('layer-' + o.id);
+        }
+        if (this.map.getSource('src-' + o.id)) {
+          this.map.removeSource('src-' + o.id);
+        }
 
-            if (!this.map.getLayer('layer-' + o.id)) {
-              const beforeId = this.map.getLayer('military-fill') ? 'military-fill' : undefined;
-              this.map.addLayer({
-                id: 'layer-' + o.id,
-                type: 'raster',
-                source: 'src-' + o.id,
-                paint: {
-                  'raster-opacity': o.opacity
-                }
-              }, beforeId);
-            }
+        this.map.addSource('src-' + o.id, {
+          type: 'image',
+          url: o.url,
+          coordinates: o.coordinates
+        });
 
-            if (!o.locked) {
-              this.createMarkers(o);
-            }
+        const beforeId = this.map.getLayer('military-fill') ? 'military-fill' : undefined;
+        this.map.addLayer({
+          id: 'layer-' + o.id,
+          type: 'raster',
+          source: 'src-' + o.id,
+          paint: {
+            'raster-opacity': o.opacity
           }
-        });
-      };
+        }, beforeId);
 
-      if (this.map.isStyleLoaded()) {
+        if (!o.locked) {
+          this.createMarkers(o);
+        }
+      });
+    };
+
+    if (this.map.isStyleLoaded()) {
+      restoreOverlays();
+    } else {
+      this.map.once('style.load', () => {
         restoreOverlays();
-      } else {
-        this.map.once('style.load', () => {
-          restoreOverlays();
-        });
-      }
+      });
+    }
+  }
+
+  loadOverlays(overlays: MapImageOverlay[]) {
+    if (this.map) {
+      this.overlays().forEach(o => {
+        this.removeMarkers(o.id);
+        if (this.map!.getLayer('layer-' + o.id)) {
+          this.map!.removeLayer('layer-' + o.id);
+        }
+        if (this.map!.getSource('src-' + o.id)) {
+          this.map!.removeSource('src-' + o.id);
+        }
+      });
+    }
+    this.overlays.set(overlays || []);
+    this.saveToStorage();
+    if (this.map) {
+      this.init(this.map);
     }
   }
 
   addImageOverlay(file: File) {
-    if (!this.map) return;
-
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
@@ -84,19 +123,22 @@ export class ImageOverlayService {
         const id = 'img-overlay-' + Date.now();
         const name = file.name || 'Изображение-' + (this.overlays().length + 1);
 
-        const bounds = this.map!.getBounds();
-        const sw = bounds.getSouthWest();
-        const ne = bounds.getNorthEast();
-        const centerLngLat = this.map!.getCenter();
-        const center: [number, number] = [centerLngLat.lng, centerLngLat.lat];
+        let center: [number, number] = [27.56, 53.9];
+        let initialWidthMeters = 2000;
 
-        const widthLng = ne.lng - sw.lng;
-        const latRad = center[1] * Math.PI / 180;
-        const metersPerLngDegree = 111320 * Math.cos(latRad);
-        
-        const initialWidthMeters = Math.max(100, widthLng * 0.25 * metersPerLngDegree);
+        if (this.map) {
+          const bounds = this.map.getBounds();
+          const sw = bounds.getSouthWest();
+          const ne = bounds.getNorthEast();
+          const centerLngLat = this.map.getCenter();
+          center = [centerLngLat.lng, centerLngLat.lat];
+          const widthLng = ne.lng - sw.lng;
+          const latRad = center[1] * Math.PI / 180;
+          const metersPerLngDegree = 111320 * Math.cos(latRad);
+          initialWidthMeters = Math.max(100, widthLng * 0.25 * metersPerLngDegree);
+        }
+
         const bearing = 0;
-
         const coordinates = this.calculateCoordinates(center, initialWidthMeters, aspectRatio, bearing);
 
         const newOverlay: MapImageOverlay = {
@@ -112,36 +154,43 @@ export class ImageOverlayService {
           bearing
         };
 
-        const addAction = () => {
-          if (!this.map) return;
+        this.overlays.update(arr => [...arr, newOverlay]);
+        this.saveToStorage();
 
-          this.map.addSource('src-' + id, {
-            type: 'image',
-            url: dataUrl,
-            coordinates: coordinates
-          });
+        if (this.map) {
+          const addAction = () => {
+            if (!this.map) return;
 
-          const beforeId = this.map.getLayer('military-fill') ? 'military-fill' : undefined;
-          this.map.addLayer({
-            id: 'layer-' + id,
-            type: 'raster',
-            source: 'src-' + id,
-            paint: {
-              'raster-opacity': newOverlay.opacity
+            if (this.map.getSource('src-' + id)) {
+              this.map.removeSource('src-' + id);
             }
-          }, beforeId);
 
-          this.overlays.update(arr => [...arr, newOverlay]);
+            this.map.addSource('src-' + id, {
+              type: 'image',
+              url: dataUrl,
+              coordinates: coordinates
+            });
 
-          this.createMarkers(newOverlay);
-        };
+            const beforeId = this.map.getLayer('military-fill') ? 'military-fill' : undefined;
+            this.map.addLayer({
+              id: 'layer-' + id,
+              type: 'raster',
+              source: 'src-' + id,
+              paint: {
+                'raster-opacity': newOverlay.opacity
+              }
+            }, beforeId);
 
-        if (this.map!.isStyleLoaded()) {
-          addAction();
-        } else {
-          this.map!.once('style.load', () => {
+            this.createMarkers(newOverlay);
+          };
+
+          if (this.map.isStyleLoaded()) {
             addAction();
-          });
+          } else {
+            this.map.once('style.load', () => {
+              addAction();
+            });
+          }
         }
       };
     };
@@ -150,36 +199,34 @@ export class ImageOverlayService {
   }
 
   removeOverlay(id: string) {
-    if (!this.map) return;
+    if (this.map) {
+      this.removeMarkers(id);
 
-    this.removeMarkers(id);
+      if (this.map.getLayer('layer-' + id)) {
+        this.map.removeLayer('layer-' + id);
+      }
 
-    if (this.map.getLayer('layer-' + id)) {
-      this.map.removeLayer('layer-' + id);
-    }
-
-    if (this.map.getSource('src-' + id)) {
-      this.map.removeSource('src-' + id);
+      if (this.map.getSource('src-' + id)) {
+        this.map.removeSource('src-' + id);
+      }
     }
 
     this.overlays.update(arr => arr.filter(o => o.id !== id));
+    this.saveToStorage();
   }
 
-  /**
-   * Установить прозрачность оверлея
-   */
   setOpacity(id: string, opacity: number) {
-    if (!this.map) return;
-
-    if (this.map.getLayer('layer-' + id)) {
+    if (this.map && this.map.getLayer('layer-' + id)) {
       this.map.setPaintProperty('layer-' + id, 'raster-opacity', opacity);
     }
 
     this.overlays.update(arr => arr.map(o => o.id === id ? { ...o, opacity } : o));
+    this.saveToStorage();
   }
 
   setLocked(id: string, locked: boolean) {
     this.overlays.update(arr => arr.map(o => o.id === id ? { ...o, locked } : o));
+    this.saveToStorage();
 
     const overlay = this.overlays().find(o => o.id === id);
     if (!overlay) return;
@@ -256,6 +303,10 @@ export class ImageOverlayService {
         this.updateAllOverlayMarkers(id, centerMarker, rotateMarker);
       });
 
+      marker.on('dragend', () => {
+        this.saveToStorage();
+      });
+
       cornerMarkers.push(marker);
     });
 
@@ -320,6 +371,10 @@ export class ImageOverlayService {
       const topCenterLng = (newCoords[0][0] + newCoords[1][0]) / 2;
       const topCenterLat = (newCoords[0][1] + newCoords[1][1]) / 2;
       rotateMarker.setLngLat([topCenterLng, topCenterLat]);
+    });
+
+    centerMarker.on('dragend', () => {
+      this.saveToStorage();
     });
 
     const rotateEl = document.createElement('div');
@@ -395,6 +450,10 @@ export class ImageOverlayService {
       } : o));
 
       this.updateAllOverlayMarkers(id, centerMarker, rotateMarker);
+    });
+
+    rotateMarker.on('dragend', () => {
+      this.saveToStorage();
     });
 
     const allMarkers = [...cornerMarkers, centerMarker, rotateMarker];

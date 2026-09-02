@@ -5,6 +5,7 @@ import { TrenchGeometryService } from './trench-geometry.service';
 import { TerrainService } from './terrain.service';
 import { TacticalDrawingService, TacticalLineMode } from './tactical-drawing.service';
 import { TacticalSymbolsManagerService } from './tactical-symbols-manager.service';
+import { ImageOverlayService } from './image-overlay.service';
 import { MapInteractionMode, ObjectGroup } from '../models/tactical-map.types';
 
 export type { MapInteractionMode, ObjectGroup };
@@ -19,6 +20,7 @@ export class TacticalMapService {
   public terrainService = inject(TerrainService);
   public drawingService = inject(TacticalDrawingService);
   public symbolsManager = inject(TacticalSymbolsManagerService);
+  public imageOverlayService = inject(ImageOverlayService);
 
   readonly placedSymbols = signal<any[]>(this.loadFromStorage());
 
@@ -55,7 +57,6 @@ export class TacticalMapService {
       this.placedSymbols();
       this.updateTacticalSymbolsSource();
       this.updateLinearVerticesSource();
-      this.updateMarchWaypointsSource();
       this.updateHighlightLayers();
     });
 
@@ -165,6 +166,42 @@ export class TacticalMapService {
     });
   }
 
+  toggleSymbolVisibility(id: number | string) {
+    this.placedSymbols.update(prev =>
+      prev.map(s => {
+        if (s.properties?.id === id) {
+          const isHidden = !s.properties.hidden;
+          return { ...s, properties: { ...s.properties, hidden: isHidden } };
+        }
+        return s;
+      })
+    );
+  }
+
+  toggleGroupVisibility(groupId: string) {
+    const group = this.objectGroups().find(g => g.id === groupId);
+    if (!group) return;
+    const allHidden = this.isGroupHidden(groupId);
+    const newHidden = !allHidden;
+    this.placedSymbols.update(prev =>
+      prev.map(s => {
+        if (group.elementIds.includes(s.properties?.id)) {
+          return { ...s, properties: { ...s.properties, hidden: newHidden } };
+        }
+        return s;
+      })
+    );
+  }
+
+  isGroupHidden(groupId: string): boolean {
+    const group = this.objectGroups().find(g => g.id === groupId);
+    if (!group || group.elementIds.length === 0) return false;
+    return group.elementIds.every(id => {
+      const s = this.placedSymbols().find(item => item.properties?.id === id);
+      return s ? !!s.properties?.hidden : false;
+    });
+  }
+
   private loadGroupsFromStorage(): ObjectGroup[] {
     try {
       const data = localStorage.getItem('topos_object_groups');
@@ -187,139 +224,164 @@ export class TacticalMapService {
   private pendingDragVertexLngLat: [number, number] | null = null;
 
   readonly templateCustomColor = signal<string>('');
+  readonly activeDrawingMode = signal<string>('none');
 
   updateLinearVerticesSource() {
-    if (!this.mapInstance) return;
-    const source = this.mapInstance.getSource('linear-vertices') as maplibregl.GeoJSONSource;
-    if (!source) return;
+    if (!this.mapInstance || !this.mapInstance.getStyle()) return;
+    try {
+      const source = this.mapInstance.getSource('linear-vertices') as maplibregl.GeoJSONSource;
+      if (!source) return;
 
-    const selected = this.selectedPlacedSymbol();
-    if (selected && selected.properties?.['isLinear']) {
-      const origCoords = selected.properties['origCoords'] as [number, number][];
-      const symbolId = selected.properties['id'];
-      if (origCoords) {
-        const features = origCoords.map((coord, idx) => ({
-          type: 'Feature' as const,
-          properties: { symbolId, vertexIndex: idx },
-          geometry: { type: 'Point' as const, coordinates: coord }
-        }));
-        source.setData({ type: 'FeatureCollection', features });
-        return;
+      const selected = this.selectedPlacedSymbol();
+      if (selected && selected.properties?.['isLinear']) {
+        const origCoords = selected.properties['origCoords'] as [number, number][];
+        const symbolId = selected.properties['id'];
+        if (origCoords) {
+          const features = origCoords.map((coord, idx) => ({
+            type: 'Feature' as const,
+            properties: { symbolId, vertexIndex: idx },
+            geometry: { type: 'Point' as const, coordinates: coord }
+          }));
+          source.setData({ type: 'FeatureCollection', features });
+          return;
+        }
       }
-    }
-    source.setData({ type: 'FeatureCollection', features: [] });
+      source.setData({ type: 'FeatureCollection', features: [] });
+    } catch {}
   }
 
   updateHighlightLayers() {
-    if (!this.mapInstance) return;
-    
-    const selected = this.selectedPlacedSymbols();
-    const symbolLayer = this.mapInstance.getLayer('tactical_symbols_highlight_layer');
-    const lineLayer = this.mapInstance.getLayer('tactical_lines_highlight_layer');
-    const polyLayer = this.mapInstance.getLayer('tactical_polygons_highlight_layer');
+    if (!this.mapInstance || !this.mapInstance.getStyle()) return;
+    try {
+      const selected = this.selectedPlacedSymbols();
+      const symbolLayer = this.mapInstance.getLayer('tactical_symbols_highlight_layer');
+      const lineLayer = this.mapInstance.getLayer('tactical_lines_highlight_layer');
+      const polyLayer = this.mapInstance.getLayer('tactical_polygons_highlight_layer');
 
-    if (selected.length === 0) {
-      const emptyFilter = ['==', 'id', ''] as any;
-      if (symbolLayer) this.mapInstance.setFilter('tactical_symbols_highlight_layer', emptyFilter);
-      if (lineLayer) this.mapInstance.setFilter('tactical_lines_highlight_layer', emptyFilter);
-      if (polyLayer) this.mapInstance.setFilter('tactical_polygons_highlight_layer', emptyFilter);
-    } else {
-      const idValues: (string | number)[] = [];
-      selected.forEach(s => {
-        const val = s.properties?.['id'];
-        if (val !== undefined && val !== null) {
-          idValues.push(Number(val));
-          idValues.push(String(val));
-        }
-      });
+      if (selected.length === 0) {
+        const emptyFilter = ['==', 'id', ''] as any;
+        if (symbolLayer) this.mapInstance.setFilter('tactical_symbols_highlight_layer', emptyFilter);
+        if (lineLayer) this.mapInstance.setFilter('tactical_lines_highlight_layer', emptyFilter);
+        if (polyLayer) this.mapInstance.setFilter('tactical_polygons_highlight_layer', emptyFilter);
+      } else {
+        const idValues: (string | number)[] = [];
+        selected.forEach(s => {
+          const val = s.properties?.['id'];
+          if (val !== undefined && val !== null) {
+            idValues.push(Number(val));
+            idValues.push(String(val));
+          }
+        });
 
-      const idFilter = ['in', 'id', ...idValues];
-      
-      if (symbolLayer) this.mapInstance.setFilter('tactical_symbols_highlight_layer', ['all', ['==', '$type', 'Point'], idFilter] as any);
-      if (lineLayer) this.mapInstance.setFilter('tactical_lines_highlight_layer', ['all', ['==', '$type', 'LineString'], idFilter] as any);
-      if (polyLayer) this.mapInstance.setFilter('tactical_polygons_highlight_layer', ['all', ['==', '$type', 'Polygon'], idFilter] as any);
-    }
+        const idFilter = ['in', 'id', ...idValues];
+        
+        if (symbolLayer) this.mapInstance.setFilter('tactical_symbols_highlight_layer', ['all', ['==', '$type', 'Point'], idFilter] as any);
+        if (lineLayer) this.mapInstance.setFilter('tactical_lines_highlight_layer', ['all', ['==', '$type', 'LineString'], idFilter] as any);
+        if (polyLayer) this.mapInstance.setFilter('tactical_polygons_highlight_layer', ['all', ['==', '$type', 'Polygon'], idFilter] as any);
+      }
+    } catch {}
   }
 
-  updateMarchWaypointsSource(activeCoords?: [number, number][]) {
-    if (!this.mapInstance) return;
-    const source = this.mapInstance.getSource('march-waypoints') as maplibregl.GeoJSONSource;
-    if (!source) return;
+  private currentMarchPlaces: any[] = [];
 
-    const features: any[] = [];
+  updateMarchPlacesSource(places: Array<{ name: string; coords: [number, number]; distanceAlongRouteKm?: number }>) {
+    this.currentMarchPlaces = places || [];
+    if (!this.mapInstance || !this.mapInstance.getStyle()) return;
+    try {
+      const source = this.mapInstance.getSource('march-places') as maplibregl.GeoJSONSource;
+      if (!source) return;
 
-    this.placedSymbols().forEach(s => {
-      if (s.properties && s.properties['lineType'] === 'march_route') {
-        const origCoords = s.properties['origCoords'] as [number, number][];
-        if (origCoords) {
-          origCoords.forEach((coord, idx) => {
-            features.push({
-              type: 'Feature',
-              properties: {
-                label: String(idx + 1),
-                routeId: s.properties['id']
-              },
-              geometry: {
-                type: 'Point',
-                coordinates: coord
-              }
-            });
-          });
-        }
-      }
-    });
-
-    if (activeCoords && activeCoords.length > 0) {
-      activeCoords.forEach((coord, idx) => {
-        features.push({
+      const features = (places || []).map((p: any, idx) => {
+        return {
           type: 'Feature',
           properties: {
-            label: String(idx + 1),
-            routeId: 'active'
+            id: `march_place_${idx}`,
+            name: p.name,
+            distanceKm: p.distanceAlongRouteKm,
+            textAnchor: p.textAnchor || 'center',
+            textOffset: p.textOffset || [0, 0],
+            svgAnchor: p.svgAnchor || 'middle',
+            svgOffset: p.svgOffset || [0, 0],
+            svgBaseline: p.svgBaseline || 'central'
           },
           geometry: {
             type: 'Point',
-            coordinates: coord
+            coordinates: p.coords
           }
-        });
+        };
       });
-    }
 
-    source.setData({
-      type: 'FeatureCollection',
-      features
-    });
+      source.setData({
+        type: 'FeatureCollection',
+        features
+      });
+    } catch {}
+  }
+
+  private currentMarchKilometers: any[] = [];
+
+  updateMarchKilometersSource(marks: Array<{ km: number; label: string; coords: [number, number]; bearing?: number }>) {
+    this.currentMarchKilometers = marks || [];
+    if (!this.mapInstance || !this.mapInstance.getStyle()) return;
+    try {
+      const source = this.mapInstance.getSource('march-kilometers') as maplibregl.GeoJSONSource;
+      if (!source) return;
+
+      const features = (marks || []).map((m, idx) => ({
+        type: 'Feature',
+        properties: {
+          id: `march_km_${idx}`,
+          label: m.label,
+          km: m.km,
+          bearing: m.bearing || 0
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: m.coords
+        }
+      }));
+
+      source.setData({
+        type: 'FeatureCollection',
+        features
+      });
+    } catch {}
   }
 
   updatePlaybackMarker(coords: [number, number] | null, angle: number = 0) {
-    if (!this.mapInstance) return;
-    const source = this.mapInstance.getSource('playback-source') as maplibregl.GeoJSONSource;
-    if (!source) return;
+    if (!this.mapInstance || !this.mapInstance.getStyle()) return;
+    try {
+      const source = this.mapInstance.getSource('playback-source') as maplibregl.GeoJSONSource;
+      if (!source) return;
 
-    if (!coords) {
-      source.setData({ type: 'FeatureCollection', features: [] });
-      return;
-    }
+      if (!coords) {
+        source.setData({ type: 'FeatureCollection', features: [] });
+        return;
+      }
 
-    source.setData({
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        properties: { bearing: angle },
-        geometry: {
-          type: 'Point',
-          coordinates: coords
-        }
-      }]
-    });
+      source.setData({
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          properties: { bearing: angle },
+          geometry: {
+            type: 'Point',
+            coordinates: coords
+          }
+        }]
+      });
+    } catch {}
   }
 
 
   initLayers(map: maplibregl.Map) {
+    if (!map || !map.getStyle()) return;
+    this.mapInstance = map;
+    this.pendingImages.clear();
     if (!map.getSource('tactical-symbols')) {
       map.addSource('tactical-symbols', {
         type: 'geojson',
-        data: { type: 'FeatureCollection', features: this.placedSymbols() }
+        data: { type: 'FeatureCollection', features: this.placedSymbols().filter(s => !s.properties?.hidden) }
       });
     }
 
@@ -476,42 +538,90 @@ export class TacticalMapService {
       });
     }
 
-    if (!map.getSource('march-waypoints')) {
-      map.addSource('march-waypoints', {
+    if (!map.getSource('march-places')) {
+      map.addSource('march-places', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] }
       });
     }
 
-    if (!map.getLayer('march_waypoints_circles')) {
+    if (map.getLayer('march_places_dots')) {
+      map.removeLayer('march_places_dots');
+    }
+
+    if (!map.getLayer('march_places_labels')) {
       map.addLayer({
-        id: 'march_waypoints_circles',
-        type: 'circle',
-        source: 'march-waypoints',
+        id: 'march_places_labels',
+        type: 'symbol',
+        source: 'march-places',
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-size': 13,
+          'text-font': ['Noto Sans Regular'],
+          'text-anchor': ['coalesce', ['get', 'textAnchor'], 'center'],
+          'text-offset': ['coalesce', ['get', 'textOffset'], ['literal', [0, 0]]],
+          'text-justify': 'auto',
+          'text-allow-overlap': false,
+          'text-ignore-placement': false,
+          'text-padding': 6
+        },
         paint: {
-          'circle-radius': 9,
-          'circle-color': '#2563eb',
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 1.5
+          'text-color': '#1e3a8a',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2.2
         }
       });
     }
 
-    if (!map.getLayer('march_waypoints_labels')) {
+    if (this.currentMarchPlaces.length > 0) {
+      this.updateMarchPlacesSource(this.currentMarchPlaces);
+    }
+
+    if (!map.getSource('march-kilometers')) {
+      map.addSource('march-kilometers', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+    }
+
+    if (!map.getLayer('march_kilometers_ticks')) {
       map.addLayer({
-        id: 'march_waypoints_labels',
+        id: 'march_kilometers_ticks',
+        type: 'circle',
+        source: 'march-kilometers',
+        paint: {
+          'circle-radius': 4.0,
+          'circle-color': '#ffffff',
+          'circle-stroke-color': '#1d4ed8',
+          'circle-stroke-width': 2.0
+        }
+      });
+    }
+
+    if (!map.getLayer('march_kilometers_labels')) {
+      map.addLayer({
+        id: 'march_kilometers_labels',
         type: 'symbol',
-        source: 'march-waypoints',
+        source: 'march-kilometers',
         layout: {
           'text-field': ['get', 'label'],
           'text-size': 10,
+          'text-font': ['Noto Sans Regular'],
+          'text-offset': [0.7, 0],
+          'text-anchor': 'left',
           'text-allow-overlap': true,
           'text-ignore-placement': true
         },
         paint: {
-          'text-color': '#ffffff'
+          'text-color': '#1d4ed8',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2.0
         }
       });
+    }
+
+    if (this.currentMarchKilometers.length > 0) {
+      this.updateMarchKilometersSource(this.currentMarchKilometers);
     }
 
 
@@ -552,8 +662,10 @@ export class TacticalMapService {
     });
   }
 
-  init(map: maplibregl.Map) {
+  init(map: maplibregl.Map | null) {
     this.mapInstance = map;
+    this.pendingImages.clear();
+    if (!map) return;
     this.setupSymbolDragging(map);
     this.setupBoxSelection(map);
 
@@ -562,11 +674,9 @@ export class TacticalMapService {
         this.justSelectedBox = false;
         return;
       }
-      if (this.interactionMode() !== 'edit') {
+      if (this.activeDrawingMode() !== 'none') {
         return;
       }
-      const canvas = map.getCanvas();
-      if (canvas.style.cursor === 'crosshair') return;
 
       const template = this.selectedSymbol();
       if (template) {
@@ -582,7 +692,11 @@ export class TacticalMapService {
             color: color || '',
             name: this.templateCustomName() || template.name,
             size: this.templateCustomSize(),
-            angle: this.templateCustomAngle()
+            angle: this.templateCustomAngle(),
+            hasPatrol: template.hasPatrol ?? false,
+            patrolStyle: template.patrolStyle || 'solid',
+            patrolLength: template.patrolLength || 400,
+            patrolAngle: template.patrolAngle ?? this.templateCustomAngle() ?? 0
           },
           geometry: {
             type: 'Point',
@@ -625,13 +739,15 @@ export class TacticalMapService {
         [e.point.x - 6, e.point.y - 6],
         [e.point.x + 6, e.point.y + 6]
       ];
+      const availableLayers = [
+        'tactical_symbols_layer',
+        'tactical_lines_layer',
+        'tactical_polygons_fill_layer',
+        'tactical_polygons_outline_layer'
+      ].filter(id => !!map.getLayer(id));
+
       const features = map.queryRenderedFeatures(bbox, {
-        layers: [
-          'tactical_symbols_layer',
-          'tactical_lines_layer',
-          'tactical_polygons_fill_layer',
-          'tactical_polygons_outline_layer'
-        ]
+        layers: availableLayers
       });
 
       if (features.length > 0) {
@@ -650,9 +766,26 @@ export class TacticalMapService {
     });
   }
 
+  private pendingImages = new Set<string>();
+
+  private addFallbackImage(targetIconId: string) {
+    if (!this.mapInstance || this.mapInstance.hasImage(targetIconId)) return;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const imgData = ctx.createImageData(1, 1);
+        this.mapInstance.addImage(targetIconId, imgData);
+      }
+    } catch {}
+  }
+
   handleMissingImage(missingId: string) {
     if (!this.mapInstance || !missingId) return;
     if (this.mapInstance.hasImage(missingId)) return;
+    if (this.pendingImages.has(missingId)) return;
 
     let symbolId = missingId;
     let color = '';
@@ -696,6 +829,11 @@ export class TacticalMapService {
       if (callback) callback();
       return;
     }
+    if (this.pendingImages.has(targetIconId)) {
+      if (callback) callback();
+      return;
+    }
+    this.pendingImages.add(targetIconId);
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -707,9 +845,12 @@ export class TacticalMapService {
         }
         this.mapInstance.addImage(targetIconId, img);
       }
+      this.pendingImages.delete(targetIconId);
       if (callback) callback();
     };
     img.onerror = () => {
+      this.addFallbackImage(targetIconId);
+      this.pendingImages.delete(targetIconId);
       if (callback) callback();
     };
   }
@@ -732,9 +873,17 @@ export class TacticalMapService {
       if (callback) callback();
       return;
     }
+    if (this.pendingImages.has(targetIconId)) {
+      if (callback) callback();
+      return;
+    }
+    this.pendingImages.add(targetIconId);
 
     fetch(`symbols/${symbolId}.svg`)
-      .then(r => r.text())
+      .then(r => {
+        if (!r.ok) throw new Error('Not found');
+        return r.text();
+      })
       .then(svgText => {
         try {
           const parser = new DOMParser();
@@ -769,18 +918,23 @@ export class TacticalMapService {
               }
               this.mapInstance.addImage(targetIconId, img);
             }
+            this.pendingImages.delete(targetIconId);
             if (callback) callback();
           };
           img.onerror = () => {
+            this.addFallbackImage(targetIconId);
+            this.pendingImages.delete(targetIconId);
             if (callback) callback();
           };
-        } catch (e) {
-          console.error('Ошибка обработки цветного SVG знака:', e);
+        } catch {
+          this.addFallbackImage(targetIconId);
+          this.pendingImages.delete(targetIconId);
           if (callback) callback();
         }
       })
-      .catch(e => {
-        console.error('Ошибка загрузки SVG файла:', e);
+      .catch(() => {
+        this.addFallbackImage(targetIconId);
+        this.pendingImages.delete(targetIconId);
         if (callback) callback();
       });
   }
@@ -994,14 +1148,14 @@ export class TacticalMapService {
     }
   }
 
-  placeLinearSymbol(coords: [number, number][], lineType: 'trench' | 'comm_open' | 'comm_covered' | 'wire' | string, name: string, flipSide: boolean = false, isSmooth: boolean = false) {
+  placeLinearSymbol(coords: [number, number][], lineType: 'simple_line' | 'line' | 'trench' | 'comm_open' | 'comm_covered' | 'wire' | 'area_polygon' | string, name: string, flipSide: boolean = false, isSmooth: boolean = false, isDashed: boolean = false, customLineStyle?: string) {
     if (!coords || coords.length < 2) return;
     const geom = this.trenchGeometryService.generateLinearGeometry(coords, lineType, flipSide, isSmooth);
     
     let color = this.templateCustomColor();
     if (!color) {
       if (lineType === 'wire') color = '#000000';
-      else if (lineType === 'march_route') color = '#2563eb';
+      else if (lineType === 'march_route') color = '#466bf7';
       else color = '#ef4444';
     }
 
@@ -1014,7 +1168,7 @@ export class TacticalMapService {
 
     const isArrow = lineType.startsWith('arrow_');
     const fillOpacity = isArrow ? (lineType === 'arrow_retreat' ? 0.25 : (lineType === 'arrow_attack' ? 0.45 : 0.40)) : 0;
-    const lineDashArray = (lineType === 'arrow_retreat') ? [3, 3] : [1, 0];
+    const lineDashArray = (isDashed || lineType === 'arrow_retreat') ? [3, 3] : [1, 0];
 
     const newFeature = {
       type: 'Feature',
@@ -1030,12 +1184,34 @@ export class TacticalMapService {
         origCoords: coords,
         flipSide: flipSide,
         isSmooth: isSmooth,
+        isDashed: isDashed,
+        customLineStyle: customLineStyle,
         fillOpacity: fillOpacity,
         lineDashArray: lineDashArray
       },
       geometry: geom
     };
 
+    this.placedSymbols.update(prev => [...prev, newFeature]);
+    this.updateTacticalSymbolsSource();
+    this.selectPlacedSymbol(newFeature);
+  }
+
+  placeTextBox(coords: [number, number], text: string = 'Надпись') {
+    const newFeature = {
+      type: 'Feature',
+      properties: {
+        id: Date.now(),
+        name: text,
+        color: '#222222',
+        size: 14,
+        isText: true
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: coords
+      }
+    };
     this.placedSymbols.update(prev => [...prev, newFeature]);
     this.updateTacticalSymbolsSource();
     this.selectPlacedSymbol(newFeature);
@@ -1339,14 +1515,16 @@ export class TacticalMapService {
   }
 
   public updateTacticalSymbolsSource() {
-    if (!this.mapInstance) return;
-    const source = this.mapInstance.getSource('tactical-symbols') as maplibregl.GeoJSONSource;
-    if (source) {
-      source.setData({
-        type: 'FeatureCollection',
-        features: this.placedSymbols()
-      });
-    }
+    if (!this.mapInstance || !this.mapInstance.getStyle()) return;
+    try {
+      const source = this.mapInstance.getSource('tactical-symbols') as maplibregl.GeoJSONSource;
+      if (source) {
+        source.setData({
+          type: 'FeatureCollection',
+          features: this.placedSymbols().filter(s => !s.properties?.hidden)
+        });
+      }
+    } catch {}
   }
 
   private setupBoxSelection(map: maplibregl.Map) {
@@ -1374,8 +1552,8 @@ export class TacticalMapService {
         const container = map.getContainer();
         boxElement = document.createElement('div');
         boxElement.style.position = 'absolute';
-        boxElement.style.border = '1.5px dashed #2563eb';
-        boxElement.style.backgroundColor = 'rgba(37, 99, 235, 0.15)';
+        boxElement.style.border = '1.5px dashed #466bf7';
+        boxElement.style.backgroundColor = 'rgba(70, 107, 247, 0.15)';
         boxElement.style.pointerEvents = 'none';
         boxElement.style.zIndex = '1000';
         boxElement.style.left = `${e.point.x}px`;
@@ -1421,15 +1599,17 @@ export class TacticalMapService {
 
           if (maxX - minX > 4 || maxY - minY > 4) {
             this.justSelectedBox = true;
+            const availableLayers = [
+              'tactical_symbols_layer',
+              'tactical_lines_layer',
+              'tactical_polygons_outline_layer',
+              'tactical_polygons_fill_layer'
+            ].filter(id => !!map.getLayer(id));
+
             const features = map.queryRenderedFeatures(
               [[minX, minY], [maxX, maxY]],
               {
-                layers: [
-                  'tactical_symbols_layer',
-                  'tactical_lines_layer',
-                  'tactical_polygons_fill_layer',
-                  'tactical_polygons_outline_layer'
-                ]
+                layers: availableLayers
               }
             );
 
@@ -1480,11 +1660,27 @@ export class TacticalMapService {
 
     let plannerTasks = [];
     let plannerDevices = [];
+    let routePlannerState = null;
+    let marchOrderElements = [];
     try {
       const tasks = localStorage.getItem('topos_planner_tasks');
       if (tasks) plannerTasks = JSON.parse(tasks);
       const devices = localStorage.getItem('topos_planner_devices');
       if (devices) plannerDevices = JSON.parse(devices);
+      const rState = localStorage.getItem('topos_route_planner_state');
+      if (rState) routePlannerState = JSON.parse(rState);
+      const mElements = localStorage.getItem('topos_march_order_elements');
+      if (mElements) marchOrderElements = JSON.parse(mElements);
+    } catch (e) {}
+
+    let imageOverlays: any[] = [];
+    try {
+      if (this.imageOverlayService) {
+        imageOverlays = this.imageOverlayService.overlays();
+      } else {
+        const stored = localStorage.getItem('topos_image_overlays');
+        if (stored) imageOverlays = JSON.parse(stored);
+      }
     } catch (e) {}
 
     const plannerSettings = {
@@ -1505,6 +1701,9 @@ export class TacticalMapService {
       plannerTasks,
       plannerDevices,
       plannerSettings,
+      routePlannerState,
+      marchOrderElements,
+      imageOverlays,
       mapPosition
     };
   }
@@ -1519,6 +1718,25 @@ export class TacticalMapService {
     
     this.placedSymbols.set(symbols);
     this.objectGroups.set(groups);
+
+    if (scenario.imageOverlays) {
+      localStorage.setItem('topos_image_overlays', JSON.stringify(scenario.imageOverlays));
+      if (this.imageOverlayService) {
+        this.imageOverlayService.loadOverlays(scenario.imageOverlays);
+      }
+    } else {
+      localStorage.removeItem('topos_image_overlays');
+      if (this.imageOverlayService) {
+        this.imageOverlayService.loadOverlays([]);
+      }
+    }
+
+    if (scenario.routePlannerState) {
+      localStorage.setItem('topos_route_planner_state', JSON.stringify(scenario.routePlannerState));
+    }
+    if (scenario.marchOrderElements) {
+      localStorage.setItem('topos_march_order_elements', JSON.stringify(scenario.marchOrderElements));
+    }
 
     if (scenario.plannerTasks) {
       localStorage.setItem('topos_planner_tasks', JSON.stringify(scenario.plannerTasks));
@@ -1569,6 +1787,15 @@ export class TacticalMapService {
       }
     });
 
+    this.updateTacticalSymbolsSource();
+  }
+
+  public clearAllTacticalFeatures() {
+    this.placedSymbols.set([]);
+    this.objectGroups.set([]);
+    this.selectedPlacedSymbol.set(null);
+    this.selectedPlacedSymbols.set([]);
+    this.activeCalculationGroupId.set('all');
     this.updateTacticalSymbolsSource();
   }
 }

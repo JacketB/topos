@@ -5,11 +5,15 @@ describe('MarchOrderService', () => {
   let service: MarchOrderService;
 
   beforeEach(() => {
+    localStorage.clear();
     service = new MarchOrderService();
+    service.setElements([]);
   });
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
+  it('should be created and have default elements if storage is empty', () => {
+    localStorage.clear();
+    const freshService = new MarchOrderService();
+    expect(freshService.elements().length).toBe(4);
   });
 
   it('should add, update and remove elements correctly', () => {
@@ -55,8 +59,6 @@ describe('MarchOrderService', () => {
       distanceUnit: 'm'
     };
 
-    // Глубина: (N * L_vehicle) + (N - 1) * D_between
-    // = (3 * 10) + (2 * 50) = 30 + 100 = 130 метров = 0.13 км
     const unitLength = service.getUnitLengthKm(el);
     expect(unitLength).toBeCloseTo(0.13, 3);
   });

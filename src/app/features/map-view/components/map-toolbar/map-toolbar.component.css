@@ -4,7 +4,6 @@
   z-index: 100;
 }
 
-/* 100% Точные Исходные Профессиональные Стили Тулбара Topos GIS */
 .app-top-toolbar {
   width: 100%;
   height: 36px;
@@ -13,6 +12,7 @@
   color: #1e293b;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 8px;
   border-bottom: 1px solid #cbd5e1;
   flex-shrink: 0;
@@ -24,13 +24,203 @@
 .toolbar-left {
   display: flex;
   align-items: center;
-  width: 100%;
+  gap: 4px;
+  flex-wrap: nowrap;
+  flex: 1;
 }
 
 .toolbar-group {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.toolbar-dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tool-btn-dropdown {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  outline: none;
+}
+
+.tool-btn-dropdown:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.tool-btn-dropdown.active {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: #93c5fd;
+  box-shadow: inset 0 1px 2px rgba(70, 107, 247, 0.15);
+}
+
+.dropdown-chevron {
+  font-size: 8px;
+  opacity: 0.65;
+  transition: transform 0.15s ease;
+}
+
+.toolbar-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 220px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: dropdownFadeIn 0.12s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  padding: 4px 8px 2px 8px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #e2e8f0;
+  margin: 3px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.dropdown-item:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.dropdown-item.active {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: #bfdbfe;
+}
+
+.dropdown-item .item-label {
+  flex: 1;
+}
+
+.key-tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 4px;
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  border-radius: 3px;
+}
+
+.dropdown-item.active .key-tag {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary-hover);
+}
+
+.item-check {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  border: 1.5px solid #cbd5e1;
+  color: transparent;
+}
+
+.item-check.checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.mode-segmented-control {
+  display: inline-flex;
+  background-color: #f1f5f9;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid #cbd5e1;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 18px;
+  background-color: #e2e8f0;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.project-btn {
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s ease;
+}
+
+.project-btn:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 .tool-btn {
@@ -57,10 +247,10 @@
 }
 
 .tool-btn.active {
-  background-color: #dbeafe;
-  color: #2563eb;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
   border-color: #93c5fd;
-  box-shadow: inset 0 1px 2px rgba(37, 99, 235, 0.15);
+  box-shadow: inset 0 1px 2px rgba(70, 107, 247, 0.15);
 }
 
 .key-hint {
@@ -90,9 +280,9 @@
 }
 
 .tool-btn.active .key-hint {
-  background-color: #2563eb;
+  background-color: var(--color-primary);
   color: #ffffff;
-  border-color: #1d4ed8;
+  border-color: var(--color-primary-hover);
 }
 
 .mode-select-btn {
@@ -132,10 +322,16 @@
 }
 
 .tool-btn-text.active {
-  background-color: #dbeafe;
-  color: #2563eb;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
   border-color: #93c5fd;
-  box-shadow: inset 0 1px 2px rgba(37, 99, 235, 0.15);
+  box-shadow: inset 0 1px 2px rgba(70, 107, 247, 0.15);
+}
+
+.app-top-toolbar app-place-search {
+  width: 170px;
+  flex-shrink: 0;
+  display: block;
 }
 
 /* Поповер библиотеки знаков */
@@ -194,8 +390,8 @@
 }
 
 .symbols-library-tab-btn.active {
-  background-color: #eff6ff;
-  color: #2563eb;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
   border-color: #bfdbfe;
   font-weight: 600;
 }
@@ -273,12 +469,12 @@
 
 .symbol-grid-item:hover {
   border-color: #93c5fd;
-  background-color: #eff6ff;
+  background-color: var(--color-primary-light);
 }
 
 .symbol-grid-item.selected {
-  border-color: #2563eb;
-  background-color: #dbeafe;
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
 }
 
 .symbol-icon-wrapper-pop img {

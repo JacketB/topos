@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, signal, inject } from '@angular/core';
+import { Component, EventEmitter, Output, signal, inject, input, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MarchRouteService, BelarusPlace } from '../../services/march-route.service';
@@ -13,12 +13,24 @@ import { MarchRouteService, BelarusPlace } from '../../services/march-route.serv
 export class PlaceSearchComponent {
   private routeService = inject(MarchRouteService);
 
+  readonly initialValue = input<string>('');
+  readonly placeholder = input<string>('Поиск населенного пункта РБ...');
+
   @Output() selectPlace = new EventEmitter<BelarusPlace>();
 
   searchQuery = signal('');
   searchResults = signal<BelarusPlace[]>([]);
   isOpen = signal(false);
   isLoading = signal(false);
+
+  constructor() {
+    effect(() => {
+      const init = this.initialValue();
+      if (init) {
+        this.searchQuery.set(init);
+      }
+    });
+  }
 
   async onInput(query: string) {
     this.searchQuery.set(query);
@@ -44,6 +56,18 @@ export class PlaceSearchComponent {
     this.selectPlace.emit(place);
     this.searchQuery.set(place.name);
     this.isOpen.set(false);
+  }
+
+  formatPlaceType(type?: string): string {
+    switch (type) {
+      case 'city': return 'г.';
+      case 'town': return 'г.п.';
+      case 'village': return 'д.';
+      case 'hamlet': return 'х.';
+      case 'settlement': return 'пос.';
+      case 'suburb': return 'приг.';
+      default: return '';
+    }
   }
 
   clearSearch() {

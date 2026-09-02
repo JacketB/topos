@@ -26,8 +26,9 @@ export class MapLayersService {
       visible: true,
       expanded: false,
       layers: [
-        { id: 'contour_line', name: 'Горизонтали', visible: false },
-        { id: 'contour_label', name: 'Отметки высот горизонталей', visible: false },
+        { id: 'hillshade_layer', name: 'Теневая отмывка рельефа (Hillshade)', visible: true },
+        { id: 'contour_line', name: 'Горизонтали (Изогипсы)', visible: true },
+        { id: 'contour_label', name: 'Отметки высот горизонталей', visible: true },
         { id: 'mountain_peak_labels', name: 'Вершины и командные высоты', visible: true }
       ]
     },
@@ -97,7 +98,8 @@ export class MapLayersService {
       visible: true,
       expanded: false,
       layers: [
-        { id: 'buildings', name: 'Здания и строения', visible: true },
+        { id: '3d_buildings', name: '3D-здания (Объемная застройка)', visible: true },
+        { id: 'buildings', name: '2D-контуры строений', visible: true },
         { id: 'landuse_residential', name: 'Жилые и промышленные кварталы', visible: true },
         { id: 'housenumber_labels', name: 'Номера домов и адреса', visible: true }
       ]
@@ -111,10 +113,64 @@ export class MapLayersService {
         { id: 'place_labels', name: 'Города, поселки и деревни', visible: true },
         { id: 'poi_labels', name: 'Точки интереса', visible: true },
         { id: 'aerodrome_labels', name: 'Аэродромы и вертолетные площадки', visible: true },
-        { id: 'boundary', name: 'Административные границы и районы', visible: true }
+        { id: 'boundary_country', name: 'Государственная граница', visible: true },
+        { id: 'boundary_region', name: 'Областные и районные границы', visible: true }
       ]
     }
   ]);
+
+  constructor() {
+    this.loadState();
+  }
+
+  private loadState() {
+    try {
+      const stored = localStorage.getItem('topos_map_layer_groups');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          this.groups.update(defaults => {
+            return defaults.map(defGroup => {
+              const savedGroup = parsed.find((g: any) => g.id === defGroup.id);
+              if (!savedGroup) return defGroup;
+              return {
+                ...defGroup,
+                visible: savedGroup.visible ?? defGroup.visible,
+                expanded: savedGroup.expanded ?? defGroup.expanded,
+                layers: defGroup.layers.map(defLayer => {
+                  const savedLayer = savedGroup.layers?.find((l: any) => l.id === defLayer.id);
+                  if (!savedLayer) return defLayer;
+                  return { ...defLayer, visible: savedLayer.visible ?? defLayer.visible };
+                })
+              };
+            });
+          });
+        }
+      }
+    } catch {}
+  }
+
+  private saveState() {
+    try {
+      localStorage.setItem('topos_map_layer_groups', JSON.stringify(this.groups()));
+    } catch {}
+  }
+
+  applyAllLayersVisibility(map: maplibregl.Map | null) {
+    if (!map) return;
+    const currentGroups = this.groups();
+    for (const group of currentGroups) {
+      for (const layer of group.layers) {
+        if (map.getLayer(layer.id)) {
+          const isVisible = group.visible && layer.visible;
+          map.setLayoutProperty(layer.id, 'visibility', isVisible ? 'visible' : 'none');
+          if (layer.id === 'boundary_country' && map.getLayer('boundary_country_halo')) {
+            map.setLayoutProperty('boundary_country_halo', 'visibility', isVisible ? 'visible' : 'none');
+          }
+        }
+      }
+    }
+  }
 
   toggleGroupExpansion(groupId: string) {
     this.groups.update(currentGroups => 
@@ -122,6 +178,7 @@ export class MapLayersService {
         group.id === groupId ? { ...group, expanded: !group.expanded } : group
       )
     );
+    this.saveState();
   }
 
   toggleGroup(groupId: string, map: maplibregl.Map | null) {
@@ -133,6 +190,9 @@ export class MapLayersService {
         const updatedLayers = group.layers.map(layer => {
           if (map && map.getLayer(layer.id)) {
             map.setLayoutProperty(layer.id, 'visibility', newGroupVisible ? 'visible' : 'none');
+            if (layer.id === 'boundary_country' && map.getLayer('boundary_country_halo')) {
+              map.setLayoutProperty('boundary_country_halo', 'visibility', newGroupVisible ? 'visible' : 'none');
+            }
           }
           return { ...layer, visible: newGroupVisible };
         });
@@ -140,6 +200,7 @@ export class MapLayersService {
         return { ...group, visible: newGroupVisible, layers: updatedLayers };
       })
     );
+    this.saveState();
   }
 
   toggleLayer(layerId: string, map: maplibregl.Map | null) {
@@ -153,6 +214,9 @@ export class MapLayersService {
           const newVisible = !layer.visible;
           if (map && map.getLayer(layer.id)) {
             map.setLayoutProperty(layer.id, 'visibility', newVisible ? 'visible' : 'none');
+            if (layer.id === 'boundary_country' && map.getLayer('boundary_country_halo')) {
+              map.setLayoutProperty('boundary_country_halo', 'visibility', newVisible ? 'visible' : 'none');
+            }
           }
           return { ...layer, visible: newVisible };
         });
@@ -161,5 +225,6 @@ export class MapLayersService {
         return { ...group, visible: anyVisible, layers: updatedLayers };
       })
     );
+    this.saveState();
   }
 }

@@ -1,11 +1,12 @@
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { MapViewModel } from '../../viewmodels/map.viewmodel';
 import { SymbolPropertiesComponent } from '../symbol-properties/symbol-properties.component';
 
 @Component({
   selector: 'app-map-sidebar',
   standalone: true,
-  imports: [SymbolPropertiesComponent],
+  imports: [CommonModule, SymbolPropertiesComponent],
   templateUrl: './map-sidebar.component.html',
   styleUrl: './map-sidebar.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush

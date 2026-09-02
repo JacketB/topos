@@ -2,7 +2,7 @@
   <!-- Шапка -->
   <div class="panel-header">
     <span class="panel-title">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary, #466bf7);">
         <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
         <polyline points="2 17 12 22 22 17"></polyline>
         <polyline points="2 12 12 17 22 12"></polyline>
@@ -74,6 +74,14 @@
         <details class="tree-details group-details">
           <summary class="tree-summary group-summary">
             <span class="summary-left">
+              <input 
+                type="checkbox" 
+                class="element-checkbox"
+                [checked]="isGroupAllSelected(group.id)"
+                (click)="$event.stopPropagation()"
+                (change)="toggleGroupSelectAll(group.id, $event)"
+                title="Выделить все объекты в районе"
+              />
               <span class="icon-folder">
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 4px; color: #4b5563;">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
@@ -83,6 +91,24 @@
               <span class="badge">{{ group.elementIds.length }}</span>
             </span>
             <span class="summary-actions">
+              <button 
+                class="icon-action-btn" 
+                [class.hidden-active]="isGroupHidden(group.id)"
+                (click)="toggleGroupVisibility(group.id, $event)" 
+                [title]="isGroupHidden(group.id) ? 'Показать район на карте' : 'Скрыть район на карте'"
+              >
+                @if (isGroupHidden(group.id)) {
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                }
+              </button>
               <button class="icon-action-btn" (click)="zoomToGroup(group.id, $event)" title="Показать район на карте">
                 <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -115,6 +141,13 @@
                     (click)="selectElement(item)"
                   >
                     <span class="element-info">
+                      <input 
+                        type="checkbox" 
+                        class="element-checkbox"
+                        [checked]="checkedElementIds()[id]"
+                        (change)="toggleElementCheck(id)"
+                        (click)="$event.stopPropagation()"
+                      />
                       <span class="element-icon">
                         @if (item.properties?.isLinear) {
                           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" style="display: inline-block; vertical-align: middle; margin-right: 2px; color: #4f46e5;">
@@ -130,6 +163,24 @@
                       <span class="element-name">{{ getSymbolName(item) }}</span>
                     </span>
                     <div style="display: flex; gap: 2px; align-items: center;" (click)="$event.stopPropagation()">
+                      <button 
+                        class="icon-action-btn" 
+                        [class.hidden-active]="item.properties?.hidden"
+                        (click)="toggleElementVisibility(item.properties?.id, $event)"
+                        [title]="item.properties?.hidden ? 'Показать на карте' : 'Скрыть на карте'"
+                      >
+                        @if (item.properties?.hidden) {
+                          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                          </svg>
+                        } @else {
+                          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                        }
+                      </button>
                       <button 
                         class="zoom-to-element-btn" 
                         (click)="zoomToElement(item, $event)"

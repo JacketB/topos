@@ -1,0 +1,26 @@
+[[permission]]
+identifier = "allow-search-belarus-places"
+description = "Allows frontend to search places in Belarus"
+
+[permission.commands]
+allow = [
+  "search_belarus_places"
+]
+
+[[permission]]
+identifier = "allow-calculate-march-route"
+description = "Allows frontend to calculate march route on road graph"
+
+[permission.commands]
+allow = [
+  "calculate_march_route"
+]
+
+[[permission]]
+identifier = "allow-get-march-overlays"
+description = "Allows frontend to get kilometer marks and corridor places"
+
+[permission.commands]
+allow = [
+  "get_march_overlays"
+]

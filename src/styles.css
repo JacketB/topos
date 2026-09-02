@@ -94,13 +94,13 @@ app-root, app-map-view {
 }
 
 .fort-btn.primary {
-  background-color: #2563eb;
+  background-color: var(--color-primary);
   color: #ffffff;
-  border-color: #1d4ed8;
+  border-color: var(--color-primary-hover);
 }
 
 .fort-btn.primary:hover {
-  background-color: #1d4ed8;
+  background-color: var(--color-primary-hover);
 }
 
 .fort-btn.secondary {
@@ -115,6 +115,14 @@ app-root, app-map-view {
   border-color: #94a3b8;
 }
 
+.fort-btn:focus-visible,
+.tool-btn:focus-visible,
+.quick-icon-btn:focus-visible,
+.control-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .vs-input {
   border: 1px solid #cbd5e1;
   border-radius: 4px;
@@ -127,8 +135,8 @@ app-root, app-map-view {
 }
 
 .vs-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(70, 107, 247, 0.15);
 }
 
 button.fort-report-close-btn,

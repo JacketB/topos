@@ -11,6 +11,32 @@ import {
 } from '../../consts/military-layers.const';
 import { mapsUrls } from '../../../../consts/map-urls';
 
+const FALLBACK_EMPTY_PNG = new Uint8Array([
+  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1,
+  8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0, 0, 13, 73, 68, 65, 84, 120, 1, 99, 96, 108,
+  91, 240, 31, 0, 3, 218, 2, 39, 0, 6, 134, 99, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66,
+  96, 130
+]);
+
+let pmtilesProtocolInstance: Protocol | null = null;
+function getPmtilesProtocol(): Protocol {
+  if (!pmtilesProtocolInstance) {
+    pmtilesProtocolInstance = new Protocol();
+    const rawTile = pmtilesProtocolInstance.tile;
+    maplibregl.addProtocol('pmtiles', (params, abortController) => {
+      return rawTile(params, abortController).then((res: any) => {
+        if (!res || res.data === null || res.data === undefined) {
+          return { data: FALLBACK_EMPTY_PNG };
+        }
+        return res;
+      }).catch(() => {
+        return { data: FALLBACK_EMPTY_PNG };
+      });
+    });
+  }
+  return pmtilesProtocolInstance;
+}
+
 @Component({
   selector: 'app-map-canvas',
   standalone: true,
@@ -88,10 +114,13 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       const mode = this.vm.tacticalMapService.interactionMode();
       const lineMode = this.vm.activeLineMode();
       const isMeasuring = this.vm.isMeasuring();
+      const selectedTemplate = this.vm.tacticalMapService.selectedSymbol();
+
+      this.vm.tacticalMapService.activeDrawingMode.set(lineMode);
 
       if (this.map) {
         const canvas = this.map.getCanvas();
-        if (isMeasuring || lineMode !== 'none') {
+        if (isMeasuring || lineMode !== 'none' || selectedTemplate) {
           canvas.style.cursor = 'crosshair';
         } else if (mode === 'select') {
           canvas.style.cursor = 'cell';
@@ -100,6 +129,41 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         } else {
           canvas.style.cursor = '';
         }
+      }
+    });
+
+    effect(() => {
+      const is3D = this.vm.is3D();
+      const exaggeration = this.vm.terrainExaggeration();
+      if (this.map && this.map.getSource('terrain-source')) {
+        if (is3D) {
+          this.map.setTerrain({ source: 'terrain-source', exaggeration });
+        } else {
+          this.map.setTerrain(null as any);
+        }
+      }
+    });
+
+    effect(() => {
+      const isHillshade = this.vm.isHillshadeEnabled();
+      const exaggeration = this.vm.hillshadeExaggerationValue();
+      const sunAngle = this.vm.hillshadeSunAngle();
+      const shadowColor = this.vm.hillshadeShadowColor();
+
+      if (this.map && this.map.getLayer('hillshade_layer')) {
+        this.map.setLayoutProperty('hillshade_layer', 'visibility', isHillshade ? 'visible' : 'none');
+        if (isHillshade) {
+          this.map.setPaintProperty('hillshade_layer', 'hillshade-exaggeration', exaggeration);
+          this.map.setPaintProperty('hillshade_layer', 'hillshade-illumination-direction', sunAngle);
+          this.map.setPaintProperty('hillshade_layer', 'hillshade-shadow-color', shadowColor);
+        }
+      }
+    });
+
+    effect(() => {
+      const is3DBuildings = this.vm.is3DBuildingsEnabled();
+      if (this.map && this.map.getLayer('3d_buildings')) {
+        this.map.setLayoutProperty('3d_buildings', 'visibility', is3DBuildings ? 'visible' : 'none');
       }
     });
   }
@@ -146,13 +210,32 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       prevBearing = this.map.getBearing();
       prevPitch = this.map.getPitch();
 
+      this.vm.setMapInstance(null as any);
       this.map.remove();
       this.map = null;
-      this.vm.setMapInstance(null as any);
     }
+
+    const terrainPmtilesUrl = 'http://topos.localhost/terrain.pmtiles';
+    const protocol = getPmtilesProtocol();
+    try {
+      protocol.add(new PMTiles(terrainPmtilesUrl));
+    } catch {}
 
     const sourcesSpec: any = {
       [MILITARY_SOURCE_ID]: MILITARY_SOURCE_SPEC,
+      'contours-source': {
+        type: 'geojson',
+        data: 'contours.geojson'
+      },
+      'terrain-source': {
+        type: 'raster-dem',
+        tiles: [`pmtiles://${terrainPmtilesUrl}/{z}/{x}/{y}`],
+        tileSize: 256,
+        encoding: 'mapbox',
+        minzoom: 0,
+        maxzoom: 10,
+        bounds: [22.70, 50.95, 33.20, 56.45]
+      }
     };
 
     if (type === 'xyz') {
@@ -164,9 +247,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         maxzoom: 20
       };
     } else {
-      const protocol = new Protocol();
-      maplibregl.addProtocol('pmtiles', protocol.tile);
-
       const pmtiles = new PMTiles(url);
       protocol.add(pmtiles);
 
@@ -184,13 +264,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
               maxzoom: 14
             })
       };
-
-      if (type === 'vector') {
-        sourcesSpec['contours-source'] = {
-          type: 'geojson',
-          data: 'contours.geojson'
-        };
-      }
     }
 
     this.map = new maplibregl.Map({
@@ -205,8 +278,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       bearing: prevBearing,
       pitch: prevPitch,
       minZoom: 6.48,
+      maxPitch: 85,
       fadeDuration: 0,
-      preserveDrawingBuffer: true,
+      preserveDrawingBuffer: false,
+      maxTileCacheSize: 50,
+      collectResourceTiming: false,
     } as any);
     this.vm.setMapInstance(this.map);
     this.updateCenterCoords();
@@ -235,6 +311,12 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       this.updateTransformBoxPosition();
       this.updateCenterCoords();
     });
+    this.map.on('mousemove', (e) => {
+      this.vm.cursorLatLon.set([e.lngLat.lat, e.lngLat.lng]);
+    });
+    this.map.on('mouseout', () => {
+      this.vm.cursorLatLon.set(null);
+    });
     this.map.on('rotate', () => {
       this.vm.bearing.set(this.map ? this.map.getBearing() : 0);
       this.updateTransformBoxPosition();
@@ -246,15 +328,14 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
 
     this.vm.tacticalMapService.init(this.map);
 
+    this.map.on('load', () => {
+      this.vm.mapLayersService.applyAllLayersVisibility(this.map);
+    });
+    this.vm.mapLayersService.applyAllLayersVisibility(this.map);
+
     this.map.on('mousemove', (e) => {
       if (this.vm.isEditingCoords()) return;
-      const lat = e.lngLat.lat;
-      const lng = e.lngLat.lng;
-      const latDir = lat >= 0 ? 'С.Ш.' : 'Ю.Ш.';
-      const lngDir = lng >= 0 ? 'В.Д.' : 'З.Д.';
-      this.vm.cursorCoords.set(
-        `${Math.abs(lat).toFixed(4)} ${latDir}, ${Math.abs(lng).toFixed(4)} ${lngDir}`,
-      );
+      this.vm.cursorLatLon.set([e.lngLat.lat, e.lngLat.lng]);
     });
 
     this.map.on('zoom', () => {
@@ -280,6 +361,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       if (this.vm.isQuickLayersMenuOpen()) this.vm.isQuickLayersMenuOpen.set(false);
       if (this.vm.isToogleMapMenuOpen()) this.vm.isToogleMapMenuOpen.set(false);
       if (this.vm.activeCategoryDropdown()) this.vm.activeCategoryDropdown.set(null);
+
+      if (this.vm.pickingRoutePoint() !== null) {
+        this.vm.setPickedRoutePoint([e.lngLat.lng, e.lngLat.lat]);
+        return;
+      }
 
       if (this.vm.activeLineMode() !== 'none') {
         this.vm.addDrawingPoint([e.lngLat.lng, e.lngLat.lat]);
@@ -313,6 +399,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       if (this.map) {
         this.vm.mapMeasurementService.initLayers(this.map);
         this.vm.tacticalMapService.initLayers(this.map);
+        this.vm.tacticalAnalyticsService.initLayers(this.map);
+
+        if (this.vm.is3D() && this.map.getSource('terrain-source')) {
+          this.map.setTerrain({ source: 'terrain-source', exaggeration: this.vm.terrainExaggeration() });
+        }
 
         this.vm.currentScale.set(this.vm.mapScaleService.getCurrentScale(this.map.getZoom(), this.map.getCenter().lat));
         this.vm.mapScaleService.updateScaleInfo(
@@ -439,26 +530,65 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   private getLayersForType(type: string) {
+    let baseLayers: any[] = [];
     if (type === 'raster' || type === 'xyz') {
-      return [
-      {
-        id: 'raster-layer',
-        type: 'raster',
-        source: 'belarus-data',
-        paint: {
-          'raster-opacity': 1,
-          'raster-resampling': 'nearest'
-        }
-      },
-      ...MILITARY_LAYERS
-    ];
+      baseLayers = [
+        {
+          id: 'raster-layer',
+          type: 'raster',
+          source: 'belarus-data',
+          paint: {
+            'raster-opacity': 1,
+            'raster-resampling': 'nearest'
+          }
+        },
+        {
+          id: 'hillshade_layer',
+          type: 'hillshade',
+          source: 'terrain-source',
+          layout: {
+            visibility: 'visible'
+          },
+          paint: {
+            'hillshade-exaggeration': 0.65,
+            'hillshade-shadow-color': '#0f172a',
+            'hillshade-highlight-color': '#ffffff',
+            'hillshade-accent-color': '#020617',
+            'hillshade-illumination-direction': 315,
+            'hillshade-illumination-anchor': 'viewport'
+          }
+        },
+        ...mapLayers.filter(l => ['contour_line', 'contour_label', 'mountain_peak_labels'].includes(l.id)),
+        ...MILITARY_LAYERS
+      ];
+    } else {
+      baseLayers = [
+        ...mapLayers.filter((l) => l.id !== 'place_labels'),
+        ...MILITARY_LAYERS,
+        ...mapLayers.filter((l) => l.id === 'place_labels'),
+      ];
     }
 
-    return [
-      ...mapLayers.filter((l) => l.id !== 'place_labels'),
-      ...MILITARY_LAYERS,
-      ...mapLayers.filter((l) => l.id === 'place_labels'),
-    ];
+    const layerVisibilityMap = new Map<string, boolean>();
+    for (const group of this.vm.mapLayersService.groups()) {
+      for (const layer of group.layers) {
+        layerVisibilityMap.set(layer.id, group.visible && layer.visible);
+      }
+    }
+
+    return baseLayers.map(l => {
+      if (layerVisibilityMap.has(l.id)) {
+        const isVisible = layerVisibilityMap.get(l.id)!;
+        return {
+          ...l,
+          layout: {
+            ...(l.layout || {}),
+            visibility: isVisible ? 'visible' : 'none'
+          }
+        };
+      }
+      return l;
+    });
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -468,7 +598,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
         return;
       }
-      if (this.vm.selectedPlacedSymbol()) {
+      if (this.vm.selectedPlacedSymbol() || this.vm.selectedPlacedSymbols().length > 0) {
         this.vm.deletePlacedSymbol();
       }
     }
@@ -477,13 +607,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   updateCenterCoords() {
     if (!this.map) return;
     const center = this.map.getCenter();
-    const lat = center.lat;
-    const lng = center.lng;
-    const latDir = lat >= 0 ? 'С.Ш.' : 'Ю.Ш.';
-    const lngDir = lng >= 0 ? 'В.Д.' : 'З.Д.';
-    this.vm.centerCoords.set(
-      `${Math.abs(lat).toFixed(4)} ${latDir}, ${Math.abs(lng).toFixed(4)} ${lngDir}`
-    );
+    this.vm.centerLatLon.set([center.lat, center.lng]);
   }
 
   ngOnDestroy() {
@@ -492,9 +616,9 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       this.savePosInterval = null;
     }
     if (this.map) {
+      this.vm.setMapInstance(null as any);
       this.map.remove();
       this.map = null;
-      this.vm.setMapInstance(null as any);
     }
   }
 }

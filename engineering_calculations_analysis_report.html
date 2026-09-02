@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Аналитический отчет: Инженерные расчеты Topos GIS vs Методика МОРБ-2006</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #466bf7;
+      --primary-hover: #3556db;
+      --primary-light: #eff6ff;
+      --primary-border: #bfdbfe;
+      --bg-app: #f8fafc;
+      --bg-card: #ffffff;
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --success: #16a34a;
+      --success-light: #f0fdf4;
+      --warning: #d97706;
+      --warning-light: #fffbeb;
+      --danger: #dc2626;
+      --danger-light: #fef2f2;
+      --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 60px;
+    }
+
+    .header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .header-title-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo {
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .header-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+    }
+
+    .header-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--primary-light);
+      border: 1px solid var(--primary-border);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .main-container {
+      max-width: 1400px;
+      margin: 24px auto 0;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .metric-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.1;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .metric-unit {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .metric-progress-bg {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .metric-progress-bar {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--primary);
+    }
+
+    .metric-progress-bar.success { background: var(--success); }
+    .metric-progress-bar.warning { background: var(--warning); }
+    .metric-progress-bar.danger { background: var(--danger); }
+
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      background: #f1f5f9;
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      background: #ffffff;
+      border-color: var(--border-dark);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tab-badge {
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: var(--text-muted);
+    }
+
+    .tab-btn.active .tab-badge {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .content-section {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .content-section.active {
+      display: flex;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: #fafafa;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    .matrix-table th {
+      background: #f8fafc;
+      padding: 12px 16px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-bottom: 2px solid var(--border-color);
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+    }
+
+    .matrix-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: top;
+    }
+
+    .matrix-table tr:hover {
+      background: #f8fafc;
+    }
+
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status-tag.success {
+      background: var(--success-light);
+      color: var(--success);
+      border: 1px solid #bbf7d0;
+    }
+
+    .status-tag.warning {
+      background: var(--warning-light);
+      color: var(--warning);
+      border: 1px solid #fde68a;
+    }
+
+    .status-tag.danger {
+      background: var(--danger-light);
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    .priority-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+    }
+
+    .priority-p0 { background: #fee2e2; color: #991b1b; }
+    .priority-p1 { background: #ffedd5; color: #9a3412; }
+    .priority-p2 { background: #fef9c3; color: #854d0e; }
+    .priority-p3 { background: #f1f5f9; color: #475569; }
+
+    .formula-box {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--primary);
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #1e293b;
+      overflow-x: auto;
+    }
+
+    .gap-item {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 16px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .gap-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .gap-item-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .gap-item-desc {
+      font-size: 0.85rem;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .gap-diff-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+    }
+
+    .gap-diff-col {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .gap-diff-label {
+      font-weight: 700;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .roadmap-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .roadmap-stage {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .roadmap-stage-header {
+      padding: 14px 18px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .roadmap-stage-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .roadmap-tasks {
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #ffffff;
+    }
+
+    .roadmap-task {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.85rem;
+    }
+
+    .task-checkbox {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      margin-top: 2px;
+    }
+
+    .code-badge {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: #f1f5f9;
+      color: var(--primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-container">
+      <div class="header-title-block">
+        <div class="header-logo">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="header-title">Анализ инженерных расчетов: Topos GIS vs МОРБ-2006</h1>
+          <p class="header-subtitle">Сравнение математических моделей приложения с «Методикой инженерных расчетов» МО РБ (2006 г.)</p>
+        </div>
+      </div>
+
+      <div class="header-badge">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 6v6l4 2" />
+        </svg>
+        <span>Август 2026 • 12 разделов • 137 таблиц нормативов</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">
+          <span>Покрытие методики</span>
+          <span class="priority-pill priority-p1">26.5%</span>
+        </div>
+        <div class="metric-value">
+          <span>26.5</span>
+          <span class="metric-unit">%</span>
+        </div>
+        <div class="metric-progress-bg">
+          <div class="metric-progress-bar warning" style="width: 26.5%;"></div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">
+          <span>Фортификация (Раздел 6)</span>
+          <span class="priority-pill priority-p2">Высокое</span>
+        </div>
+        <div class="metric-value">
+          <span>75.0</span>
+          <span class="metric-unit">%</span>
+        </div>
+        <div class="metric-progress-bg">
+          <div class="metric-progress-bar success" style="width: 75%;"></div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">
+          <span>Критические пробелы (P0)</span>
+          <span class="priority-pill priority-p0">P0</span>
+        </div>
+        <div class="metric-value" style="color: var(--danger);">
+          <span>2</span>
+          <span class="metric-unit">раздела (МВЗ, Проходы)</span>
+        </div>
+        <div class="metric-progress-bg">
+          <div class="metric-progress-bar danger" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">
+          <span>Высокий приоритет (P1)</span>
+          <span class="priority-pill priority-p1">P1</span>
+        </div>
+        <div class="metric-value" style="color: var(--warning);">
+          <span>3</span>
+          <span class="metric-unit">раздела (Переправы, III оч., ВТО)</span>
+        </div>
+        <div class="metric-progress-bg">
+          <div class="metric-progress-bar warning" style="width: 100%;"></div>
+        </div>
+      </div>
+    </section>
+
+    <nav class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('matrix')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <line x1="3" y1="9" x2="21" y2="9" />
+          <line x1="9" y1="21" x2="9" y2="9" />
+        </svg>
+        <span>Матрица покрытия (12 разделов)</span>
+        <span class="tab-badge">12</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('gaps')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>Детальный анализ недостатков</span>
+        <span class="tab-badge">8</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('formulas')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 7 4 4 20 4 20 7" />
+          <line x1="9" y1="20" x2="15" y2="20" />
+          <line x1="12" y1="4" x2="12" y2="20" />
+        </svg>
+        <span>Формулы и нормативы МОРБ</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('roadmap')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
+        <span>Дорожная карта доработок</span>
+      </button>
+    </nav>
+
+    <!-- TAB 1: MATRIX -->
+    <section id="tab-matrix" class="content-section active">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--primary)" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+            <span>Сопоставление функционала Topos GIS с разделами методики МОРБ-2006</span>
+          </div>
+        </div>
+        <div class="card-body" style="padding: 0; overflow-x: auto;">
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">№</th>
+                <th>Раздел методики МОРБ-2006</th>
+                <th>Реализация в кодовой базе Topos GIS</th>
+                <th style="width: 140px;">Полнота</th>
+                <th style="width: 160px;">Статус покрытия</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1</strong></td>
+                <td><strong>Порядок производства расчетов</strong><br><small style="color: var(--text-muted);">Этапы расчетов, уяснение задачи, схема инженерного обеспечения</small></td>
+                <td><span class="code-badge">FortificationPlannerComponent</span><br>Календарный график ВОР/РОП</td>
+                <td><strong>35%</strong></td>
+                <td><span class="status-tag warning">⚠️ Частично</span></td>
+              </tr>
+              <tr>
+                <td><strong>2</strong></td>
+                <td><strong>Оценка инженерных войск противника</strong><br><small style="color: var(--text-muted);">Распределение на главном ударе, темпы минирования и фортификации</small></td>
+                <td><em>Отсутствует</em></td>
+                <td><strong>0%</strong></td>
+                <td><span class="status-tag danger">❌ Отсутствует</span></td>
+              </tr>
+              <tr>
+                <td><strong>3</strong></td>
+                <td><strong>Оценка возможностей своих войск</strong><br><small style="color: var(--text-muted);">Маневр, глубина походного порядка Гк, расчет времени марша и сил усиления</small></td>
+                <td><span class="code-badge">MarchOrderService</span>, <span class="code-badge">MarchRouteService</span><br>Походный порядок роты/батальона, дистанции</td>
+                <td><strong>45%</strong></td>
+                <td><span class="status-tag warning">⚠️ Частично</span></td>
+              </tr>
+              <tr>
+                <td><strong>4</strong></td>
+                <td><strong>Оценка местности в инженерном отношении</strong><br><small style="color: var(--text-muted);">Грунты I-VI кат., проходимость лесов, болот, рек, снега, ледяного покрова</small></td>
+                <td><span class="code-badge">TerrainService</span>, <span class="code-badge">ElevationProfileComponent</span><br>Высоты DEM, уклоны, водные линии</td>
+                <td><strong>30%</strong></td>
+                <td><span class="status-tag warning">⚠️ Частично</span></td>
+              </tr>
+              <tr>
+                <td><strong>5</strong></td>
+                <td><strong>Инженерная разведка противника и местности</strong><br><small style="color: var(--text-muted);">ИРД, ИНП, темп разведки маршрутов, разведка водных преград</small></td>
+                <td><span class="code-badge">TacticalAnalyticsService</span><br>Viewshed 360°, круги дальности</td>
+                <td><strong>20%</strong></td>
+                <td><span class="status-tag warning">⚠️ Частично</span></td>
+              </tr>
+              <tr>
+                <td><strong>6</strong></td>
+                <td><strong>Расчет фортификационного оборудования позиций</strong><br><small style="color: var(--text-muted);">Окопы, траншеи, щели, блиндажи, укрытия техники, I, II и III очереди</small></td>
+                <td><span class="code-badge">FortificationCalculationService</span>, <span class="code-badge">FortificationPlannerComponent</span><br>Нормы грунта, леса, металла, машино-смены ПЗМ-2/ЭОВ/МДК</td>
+                <td><strong>75%</strong></td>
+                <td><span class="status-tag success">✅ Реализовано</span></td>
+              </tr>
+              <tr>
+                <td><strong>7</strong></td>
+                <td><strong>Расчет системы инженерных заграждений</strong><br><small style="color: var(--text-muted);">Минные поля (ПТМП, ППМП), расход мин, ГМЗ-3, УМЗ, расчет ПОЗ, рвы</small></td>
+                <td><span class="code-badge">FortificationCalculationService</span><br>Только проволочные заграждения (МЗП)</td>
+                <td><strong>15%</strong></td>
+                <td><span class="status-tag danger">⚠️ Критический пробел</span></td>
+              </tr>
+              <tr>
+                <td><strong>8</strong></td>
+                <td><strong>Расчет подготовки и содержания путей</strong><br><small style="color: var(--text-muted);">Колонные пути, ООД (отряд обеспечения движения), темпы БАТ/ИМР/МТУ</small></td>
+                <td><span class="code-badge">MarchRouteService</span><br>Маршруты по дорожной сети Беларуси, мосты</td>
+                <td><strong>40%</strong></td>
+                <td><span class="status-tag warning">⚠️ Частично</span></td>
+              </tr>
+              <tr>
+                <td><strong>9</strong></td>
+                <td><strong>Расчет преодоления заграждений и разрушений</strong><br><small style="color: var(--text-muted);">Установки разминирования УР-77/УР-83П, минные тралы КМТ, проходы в завалах</small></td>
+                <td><em>Отсутствует</em></td>
+                <td><strong>0%</strong></td>
+                <td><span class="status-tag danger">❌ Отсутствует</span></td>
+              </tr>
+              <tr>
+                <td><strong>10</strong></td>
+                <td><strong>Расчет оборудования и содержания переправ</strong><br><small style="color: var(--text-muted);">Десантные (ПТС), паромные (ПМП/ГСП), наплавные мосты ПМП, переправа танков под водой</small></td>
+                <td><em>Отсутствует</em> (только фиксация мостов)</td>
+                <td><strong>5%</strong></td>
+                <td><span class="status-tag danger">❌ Отсутствует</span></td>
+              </tr>
+              <tr>
+                <td><strong>11</strong></td>
+                <td><strong>Расчет оборудования пунктов водоснабжения</strong><br><small style="color: var(--text-muted);">Нормы расхода воды, станции СКО-10/ВФС, буровые установки ПБУ-50</small></td>
+                <td><em>Отсутствует</em></td>
+                <td><strong>0%</strong></td>
+                <td><span class="status-tag danger">❌ Отсутствует</span></td>
+              </tr>
+              <tr>
+                <td><strong>12</strong></td>
+                <td><strong>Мероприятия по скрытию, имитации и противодействию ВТО</strong><br><small style="color: var(--text-muted);">Комплекты МКТ-2Л/3Л, отражатели ОМУ, тепловые ловушки, макеты, дымы</small></td>
+                <td><span class="code-badge">FortificationCalculationService</span><br>Площадь сетей для траншей ($1.5 \times L$)</td>
+                <td><strong>15%</strong></td>
+                <td><span class="status-tag warning">⚠️ Частично</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: GAPS -->
+    <section id="tab-gaps" class="content-section">
+      <div class="gap-item">
+        <div class="gap-item-header">
+          <div class="gap-item-title">
+            <span class="priority-pill priority-p0">P0</span>
+            <span>1. Полное отсутствие математического аппарата расчета минных полей и ПОЗ (Раздел 7)</span>
+          </div>
+          <span class="status-tag danger">Критический дефект</span>
+        </div>
+        <p class="gap-item-desc">В Topos GIS из всех видов заграждений реализована только проволочная спираль МЗП. Отсутствует фундаментальный армейский расчет расхода мин на километр фронта, схем минирования, производительности механизированных заградителей и рубежей подвижных отрядов заграждений.</p>
+        <div class="gap-diff-grid">
+          <div class="gap-diff-col">
+            <span class="gap-diff-label">Требования руководства МОРБ-2006:</span>
+            <span>• Расчет расхода мин для ПТМП ($N = L_{\text{мп}} \cdot P_{\text{мин}}$, 750–1000 шт/км для ТМ-62М).<br>• Расчет противопехотных полей (ПМН-4, ПОМ-2, ОЗМ-72).<br>• Нормативы выкладки заградителями ГМЗ-3 (208 мин за 15 мин), УМЗ, ПМЗ-4.<br>• Время выхода и рубежи ПОЗ ($T_{\text{вых}} = \frac{D}{V_{\text{поз}}} + t_{\text{разв}}$).</span>
+          </div>
+          <div class="gap-diff-col">
+            <span class="gap-diff-label">Текущее состояние в Topos GIS:</span>
+            <span>• Реализовано только линейное свойство <code>wire</code> (1.5 кг проволоки и 0.1 кола на метр).<br>• Минные поля отображаются только как статичные точечные знаки без расчетных формул.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gap-item">
+        <div class="gap-item-header">
+          <div class="gap-item-title">
+            <span class="priority-pill priority-p0">P0</span>
+            <span>2. Отсутствие калькулятора преодоления заграждений и разминирования (Раздел 9)</span>
+          </div>
+          <span class="status-tag danger">Критический дефект</span>
+        </div>
+        <p class="gap-item-desc">При планировании наступательных действий или выдвижения войск невозможно рассчитать силы и средства разграждения полосы обеспечения противника.</p>
+        <div class="gap-diff-grid">
+          <div class="gap-diff-col">
+            <span class="gap-diff-label">Требования руководства МОРБ-2006:</span>
+            <span>• Взрывной способ: УР-77 «Метеорит» (проход $90 \times 6\text{ м}$, время 3–5 мин), УР-83П.<br>• Механический способ: минные тралы КМТ-7/8/10 (скорость траления 8–12 км/ч).<br>• Проделывание проходов в лесных завалах машинами ИМР-2 (200–350 м/ч) и БАТ-2.</span>
+          </div>
+          <div class="gap-diff-col">
+            <span class="gap-diff-label">Текущее состояние в Topos GIS:</span>
+            <span>• Модуль отсутствует полностью.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gap-item">
+        <div class="gap-item-header">
+          <div class="gap-item-title">
+            <span class="priority-pill priority-p1">P1</span>
+            <span>3. Отсутствие расчетов оборудования и содержания переправ (Раздел 10)</span>
+          </div>
+          <span class="status-tag warning">Высокий приоритет</span>
+        </div>
+        <p class="gap-item-desc">При наличии детальной гидрографической сети Беларуси (реки, каналы, водохранилища) приложение не рассчитывает параметры форсирования водных преград.</p>
+        <div class="gap-diff-grid">
+          <div class="gap-diff-col">
+            <span class="gap-diff-label">Требования руководства МОРБ-2006:</span>
+            <span>• Десантная переправа на ПТС-2 ($P = \frac{60 \cdot N \cdot Q}{t_{\text{рейса}}}$).<br>• Паромная переправа на паромах ПМП 60 т / ГСП-55.<br>• Наплавные мосты ПМП (темп наведения 100 м за 30–50 мин, грузоподъемность 60/90 т).<br>• Переправа танков под водой с ОПВТ (до 5 м глубины, течение $\le 1.5\text{ м/с}$).</span>
+          </div>
+          <div class="gap-diff-col">
+            <span class="gap-diff-label">Текущее состояние в Topos GIS:</span>
+            <span>• Только обнаружение пересечения маршрута с существующими постоянными мостами.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gap-item">
+        <div class="gap-item-header">
+          <div class="gap-item-title">
+            <span class="priority-pill priority-p1">P1</span>
+            <span>4. Ограничение фортификации 1-й и 2-й очередями, отсутствие ЖБ комплектов (Раздел 6)</span>
+          </div>
+          <span class="status-tag warning">Высокий приоритет</span>
+        </div>
+        <p class="gap-item-desc">В `FortificationCalculationService` и `FortificationPlannerComponent` детально рассчитаны земляные работы и лесоматериалы 1-й и 2-й очередей, но отсутствуют капитальные железобетонные сооружения III очереди.</p>
+        <div class="gap-diff-grid">
+          <div class="gap-diff-col">
+            <span class="gap-diff-label">Требования руководства МОРБ-2006:</span>
+            <span>• III (последующая) очередь: капитальные убежища, элементы КВС-У, КВС-А, ЛКС.<br>• Фильтровентиляционные установки ФВУ-100/50, герметизация, водоотвод.<br>• Коэффициент снижения темпа работ под огнем противника ($k_{\text{огн}} = 0.5\dots0.7$).</span>
+          </div>
+          <div class="gap-diff-col">
+            <span class="gap-diff-label">Текущее состояние в Topos GIS:</span>
+            <span>• Реализованы только I и II очереди.<br>• Учитываются только коэффициенты «Ночь» (1.3) и «Зима» (1.5).</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gap-item">
+        <div class="gap-item-header">
+          <div class="gap-item-title">
+            <span class="priority-pill priority-p2">P2</span>
+            <span>5. Упрощенный расчет времени марша без графика привалов и ООД (Разделы 3, 8)</span>
+          </div>
+          <span class="status-tag warning">Средний приоритет</span>
+        </div>
+        <p class="gap-item-desc">Марш рассчитывается по чистому времени движения без регламентированных армейских привалов и без расчета отряда обеспечения движения (ООД).</p>
+        <div class="gap-diff-grid">
+          <div class="gap-diff-col">
+            <span class="gap-diff-label">Требования руководства МОРБ-2006:</span>
+            <span>• Формула марша с привалами: $T = \frac{L - Г_к}{V_{\text{ср}}} + t_{\text{прив}} + t_{\text{преп}}$.<br>• Малые привалы (по 20–30 мин через каждые 3–4 ч) и большой привал (1.5–2 ч).<br>• Состав и опережение ООД ($t_{\text{опер}} = 1.5\dots2.0\text{ ч}$, БАТ-2, ИМР, МТУ).</span>
+          </div>
+          <div class="gap-diff-col">
+            <span class="gap-diff-label">Текущее состояние в Topos GIS:</span>
+            <span>• Время марша считается по формуле $T = \frac{L}{V}$ для головы колонны.<br>• Нет расчета хвоста колонны (замыкания) при прохождении контрольных пунктов.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: FORMULAS -->
+    <section id="tab-formulas" class="content-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--primary)" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+            <span>Ключевые математические модели из руководства МОРБ-2006</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">1. Фортификационные возможности личного состава и техники (Раздел 6)</h3>
+          <div class="formula-box">
+            W_л = N_л · k_1 · k_2 · k_3 · t<br>
+            W_м = N_м · П_м · k_1м · k_2м · t
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px;">
+            где $N_л, N_м$ — численность ЛС и машин; $k_1$ — обученность (0.7–0.9); $k_2$ — огневое воздействие (0.5–0.7); $k_3$ — погодные условия (0.6–0.8); $\Pi_м$ — техническая производительность (ПЗМ-2: 140 м³/ч, ЭОВ-4421: 40–60 м³/ч, МДК-3: 120–150 м³/ч).
+          </p>
+
+          <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">2. Расход мин для минного поля (Раздел 7)</h3>
+          <div class="formula-box">
+            N_мин = L_мп · P_мин · k_резерва<br>
+            L_рубежа_ПОЗ = N_мин_запас / P_мин
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px;">
+            где $P_мин$ — плотность минирования (550–1000 шт. ТМ-62М на 1 км для вероятности поражения танков $0.65\dots0.85$).
+          </p>
+
+          <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">3. Пропускная способность десантной переправы на ПТС (Раздел 10)</h3>
+          <div class="formula-box">
+            P_дес = (60 · N_птс · Q_птс) / t_рейса<br>
+            t_рейса = (2 · B_реки) / V_воды + t_погрузки + t_выгрузки
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px;">
+            где $N_птс$ — количество транспортеров; $Q_птс$ — десантовместимость (1 тягач с орудием или 72 чел. десанта); $V_воды \approx 10\text{–}12\text{ км/ч}$.
+          </p>
+
+          <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">4. Время марша с учетом регламента привалов (Раздел 3)</h3>
+          <div class="formula-box">
+            T = (L - Г_к) / V_ср + ∑ t_малых_привалов + t_большого_привала + t_препятствий
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-muted);">
+            где $Г_к$ — глубина колонны; малые привалы по 20–30 мин через каждые 3–4 ч, большой привал 1.5–2 ч во второй половине суточного перехода.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: ROADMAP -->
+    <section id="tab-roadmap" class="content-section">
+      <div class="roadmap-list">
+        <div class="roadmap-stage">
+          <div class="roadmap-stage-header">
+            <div class="roadmap-stage-title">
+              <span class="priority-pill priority-p0">Этап 1 (P0)</span>
+              <span>Калькулятор минно-взрывных заграждений и преодоления препятствий</span>
+            </div>
+            <span class="status-tag danger">Критический</span>
+          </div>
+          <div class="roadmap-tasks">
+            <label class="roadmap-task">
+              <input type="checkbox" class="task-checkbox" checked disabled>
+              <span>Создать <code>MinefieldCalculationService</code> с расчетом расхода мин (ТМ-62М, ПМН-4, ОЗМ-72), схем раскладки и расчетом рубежей ПОЗ.</span>
+            </label>
+            <label class="roadmap-task">
+              <input type="checkbox" class="task-checkbox" checked disabled>
+              <span>Внедрить расчет механизированных заградителей (ГМЗ-3, УМЗ, ПМЗ-4).</span>
+            </label>
+            <label class="roadmap-task">
+              <input type="checkbox" class="task-checkbox" checked disabled>
+              <span>Создать <code>ObstacleBreachingService</code> с расчетом пусков УР-77 «Метеорит», тралов КМТ и темпов ИМР-2 в завалах.</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="roadmap-stage">
+          <div class="roadmap-stage-header">
+            <div class="roadmap-stage-title">
+              <span class="priority-pill priority-p1">Этап 2 (P1)</span>
+              <span>Модуль переправ и расширение фортификации (III очередь)</span>
+            </div>
+            <span class="status-tag warning">Высокий</span>
+          </div>
+          <div class="roadmap-tasks">
+            <label class="roadmap-task">
+              <input type="checkbox" class="task-checkbox" checked disabled>
+              <span>Создать <code>WaterCrossingCalculationService</code> (десантные ПТС-2, паромы ПМП 60 т / ГСП-55, наплавные мосты ПМП).</span>
+            </label>
+            <label class="roadmap-task">
+              <input type="checkbox" class="task-checkbox" checked disabled>
+              <span>Дополнить <code>FortificationCalculationService</code> сооружениями III очереди (КВС-У, сборный железобетон, ФВУ-100) и коэффициентом огня противника $k_{\text{огн}}$.</span>
+            </label>
+            <label class="roadmap-task">
+              <input type="checkbox" class="task-checkbox" checked disabled>
+              <span>Внедрить спецификацию табельных маскировочных комплектов МКТ-2Л/3Л и уголковых отражателей ОМУ.</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="roadmap-stage">
+          <div class="roadmap-stage-header">
+            <div class="roadmap-stage-title">
+              <span class="priority-pill priority-p2">Этап 3 (P2)</span>
+              <span>Уточнение графика марша, ООД и полевое водоснабжение</span>
+            </div>
+            <span class="status-tag warning">Средний</span>
+          </div>
+          <div class="roadmap-tasks">
+            <label class="roadmap-task">
+              <input type="checkbox" class="task-checkbox" checked disabled>
+              <span>Внедрить в <code>MarchRouteService</code> регламент армейских привалов и расчет времени замыкания колонны на контрольных рубежах.</span>
+            </label>
+            <label class="roadmap-task">
+              <input type="checkbox" class="task-checkbox" checked disabled>
+              <span>Добавить расчет состава и темпа движения отряда обеспечения движения (ООД).</span>
+            </label>
+            <label class="roadmap-task">
+              <input type="checkbox" class="task-checkbox" checked disabled>
+              <span>Создать сервис <code>WaterSupplyCalculationService</code> (суточные нормы воды, станции очистки СКО-10/ВФС).</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      const targetSec = document.getElementById('tab-' + tabId);
+      if (targetSec) {
+        targetSec.classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>

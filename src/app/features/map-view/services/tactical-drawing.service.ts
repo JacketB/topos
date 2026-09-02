@@ -1,7 +1,7 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { TrenchGeometryService } from './trench-geometry.service';
 
-export type TacticalLineMode = 'none' | 'trench' | 'comm_open' | 'comm_covered' | 'wire' | 'march_route' | 'march';
+export type TacticalLineMode = 'none' | 'simple_line' | 'line' | 'trench' | 'comm_open' | 'comm_covered' | 'wire' | 'ditch_pt' | 'escarp' | 'counterscarp' | 'abatis' | 'march_route' | 'march' | 'area_polygon' | 'text_box';
 
 @Injectable({
   providedIn: 'root'

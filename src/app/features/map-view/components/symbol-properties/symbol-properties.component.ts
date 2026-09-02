@@ -65,6 +65,39 @@ export class SymbolPropertiesComponent {
     this.vm.orientSelectedPlacedSymbolToTerrain();
   }
 
+  onPlacedPatrolToggle(event: Event) {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.vm.updatePlacedSymbolProperty('hasPatrol', checked);
+    const selected = this.vm.selectedPlacedSymbol();
+    if (checked && selected) {
+      if (!selected.properties['patrolLength']) {
+        this.vm.updatePlacedSymbolProperty('patrolLength', 400);
+      }
+      if (!selected.properties['patrolStyle']) {
+        this.vm.updatePlacedSymbolProperty('patrolStyle', 'solid');
+      }
+      if (selected.properties['patrolAngle'] === undefined) {
+        this.vm.updatePlacedSymbolProperty('patrolAngle', selected.properties['angle'] || 0);
+      }
+    }
+  }
+
+  onPlacedPatrolStyleChange(style: 'solid' | 'dashed') {
+    this.vm.updatePlacedSymbolProperty('patrolStyle', style);
+  }
+
+  onPlacedPatrolAngleChange(event: Event) {
+    const angle = parseInt((event.target as HTMLInputElement).value, 10);
+    this.vm.updatePlacedSymbolProperty('patrolAngle', isNaN(angle) ? 0 : angle);
+  }
+
+  onPlacedPatrolLengthChange(event: Event) {
+    const len = parseInt((event.target as HTMLInputElement).value, 10);
+    if (!isNaN(len) && len > 0) {
+      this.vm.updatePlacedSymbolProperty('patrolLength', len);
+    }
+  }
+
   onPlacedProfileChange(event: Event) {
     const select = event.target as HTMLSelectElement;
     const profile = select.value;
@@ -102,6 +135,46 @@ export class SymbolPropertiesComponent {
     const length = parseInt(input.value, 10);
     if (!isNaN(length)) {
       this.vm.updatePlacedSymbolProperty('fortLength', length);
+    }
+  }
+
+  onPlacedOpacityChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const opacity = parseFloat(input.value);
+    if (!isNaN(opacity)) {
+      this.vm.updatePlacedSymbolProperty('fillOpacity', opacity);
+    }
+  }
+
+  onPlacedLineStyleChange(styleOrEvent: string | Event) {
+    const style = typeof styleOrEvent === 'string' ? styleOrEvent : (styleOrEvent.target as HTMLSelectElement).value;
+    this.vm.updatePlacedSymbolProperty('lineStyle', style);
+  }
+
+  onPlacedTextSizeChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const size = parseFloat(input.value);
+    if (!isNaN(size)) {
+      this.vm.updatePlacedSymbolProperty('textSize', size);
+    }
+  }
+
+  onPlacedTextColorChange(event: Event | string) {
+    const color = typeof event === 'string' ? event : (event.target as HTMLInputElement).value;
+    this.vm.updatePlacedSymbolProperty('textColor', color);
+    this.vm.updatePlacedSymbolProperty('color', color);
+  }
+
+  onPlacedTextHaloColorChange(event: Event | string) {
+    const color = typeof event === 'string' ? event : (event.target as HTMLInputElement).value;
+    this.vm.updatePlacedSymbolProperty('textHaloColor', color);
+  }
+
+  onPlacedTextHaloWidthChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const width = parseFloat(input.value);
+    if (!isNaN(width)) {
+      this.vm.updatePlacedSymbolProperty('textHaloWidth', width);
     }
   }
 }

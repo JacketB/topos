@@ -5,6 +5,7 @@ import { TrenchGeometryService } from './trench-geometry.service';
 import { TerrainService } from './terrain.service';
 import { TacticalDrawingService } from './tactical-drawing.service';
 import { TacticalSymbolsManagerService } from './tactical-symbols-manager.service';
+import { ImageOverlayService } from './image-overlay.service';
 
 const storageMap: Record<string, string> = {};
 const mockLocalStorage = {
@@ -14,9 +15,11 @@ const mockLocalStorage = {
   clear: () => { Object.keys(storageMap).forEach(k => delete storageMap[k]); }
 };
 
-if (typeof globalThis.localStorage === 'undefined' || !globalThis.localStorage.setItem) {
-  globalThis.localStorage = mockLocalStorage as any;
-}
+Object.defineProperty(globalThis, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true,
+  configurable: true
+});
 
 const mockScheduler = {
   notify: () => {},
@@ -52,7 +55,14 @@ describe('TacticalMapService - Export/Import Scenario', () => {
             finishDrawing: () => {}
           }
         },
-        { provide: TacticalSymbolsManagerService, useValue: {} }
+        { provide: TacticalSymbolsManagerService, useValue: {} },
+        {
+          provide: ImageOverlayService,
+          useValue: {
+            overlays: signal([]),
+            loadOverlays: () => {}
+          }
+        }
       ]
     });
 
@@ -133,5 +143,23 @@ describe('TacticalMapService - Export/Import Scenario', () => {
     expect(mockLocalStorage.getItem('topos_planner_soilType')).toBe('clay');
     expect(mockLocalStorage.getItem('topos_map_position')).toBe(JSON.stringify(mockScenario.mapPosition));
     expect(spyUpdate).toHaveBeenCalled();
+  });
+
+  it('should include med_mp and patrol_pair in TACTICAL_SYMBOLS catalogue', async () => {
+    const { TACTICAL_SYMBOLS } = await import('../consts/tactical-symbols.const');
+    const medical = TACTICAL_SYMBOLS.find(c => c.id === 'medical');
+    expect(medical).toBeDefined();
+    const mp = medical?.symbols.find(s => s.id === 'med_mp');
+    expect(mp).toBeDefined();
+    expect(mp?.name).toBe('МП');
+    expect(mp?.symbol).toBe('med_mp');
+
+    const command = TACTICAL_SYMBOLS.find(c => c.id === 'command_comm');
+    expect(command).toBeDefined();
+    const patrol = command?.symbols.find(s => s.id === 'patrol_pair');
+    expect(patrol).toBeDefined();
+    expect(patrol?.name).toBe('Парный патруль');
+    expect(patrol?.symbol).toBe('patrol_pair');
+    expect(patrol?.hasPatrol).toBe(true);
   });
 });

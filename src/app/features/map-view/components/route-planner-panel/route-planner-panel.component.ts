@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MapViewModel } from '../../viewmodels/map.viewmodel';
@@ -31,32 +31,58 @@ export class RoutePlannerPanelComponent {
   destinationPoint = this.vm.destinationPoint;
   waypoints = this.vm.waypoints;
   calculatedRoute = this.vm.calculatedRoute;
+  pickingRoutePoint = this.vm.pickingRoutePoint;
+  showPlacesAlongRoute = this.vm.showPlacesAlongRoute;
+  marchKilometerStepKm = this.vm.marchKilometerStepKm;
+  marchPlacesAlongRoute = this.vm.marchPlacesAlongRoute;
   isCalculating = signal<boolean>(false);
+
+  constructor() {
+    effect(() => {
+      const orig = this.originPoint().coords;
+      const dest = this.destinationPoint().coords;
+      this.waypoints();
+      this.activeColumnType();
+      this.isNightMarch();
+
+      if (orig && dest && this.isOpen()) {
+        this.recalculateRoute();
+      }
+    });
+  }
 
   togglePanel() {
     this.vm.toggleRoutePlanner();
   }
 
+  pickOnMap(target: 'origin' | 'destination' | number) {
+    this.vm.setPickingRoutePoint(target);
+  }
+
   setColumnType(type: ColumnType) {
     this.activeColumnType.set(type);
-    this.recalculateRoute();
   }
 
   toggleNightMarch() {
     this.isNightMarch.update(v => !v);
-    this.recalculateRoute();
+  }
+
+  toggleShowPlacesAlongRoute() {
+    this.vm.toggleShowPlacesAlongRoute();
+  }
+
+  setMarchKilometerStep(step: number) {
+    this.vm.setMarchKilometerStep(step);
   }
 
   onOriginSelected(place: BelarusPlace) {
     this.originPoint.update(p => ({ ...p, name: place.name, coords: place.coords }));
     this.vm.moveToCoordinates(place.coords[1], place.coords[0]);
-    this.recalculateRoute();
   }
 
   onDestinationSelected(place: BelarusPlace) {
     this.destinationPoint.update(p => ({ ...p, name: place.name, coords: place.coords }));
     this.vm.moveToCoordinates(place.coords[1], place.coords[0]);
-    this.recalculateRoute();
   }
 
   addWaypoint() {
@@ -83,12 +109,10 @@ export class RoutePlannerPanelComponent {
       return updated;
     });
     this.vm.moveToCoordinates(place.coords[1], place.coords[0]);
-    this.recalculateRoute();
   }
 
   removeWaypoint(index: number) {
     this.waypoints.update(list => list.filter((_, i) => i !== index));
-    this.recalculateRoute();
   }
 
   swapOriginDestination() {
@@ -97,7 +121,6 @@ export class RoutePlannerPanelComponent {
 
     this.originPoint.set({ ...dest, id: 'origin', label: 'A', type: 'origin' });
     this.destinationPoint.set({ ...orig, id: 'destination', label: 'B', type: 'destination' });
-    this.recalculateRoute();
   }
 
   async recalculateRoute() {
@@ -116,7 +139,8 @@ export class RoutePlannerPanelComponent {
         orig,
         dest,
         wpCoords,
-        this.activeColumnType()
+        this.activeColumnType(),
+        this.isNightMarch()
       );
 
       this.calculatedRoute.set(res.routeStats);

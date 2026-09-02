@@ -299,41 +299,30 @@ export class MapExportComponent implements OnDestroy {
       const wPxOriginal = Math.round((printMm.width / 25.4) * dpiVal);
       const safeScale = wPxOriginal > 0 ? targetW / wPxOriginal : 1.0;
 
-      // logicalW/H привязаны к targetW/H через целевой effectiveRatio
       const effectiveRatio = Math.max(1.0, dpiVal / 96);
       const logicalW = Math.max(1, Math.round(targetW / effectiveRatio));
       const logicalH = Math.max(1, Math.round(targetH / effectiveRatio));
 
-      // Точный вычисление дельты долготы левого и правого края видоискателя
-      const leftLngLat = mainMap.unproject([x1, centerY]);
-      const rightLngLat = mainMap.unproject([x2, centerY]);
-      let deltaLng = Math.abs(rightLngLat.lng - leftLngLat.lng);
-      if (deltaLng <= 0) deltaLng = 0.00001;
-
-      // Вычисление exportZoom из топомасштаба или прямого охвата видоискателя
       const selectedScale = this.exportScale();
       let exportZoom: number;
 
       if (selectedScale > 0) {
-        // Метры на 1 мм бумаги
         const metersPerMm = selectedScale / 1000;
-        // Пикселей на 1 мм при целевом DPI
         const pxPerMm = dpiVal / 25.4;
-        // Метров на 1 физический пиксель в экспорте
         const metersPerPx = metersPerMm / pxPerMm;
 
         const latRad = (exportCenter[1] * Math.PI) / 180;
         const cosLat = Math.cos(latRad);
 
-        // Точный эквивалент зума для нативного полотна при ratio = 1
-        exportZoom = Math.log2((156543.03392 * cosLat) / metersPerPx) - Math.log2(effectiveRatio);
+        exportZoom = Math.log2((78271.516964 * cosLat) / metersPerPx);
 
         if (safeScale < 1.0) {
           exportZoom += Math.log2(safeScale);
         }
       } else {
-        // Авто: абсолютная геодезическая математика совпадения ширины targetW с шириной видоискателя
-        exportZoom = Math.log2((targetW / 512) * (360 / deltaLng));
+        const screenZoom = mainMap.getZoom();
+        const vfScreenWidth = Math.max(1, x2 - x1);
+        exportZoom = screenZoom + Math.log2(targetW / vfScreenWidth);
       }
 
       this.generationProgress.set('Подготовка тактических условных знаков...');
@@ -472,11 +461,82 @@ export class MapExportComponent implements OnDestroy {
 
       this.generationProgress.set('Выполнение рендеринга на бэкенде...');
 
-      const rawStyle = mainMap.getStyle();
-      const styleObj = MapExportSanitizerUtils.sanitizeStyleForNative(rawStyle);
-      
       const placedSymbols = this.vm.placedSymbols();
-      const enrichedPlacedSymbols = MapExportSanitizerUtils.enrichFeaturesArrayForNative(placedSymbols);
+      const enrichedPlacedSymbols = MapExportSanitizerUtils.enrichFeaturesArrayForNative(placedSymbols, effectiveRatio);
+
+      const marchPlacesList = this.vm.marchPlacesAlongRoute();
+      const marchPlacesFeatures = (marchPlacesList || []).map((p: any, idx) => {
+        return {
+          type: 'Feature',
+          properties: {
+            id: `march_place_${idx}`,
+            name: p.name,
+            distanceKm: p.distanceAlongRouteKm,
+            textAnchor: p.textAnchor || 'center',
+            textOffset: p.textOffset || [0, 0],
+            svgAnchor: p.svgAnchor || 'middle',
+            svgOffset: p.svgOffset || [0, 0],
+            svgBaseline: p.svgBaseline || 'central'
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: p.coords
+          }
+        };
+      });
+
+      const marchFeatures = placedSymbols.filter(
+        (f: any) => f.properties?.lineType === 'march_route' || f.properties?.symbol === 'march_route'
+      );
+      const allKmMarks: any[] = [];
+      const kmStep = this.vm.marchKilometerStepKm();
+      if (kmStep > 0) {
+        for (const mf of marchFeatures) {
+          const coords = ((mf.geometry as any)?.coordinates || mf.properties?.origCoords) as [number, number][] | undefined;
+          if (coords && coords.length >= 2) {
+            const marks = this.vm.marchRouteService.calculateKilometerMarks(coords, kmStep);
+            allKmMarks.push(...marks);
+          }
+        }
+      }
+      const marchKmFeatures = allKmMarks.map((m, idx) => ({
+        type: 'Feature',
+        properties: {
+          id: `march_km_${idx}`,
+          label: m.label,
+          km: m.km,
+          bearing: m.bearing || 0
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: m.coords
+        }
+      }));
+
+      const rawStyle = mainMap.getStyle();
+
+      if (rawStyle.sources) {
+        if (rawStyle.sources['march-places']) {
+          rawStyle.sources['march-places'] = {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: marchPlacesFeatures
+            }
+          };
+        }
+        if (rawStyle.sources['march-kilometers']) {
+          rawStyle.sources['march-kilometers'] = {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: marchKmFeatures
+            }
+          };
+        }
+      }
+
+      const styleObj = MapExportSanitizerUtils.sanitizeStyleForNative(rawStyle, effectiveRatio);
 
       if (styleObj.sources) {
         for (const sourceId of Object.keys(styleObj.sources)) {
@@ -487,6 +547,16 @@ export class MapExportComponent implements OnDestroy {
                 type: 'FeatureCollection',
                 features: enrichedPlacedSymbols
               };
+            } else if (sourceId === 'march-places') {
+              sourceSpec.data = {
+                type: 'FeatureCollection',
+                features: marchPlacesFeatures
+              };
+            } else if (sourceId === 'march-kilometers') {
+              sourceSpec.data = {
+                type: 'FeatureCollection',
+                features: marchKmFeatures
+              };
             } else {
               const mapSource = mainMap.getSource(sourceId) as any;
               let rawData = null;
@@ -494,7 +564,7 @@ export class MapExportComponent implements OnDestroy {
                 rawData = mapSource._data || (mapSource._options && mapSource._options.data) || mapSource.data;
               }
               if (rawData) {
-                sourceSpec.data = MapExportSanitizerUtils.enrichGeoJsonForNative(rawData);
+                sourceSpec.data = MapExportSanitizerUtils.enrichGeoJsonForNative(rawData, effectiveRatio);
               } else if (!sourceSpec.data || typeof sourceSpec.data !== 'object' || !sourceSpec.data.type) {
                 sourceSpec.data = { type: 'FeatureCollection', features: [] };
               }
@@ -552,12 +622,19 @@ export class MapExportComponent implements OnDestroy {
 
         alert(`ГИС-карта высокого разрешения успешно сохранена на бэкенде в папку загрузок:\n${savedPath}`);
       } else {
-        alert('Нативный экспорт поддерживается только в оффлайн-приложении Tauri.');
+        const canvas = mainMap.getCanvas();
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        this.exportPercent.set(100);
       }
 
       this.close();
     } catch (err: any) {
-      console.error('Ошибка экспорта:', err);
       alert(`Не удалось выполнить экспорт: ${err.message || err}`);
     } finally {
       this.exportPercent.set(null);

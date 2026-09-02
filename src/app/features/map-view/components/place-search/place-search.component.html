@@ -9,7 +9,7 @@
       type="text" 
       [ngModel]="searchQuery()" 
       (ngModelChange)="onInput($event)"
-      placeholder="Поиск населенного пункта РБ..." 
+      [placeholder]="placeholder()" 
     />
 
     @if (searchQuery()) {
@@ -32,11 +32,18 @@
           </svg>
           
           <div class="item-info">
-            <span class="item-name">{{ place.name }}</span>
-            @if (place.nameBe && place.nameBe !== place.name) {
-              <span class="item-be">({{ place.nameBe }})</span>
+            <div class="item-name-row">
+              @if (formatPlaceType(place.type)) {
+                <span class="item-type-tag">{{ formatPlaceType(place.type) }}</span>
+              }
+              <span class="item-name">{{ place.name }}</span>
+              @if (place.nameBe && place.nameBe !== place.name) {
+                <span class="item-be">({{ place.nameBe }})</span>
+              }
+            </div>
+            @if (place.region) {
+              <span class="item-region">{{ place.region }}</span>
             }
-            <span class="item-region">{{ place.region }}</span>
           </div>
         </button>
       }

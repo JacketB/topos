@@ -49,6 +49,31 @@
   align-items: center;
 }
 
+.export-excel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #047857;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.export-excel-btn:hover {
+  background-color: #d1fae5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+
+.export-excel-btn:active {
+  background-color: #a7f3d0;
+}
+
 .mo-close-btn {
   background: transparent;
   border: none;

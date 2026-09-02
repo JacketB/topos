@@ -84,9 +84,21 @@ const requestMock = function(options, callback) {
     return realRequest(options, callback);
   }
 
-  let url = typeof options === 'string' ? options : (options.url || options.uri);
-  if (url && typeof url !== 'string') {
-    url = url.toString();
+  let rawUrl = typeof options === 'string' ? options : (options.url || options.uri);
+  let url = '';
+  if (typeof rawUrl === 'string') {
+    url = rawUrl;
+  } else if (rawUrl && typeof rawUrl === 'object') {
+    url = rawUrl.href || (typeof rawUrl.format === 'function' ? rawUrl.format() : String(rawUrl));
+  } else if (rawUrl) {
+    url = String(rawUrl);
+  }
+
+  if (!url || url === '[object Object]') {
+    if (options && typeof options === 'object') {
+      if (options.uri && options.uri.href) url = options.uri.href;
+      else if (options.url && options.url.href) url = options.url.href;
+    }
   }
 
   if (!url) {
@@ -135,32 +147,55 @@ const requestMock = function(options, callback) {
     if (pbfMatch) {
       const fontRange = pbfMatch[2];
       const rawStack = decodeURIComponent(pbfMatch[1]);
-      const cdnUrl = `https://cdn.jsdelivr.net/gh/openmaptiles/fonts@gh-pages/${encodeURIComponent(rawStack)}/${fontRange}.pbf`;
-      const fallbackUrl = `https://cdn.jsdelivr.net/gh/openmaptiles/fonts@gh-pages/Noto%20Sans%20Regular/${fontRange}.pbf`;
-      
-      const fetchFont = (targetUrl, isRetry = false) => {
-        const fontReqOpts = {
-          url: targetUrl,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          },
-          timeout: 10000,
-          encoding: null
-        };
-        realRequest(fontReqOpts, (err, res, body) => {
-          if (!err && res && res.statusCode === 200 && body && body.length > 0) {
-            console.error(`[FONT LOG] OK (200) for ${url} -> fetched ${body.length} bytes from ${targetUrl}`);
-            return callback(null, { statusCode: 200, request: { uri: { href: url } } }, body);
-          }
-          console.error(`[FONT LOG] FAIL (${res ? res.statusCode : (err ? err.message : 'no body')}) for ${url} from ${targetUrl}`);
-          if (!isRetry) {
-            return fetchFont(fallbackUrl, true);
-          }
-          return callback(null, { statusCode: 204, request: { uri: { href: url } } }, Buffer.alloc(0));
-        });
-      };
+      const stackList = rawStack.split(',').map(s => s.trim()).filter(Boolean);
+      stackList.push('Noto Sans Regular', 'Open Sans Regular', 'Klokantech Noto Sans Regular');
 
-      return fetchFont(cdnUrl);
+      const dirsToSearch = [];
+      if (globalConfig.resourceDir) {
+        dirsToSearch.push(path.join(globalConfig.resourceDir, 'assets', 'fonts'));
+        dirsToSearch.push(path.join(globalConfig.resourceDir, 'public', 'fonts'));
+        dirsToSearch.push(path.join(globalConfig.resourceDir, 'fonts'));
+      }
+      if (globalConfig.baseDir) {
+        dirsToSearch.push(path.join(globalConfig.baseDir, 'src-tauri', 'assets', 'fonts'));
+        dirsToSearch.push(path.join(globalConfig.baseDir, 'public', 'fonts'));
+        dirsToSearch.push(path.join(globalConfig.baseDir, 'fonts'));
+      }
+      dirsToSearch.push(path.resolve(__dirname, '..', 'assets', 'fonts'));
+      dirsToSearch.push(path.resolve(__dirname, '..', '..', 'public', 'fonts'));
+
+      const availableFonts = [
+        'Open Sans Regular',
+        'Noto Sans Regular',
+        'Klokantech Noto Sans Regular',
+        'Open Sans Bold'
+      ];
+
+      for (const fontName of [...stackList, ...availableFonts]) {
+        for (const dir of dirsToSearch) {
+          const fontPath = path.join(dir, fontName, `${fontRange}.pbf`);
+          if (fs.existsSync(fontPath)) {
+            try {
+              const data = fs.readFileSync(fontPath);
+              return callback(null, { statusCode: 200, request: { uri: { href: url } } }, data);
+            } catch {}
+          }
+        }
+      }
+
+      for (const dir of dirsToSearch) {
+        for (const fallbackName of availableFonts) {
+          const fontPath = path.join(dir, fallbackName, `${fontRange}.pbf`);
+          if (fs.existsSync(fontPath)) {
+            try {
+              const data = fs.readFileSync(fontPath);
+              return callback(null, { statusCode: 200, request: { uri: { href: url } } }, data);
+            } catch {}
+          }
+        }
+      }
+
+      return callback(null, { statusCode: 200, request: { uri: { href: url } } }, Buffer.alloc(0));
     }
   }
 
@@ -354,141 +389,309 @@ async function renderTiled(cleanedStyle, options) {
   const totalPxWidth = Math.floor(options.width * ratio);
   const totalPxHeight = Math.floor(options.height * ratio);
   const MAX_CHUNK_PX = 3072;
+  const bearing = options.bearing || 0;
+  const bearingRad = (-bearing * Math.PI) / 180;
+  const cosBearing = Math.cos(bearingRad);
+  const sinBearing = Math.sin(bearingRad);
+
+  const centerLng = options.center ? options.center[0] : 0;
+  const centerLat = options.center ? options.center[1] : 0;
+  const zoom = options.zoom || 0;
+  const centerMerc = projectMercator(centerLng, centerLat, zoom);
+
+  let baseMapBuffer;
 
   if (totalPxWidth <= MAX_CHUNK_PX && totalPxHeight <= MAX_CHUNK_PX) {
-    return render(cleanedStyle, options.width, options.height, options);
-  }
+    baseMapBuffer = await render(cleanedStyle, options.width, options.height, options);
+  } else {
+    const cols = Math.ceil(totalPxWidth / MAX_CHUNK_PX);
+    const rows = Math.ceil(totalPxHeight / MAX_CHUNK_PX);
+    const rowBuffers = [];
+    const totalTiles = rows * cols;
+    let completedTiles = 0;
 
-  const cols = Math.ceil(totalPxWidth / MAX_CHUNK_PX);
-  const rows = Math.ceil(totalPxHeight / MAX_CHUNK_PX);
-
-  const centerLng = options.center[0];
-  const centerLat = options.center[1];
-  const zoom = options.zoom || 0;
-
-  const centerMerc = projectMercator(centerLng, centerLat, zoom);
-  const compositeInputs = [];
-
-  const totalTiles = rows * cols;
-  let completedTiles = 0;
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const tileLeft = c * MAX_CHUNK_PX;
+    for (let r = 0; r < rows; r++) {
       const tileTop = r * MAX_CHUNK_PX;
-      const chunkPxW = Math.min(MAX_CHUNK_PX, totalPxWidth - tileLeft);
       const chunkPxH = Math.min(MAX_CHUNK_PX, totalPxHeight - tileTop);
+      const rowInputs = [];
 
-      const tileCenterX = tileLeft + chunkPxW / 2;
-      const tileCenterY = tileTop + chunkPxH / 2;
+      for (let c = 0; c < cols; c++) {
+        const tileLeft = c * MAX_CHUNK_PX;
+        const chunkPxW = Math.min(MAX_CHUNK_PX, totalPxWidth - tileLeft);
 
-      const offsetPxX = (tileCenterX - totalPxWidth / 2) / ratio;
-      const offsetPxY = (tileCenterY - totalPxHeight / 2) / ratio;
+        const tileCenterX = tileLeft + chunkPxW / 2;
+        const tileCenterY = tileTop + chunkPxH / 2;
 
-      const chunkMercX = centerMerc.x + offsetPxX;
-      const chunkMercY = centerMerc.y + offsetPxY;
+        const unrotatedOffsetX = (tileCenterX - totalPxWidth / 2) / ratio;
+        const unrotatedOffsetY = (tileCenterY - totalPxHeight / 2) / ratio;
 
-      const chunkCenter = unprojectMercator(chunkMercX, chunkMercY, zoom);
+        const rotOffsetX = unrotatedOffsetX * Math.cos(-bearingRad) - unrotatedOffsetY * Math.sin(-bearingRad);
+        const rotOffsetY = unrotatedOffsetX * Math.sin(-bearingRad) + unrotatedOffsetY * Math.cos(-bearingRad);
 
-      const chunkLogicalW = Math.max(1, Math.round(chunkPxW / ratio));
-      const chunkLogicalH = Math.max(1, Math.round(chunkPxH / ratio));
+        const chunkMercX = centerMerc.x + rotOffsetX;
+        const chunkMercY = centerMerc.y + rotOffsetY;
 
-      const chunkOptions = {
-        ...options,
-        width: chunkLogicalW,
-        height: chunkLogicalH,
-        center: chunkCenter
-      };
+        const chunkCenter = unprojectMercator(chunkMercX, chunkMercY, zoom);
 
-      const tileBuffer = await render(cleanedStyle, chunkLogicalW, chunkLogicalH, chunkOptions);
-      compositeInputs.push({
-        input: tileBuffer,
-        left: tileLeft,
+        const chunkLogicalW = Math.max(1, Math.round(chunkPxW / ratio));
+        const chunkLogicalH = Math.max(1, Math.round(chunkPxH / ratio));
+
+        const chunkOptions = {
+          ...options,
+          width: chunkLogicalW,
+          height: chunkLogicalH,
+          center: chunkCenter
+        };
+
+        const tileBuffer = await render(cleanedStyle, chunkLogicalW, chunkLogicalH, chunkOptions);
+        rowInputs.push({
+          input: tileBuffer,
+          left: tileLeft,
+          top: 0,
+          limitInputPixels: false,
+          unlimited: true
+        });
+
+        completedTiles++;
+        const percent = Math.min(85, Math.round((completedTiles / totalTiles) * 85));
+        process.stdout.write(JSON.stringify({ type: 'progress', percent }) + '\n');
+      }
+
+      const rowBuffer = await sharp({
+        create: {
+          width: totalPxWidth,
+          height: chunkPxH,
+          channels: 4,
+          background: { r: 255, g: 255, b: 255, alpha: 1 }
+        },
+        limitInputPixels: false,
+        unlimited: true
+      })
+      .composite(rowInputs)
+      .png()
+      .toBuffer();
+
+      rowBuffers.push({
+        input: rowBuffer,
+        left: 0,
         top: tileTop,
         limitInputPixels: false,
         unlimited: true
       });
-
-      completedTiles++;
-      const percent = Math.min(90, Math.round((completedTiles / totalTiles) * 90));
-      process.stdout.write(JSON.stringify({ type: 'progress', percent }) + '\n');
     }
+
+    baseMapBuffer = await sharp({
+      create: {
+        width: totalPxWidth,
+        height: totalPxHeight,
+        channels: 4,
+        background: { r: 255, g: 255, b: 255, alpha: 1 }
+      },
+      limitInputPixels: false,
+      unlimited: true
+    })
+    .composite(rowBuffers)
+    .png()
+    .toBuffer();
   }
 
-  process.stdout.write(JSON.stringify({ type: 'progress', percent: 95 }) + '\n');
+  process.stdout.write(JSON.stringify({ type: 'progress', percent: 90 }) + '\n');
 
   let labelsSvgBuffer = null;
   try {
-    const feats = cleanedStyle.sources?.['tactical-symbols']?.data?.features || [];
-    const pointFeats = feats.filter(f => f.geometry?.type === 'Point' && f.properties && (f.properties.name || f.properties.label || f.properties.title));
-    if (pointFeats.length > 0) {
-      const fontSizePx = Math.max(14, Math.round(14 * ratio));
-      const strokeWidthPx = Math.max(3, Math.round(3.5 * ratio));
-
-      let textElements = '';
-      for (const f of pointFeats) {
-        const textVal = String(f.properties.name || f.properties.label || f.properties.title || '').trim();
-        if (!textVal) continue;
-        const coords = f.geometry.coordinates;
-        const pointMerc = projectMercator(coords[0], coords[1], zoom);
-        const pxX = totalPxWidth / 2 + (pointMerc.x - centerMerc.x) * ratio;
-        const pxY = totalPxHeight / 2 + (pointMerc.y - centerMerc.y) * ratio + Math.round(24 * ratio);
-
-        const escaped = textVal.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        textElements += `<text x="${pxX.toFixed(1)}" y="${pxY.toFixed(1)}" class="map-label">${escaped}</text>\n`;
+    const getFeatures = (sourceName) => {
+      const src = cleanedStyle.sources?.[sourceName];
+      if (!src) return [];
+      if (Array.isArray(src.data?.features)) return src.data.features;
+      if (typeof src.data === 'string') {
+        try {
+          const parsed = JSON.parse(src.data);
+          if (Array.isArray(parsed.features)) return parsed.features;
+        } catch {}
       }
+      return [];
+    };
 
-      if (textElements) {
-        const svgContent = `<svg width="${totalPxWidth}" height="${totalPxHeight}" xmlns="http://www.w3.org/2000/svg">
-          <style>
-            .map-label {
-              font-family: "Segoe UI", Arial, sans-serif;
-              font-weight: 700;
-              font-size: ${fontSizePx}px;
-              fill: #0f172a;
-              paint-order: stroke fill;
-              stroke: #ffffff;
-              stroke-width: ${strokeWidthPx}px;
-              stroke-linejoin: round;
-              stroke-linecap: round;
-              text-anchor: middle;
-              dominant-baseline: hanging;
-            }
-          </style>
-          ${textElements}
-        </svg>`;
-        labelsSvgBuffer = Buffer.from(svgContent);
+    const pointFeats = getFeatures('tactical-symbols')
+      .filter(f => f && f.geometry?.type === 'Point' && f.properties && (f.properties.name || f.properties.label || f.properties.title));
+    
+    const marchPlacesFeats = getFeatures('march-places')
+      .filter(f => f && f.geometry?.type === 'Point' && f.properties?.name);
+
+    const marchKmFeats = getFeatures('march-kilometers')
+      .filter(f => f && f.geometry?.type === 'Point' && f.properties?.label);
+
+    let svgElements = '';
+
+    for (const f of pointFeats) {
+      if (!f.geometry || !Array.isArray(f.geometry.coordinates) || f.geometry.coordinates.length < 2) continue;
+      const coords = f.geometry.coordinates;
+      if (typeof coords[0] !== 'number' || typeof coords[1] !== 'number' || isNaN(coords[0]) || isNaN(coords[1])) continue;
+      const textVal = String(f.properties.name || f.properties.label || f.properties.title || '').trim();
+      if (!textVal) continue;
+      const pointMerc = projectMercator(coords[0], coords[1], zoom);
+      const unrotX = (pointMerc.x - centerMerc.x) * ratio;
+      const unrotY = (pointMerc.y - centerMerc.y) * ratio;
+
+      const rotX = unrotX * cosBearing - unrotY * sinBearing;
+      const rotY = unrotX * sinBearing + unrotY * cosBearing;
+
+      const pxX = totalPxWidth / 2 + rotX;
+      const pxY = totalPxHeight / 2 + rotY + Math.round(24 * ratio);
+
+      if (!isFinite(pxX) || !isFinite(pxY)) continue;
+
+      const escaped = textVal.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      svgElements += `<text x="${pxX.toFixed(1)}" y="${pxY.toFixed(1)}" class="map-label">${escaped}</text>\n`;
+    }
+
+    const placedPlaceLabels = [];
+    const minPlaceLabelDist = Math.max(30, Math.round(25 * ratio));
+
+    for (const f of marchPlacesFeats) {
+      if (!f.geometry || !Array.isArray(f.geometry.coordinates) || f.geometry.coordinates.length < 2) continue;
+      const coords = f.geometry.coordinates;
+      if (typeof coords[0] !== 'number' || typeof coords[1] !== 'number' || isNaN(coords[0]) || isNaN(coords[1])) continue;
+      const textVal = String(f.properties.name || '').trim();
+      if (!textVal) continue;
+
+      const pointMerc = projectMercator(coords[0], coords[1], zoom);
+      const unrotX = (pointMerc.x - centerMerc.x) * ratio;
+      const unrotY = (pointMerc.y - centerMerc.y) * ratio;
+
+      const rotX = unrotX * cosBearing - unrotY * sinBearing;
+      const rotY = unrotX * sinBearing + unrotY * cosBearing;
+
+      const pxX = totalPxWidth / 2 + rotX;
+      const pxY = totalPxHeight / 2 + rotY;
+
+      if (!isFinite(pxX) || !isFinite(pxY)) continue;
+
+      const isColliding = placedPlaceLabels.some(prev => Math.hypot(pxX - prev.x, pxY - prev.y) < minPlaceLabelDist);
+      if (isColliding) continue;
+
+      placedPlaceLabels.push({ x: pxX, y: pxY });
+
+      const props = f.properties || {};
+      const svgAnchor = props.svgAnchor || 'middle';
+      const svgBaseline = props.svgBaseline || 'central';
+      const offX = Array.isArray(props.svgOffset) ? props.svgOffset[0] * ratio : 0;
+      const offY = Array.isArray(props.svgOffset) ? props.svgOffset[1] * ratio : 0;
+
+      const finalX = pxX + offX;
+      const finalY = pxY + offY;
+
+      const escaped = textVal.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      svgElements += `<text x="${finalX.toFixed(1)}" y="${finalY.toFixed(1)}" class="march-place-label" text-anchor="${svgAnchor}" dominant-baseline="${svgBaseline}">${escaped}</text>\n`;
+    }
+
+    const kmDotR = Math.max(3.5, Math.round(4.0 * ratio));
+    const kmStrokeW = Math.max(1.5, Math.round(2.0 * ratio));
+    const kmOffset = Math.round(8 * ratio);
+
+    for (const f of marchKmFeats) {
+      if (!f.geometry || !Array.isArray(f.geometry.coordinates) || f.geometry.coordinates.length < 2) continue;
+      const coords = f.geometry.coordinates;
+      if (typeof coords[0] !== 'number' || typeof coords[1] !== 'number' || isNaN(coords[0]) || isNaN(coords[1])) continue;
+      const textVal = String(f.properties.label || '').trim();
+      const pointMerc = projectMercator(coords[0], coords[1], zoom);
+      const unrotX = (pointMerc.x - centerMerc.x) * ratio;
+      const unrotY = (pointMerc.y - centerMerc.y) * ratio;
+
+      const rotX = unrotX * cosBearing - unrotY * sinBearing;
+      const rotY = unrotX * sinBearing + unrotY * cosBearing;
+
+      const pxX = totalPxWidth / 2 + rotX;
+      const pxY = totalPxHeight / 2 + rotY;
+
+      if (!isFinite(pxX) || !isFinite(pxY)) continue;
+
+      svgElements += `<circle cx="${pxX.toFixed(1)}" cy="${pxY.toFixed(1)}" r="${kmDotR}" fill="#ffffff" stroke="#1d4ed8" stroke-width="${kmStrokeW}" />\n`;
+      if (textVal) {
+        const escaped = textVal.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        svgElements += `<text x="${(pxX + kmOffset).toFixed(1)}" y="${pxY.toFixed(1)}" class="march-km-label">${escaped}</text>\n`;
       }
     }
-  } catch (e) {
-    console.error('Ошибка создания SVG-оверлея надписей:', e);
-  }
+
+    if (svgElements.trim().length > 0) {
+      const fontSizePx = Math.max(12, Math.round(14 * ratio));
+      const strokeWidthPx = Math.max(2, Math.round(3 * ratio));
+      const placeFontPx = Math.max(12, Math.round(13.5 * ratio));
+      const placeHaloPx = Math.max(2.0, Math.round(2.5 * ratio));
+      const kmFontPx = Math.max(9, Math.round(10 * ratio));
+      const kmHaloPx = Math.max(1.8, Math.round(2.0 * ratio));
+
+      const svgContent = `<svg width="${totalPxWidth}" height="${totalPxHeight}" xmlns="http://www.w3.org/2000/svg">
+        <style>
+          .map-label {
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-weight: 700;
+            font-size: ${fontSizePx}px;
+            fill: #0f172a;
+            paint-order: stroke fill;
+            stroke: #ffffff;
+            stroke-width: ${strokeWidthPx}px;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+            text-anchor: middle;
+            dominant-baseline: hanging;
+          }
+          .march-place-label {
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-weight: 700;
+            font-size: ${placeFontPx}px;
+            fill: #1e3a8a;
+            paint-order: stroke fill;
+            stroke: #ffffff;
+            stroke-width: ${placeHaloPx}px;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+            text-anchor: middle;
+            dominant-baseline: central;
+          }
+          .march-km-label {
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-weight: 800;
+            font-size: ${kmFontPx}px;
+            fill: #1d4ed8;
+            paint-order: stroke fill;
+            stroke: #ffffff;
+            stroke-width: ${kmHaloPx}px;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+            text-anchor: start;
+            dominant-baseline: central;
+          }
+        </style>
+        ${svgElements}
+      </svg>`;
+      labelsSvgBuffer = Buffer.from(svgContent);
+    }
+  } catch (e) {}
 
   if (labelsSvgBuffer) {
-    compositeInputs.push({
-      input: labelsSvgBuffer,
-      left: 0,
-      top: 0,
-      limitInputPixels: false,
-      unlimited: true
-    });
+    try {
+      const finalImageBuffer = await sharp(baseMapBuffer, {
+        limitInputPixels: false,
+        unlimited: true
+      })
+      .composite([{
+        input: labelsSvgBuffer,
+        left: 0,
+        top: 0,
+        limitInputPixels: false,
+        unlimited: true
+      }])
+      .png()
+      .toBuffer();
+
+      return finalImageBuffer;
+    } catch (e) {
+      return baseMapBuffer;
+    }
   }
 
-  const stitchedBuffer = await sharp({
-    create: {
-      width: totalPxWidth,
-      height: totalPxHeight,
-      channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 1 }
-    },
-    limitInputPixels: false,
-    unlimited: true
-  })
-  .composite(compositeInputs)
-  .png()
-  .toBuffer();
-
-  return stitchedBuffer;
+  return baseMapBuffer;
 }
 
 let inputData = '';
@@ -509,13 +712,18 @@ process.stdin.on('end', () => {
       cleanedStyle = JSON.parse(styleStr);
     }
     
+    const rawBearing = typeof config.bearing === 'number' ? config.bearing : 0;
+    const normalizedBearing = ((rawBearing % 360) + 360) % 360;
+    const rawPitch = typeof config.pitch === 'number' ? config.pitch : 0;
+    const clampedPitch = Math.max(0, Math.min(60, rawPitch));
+
     const options = {
       zoom: config.zoom || 0,
       width: config.width || 800,
       height: config.height || 600,
       center: config.center || [0, 0],
-      bearing: config.bearing || 0,
-      pitch: config.pitch || 0,
+      bearing: normalizedBearing,
+      pitch: clampedPitch,
       style: cleanedStyle,
       ratio: config.ratio || 1,
       images: config.images

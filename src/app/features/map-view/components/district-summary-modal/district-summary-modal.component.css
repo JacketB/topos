@@ -132,13 +132,13 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.ds-card-earth { border-left: 3px solid #2563eb; }
+.ds-card-earth { border-left: 3px solid var(--color-primary); }
 .ds-card-labor { border-left: 3px solid #16a34a; }
 .ds-card-wood { border-left: 3px solid #d97706; }
 .ds-card-mach { border-left: 3px solid #0284c7; }
 .ds-card-wire { border-left: 3px solid #dc2626; }
 
-.ds-pill-earth { background-color: #eff6ff; color: #2563eb; }
+.ds-pill-earth { background-color: var(--color-primary-light); color: var(--color-primary); }
 .ds-pill-labor { background-color: #f0fdf4; color: #16a34a; }
 .ds-pill-wood { background-color: #fffbeb; color: #d97706; }
 .ds-pill-mach { background-color: #f0f9ff; color: #0284c7; }
@@ -193,7 +193,7 @@
 .text-right { text-align: right; }
 .font-bold { font-weight: 700; }
 .nowrap { white-space: nowrap; }
-.text-blue { color: #2563eb; }
+.text-blue { color: var(--color-primary); }
 .text-green { color: #10b981; }
 
 .ds-item-name {

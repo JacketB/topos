@@ -22,12 +22,12 @@
 }
 
 .vs-btn-action.primary {
-  background-color: #2563eb;
+  background-color: var(--color-primary);
   color: #ffffff;
-  border: 1px solid #1d4ed8;
+  border: 1px solid var(--color-primary-hover);
 }
 .vs-btn-action.primary:hover {
-  background-color: #1d4ed8;
+  background-color: var(--color-primary-hover);
 }
 
 .vs-btn-action.secondary {

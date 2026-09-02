@@ -53,8 +53,36 @@ export class FortificationCalculationService {
       earthVolume: 0,
       laborHrs: 0.4,
       wireKg: 1.5,
-      polesCount: 0.1, // 1 кол на 10 метров
+      polesCount: 0.1,
       notes: 'Проволочное заграждение (малозаметное препятствие - МЗП).'
+    },
+    ditch_pt: {
+      earthVolume: 5.25,
+      laborHrs: 0.1,
+      machHrs: 0.026,
+      machType: 'БАТ-2',
+      notes: 'Противотанковый ров (3.5х1.5 м). Выемка 5.25 м³/м, отсыпка бруствера.'
+    },
+    escarp: {
+      earthVolume: 2.0,
+      laborHrs: 0.1,
+      machHrs: 0.01,
+      machType: 'БАТ-2',
+      notes: 'Эскарп на скате крутизной 15°-25° высотой 2.0 м.'
+    },
+    counterscarp: {
+      earthVolume: 2.0,
+      laborHrs: 0.1,
+      machHrs: 0.01,
+      machType: 'БАТ-2',
+      notes: 'Контрэскарп на скате высотой 2.0 м.'
+    },
+    abatis: {
+      earthVolume: 0,
+      laborHrs: 0.8,
+      machHrs: 0.015,
+      machType: 'БАТ-2',
+      notes: 'Лесной завал (глубина 20-30 м, расход ВВ 0.8 кг/м).'
     }
   };
 
@@ -161,17 +189,46 @@ export class FortificationCalculationService {
       laborHrs: 35.0,
       metalKg: 306,
       notes: 'Сборное пулеметное сооружение (СПС).'
+    },
+    fort_shelter_kvs_u: {
+      earthVolume: 45,
+      laborHrs: 120.0,
+      machHrs: 2.0,
+      machType: 'МДК-3',
+      metalKg: 1500,
+      doorsCount: 2,
+      stovesCount: 1,
+      notes: 'Убежище из элементов КВС-У с ФВУ-100/50 на взвод/КП.'
+    },
+    fort_shelter_kvs_a: {
+      earthVolume: 35,
+      laborHrs: 90.0,
+      machHrs: 1.5,
+      machType: 'МДК-3',
+      metalKg: 1200,
+      doorsCount: 2,
+      stovesCount: 1,
+      notes: 'Убежище из элементов КВС-А с ФВУ-50/25.'
+    },
+    fort_fake_trench: {
+      earthVolume: 15,
+      laborHrs: 10.0,
+      machHrs: 0.2,
+      machType: 'ПЗМ-2',
+      notes: 'Ложный окоп / позиция для дезориентации противника.'
     }
   };
 
-  // Справочник геометрических размеров точечных сооружений для детальных расчетов
   readonly pointDimensions: Record<string, { L: number; B: number; H: number; L_app?: number; m: number; type: 'blindage' | 'shelter' }> = {
     fort_blindage: { L: 3.6, B: 1.35, H: 2.5, m: 0.5, type: 'blindage' },
     blindazh: { L: 3.6, B: 1.35, H: 2.5, m: 0.5, type: 'blindage' },
     fort_knp: { L: 5.0, B: 2.0, H: 2.5, m: 0.5, type: 'blindage' },
+    fort_shelter_kvs_u: { L: 6.5, B: 2.2, H: 3.0, m: 0.5, type: 'blindage' },
+    fort_shelter_kvs_a: { L: 5.0, B: 2.0, H: 2.8, m: 0.5, type: 'blindage' },
     fort_bmp_trench: { L: 8.0, B: 3.5, H: 1.5, L_app: 6.0, m: 0.5, type: 'shelter' },
     fort_tank_trench: { L: 9.5, B: 4.2, H: 1.8, L_app: 7.2, m: 0.5, type: 'shelter' },
-    fort_art_trench: { L: 10.0, B: 5.0, H: 1.5, L_app: 6.0, m: 0.5, type: 'shelter' }
+    fort_art_trench: { L: 10.0, B: 5.0, H: 1.5, L_app: 6.0, m: 0.5, type: 'shelter' },
+    fort_fake_trench: { L: 7.0, B: 3.0, H: 1.0, L_app: 4.0, m: 0.5, type: 'shelter' }
   };
 
   /**
@@ -503,6 +560,10 @@ export class FortificationCalculationService {
       comm_open: number;
       comm_covered: number;
       wire: number;
+      ditch_pt: number;
+      escarp: number;
+      counterscarp: number;
+      abatis: number;
     };
     items: (FortificationNorms & { type: string })[];
   } {
@@ -526,6 +587,10 @@ export class FortificationCalculationService {
     let totalCommOpenLength = 0;
     let totalCommCoveredLength = 0;
     let totalWireLength = 0;
+    let totalDitchPtLength = 0;
+    let totalEscarpLength = 0;
+    let totalCounterscarpLength = 0;
+    let totalAbatisLength = 0;
 
     const machinery: Record<string, number> = {};
     const elementsCount: Record<string, number> = {};
@@ -561,6 +626,10 @@ export class FortificationCalculationService {
         else if (lineType === 'comm_open') totalCommOpenLength += length;
         else if (lineType === 'comm_covered') totalCommCoveredLength += length;
         else if (lineType === 'wire') totalWireLength += length;
+        else if (lineType === 'ditch_pt') totalDitchPtLength += length;
+        else if (lineType === 'escarp') totalEscarpLength += length;
+        else if (lineType === 'counterscarp') totalCounterscarpLength += length;
+        else if (lineType === 'abatis') totalAbatisLength += length;
       }
 
       if (norm.machHrs && norm.machType) {
@@ -609,7 +678,11 @@ export class FortificationCalculationService {
         trench: Math.round(totalTrenchLength),
         comm_open: Math.round(totalCommOpenLength),
         comm_covered: Math.round(totalCommCoveredLength),
-        wire: Math.round(totalWireLength)
+        wire: Math.round(totalWireLength),
+        ditch_pt: Math.round(totalDitchPtLength),
+        escarp: Math.round(totalEscarpLength),
+        counterscarp: Math.round(totalCounterscarpLength),
+        abatis: Math.round(totalAbatisLength)
       },
       items
     };
@@ -620,7 +693,11 @@ export class FortificationCalculationService {
       case 'trench': return 'Траншея';
       case 'comm_open': return 'Ход сообщения (открытый)';
       case 'comm_covered': return 'Ход сообщения (крытый)';
-      case 'wire': return 'Проволочное заграждение';
+      case 'wire': return 'Проволочное заграждение (МЗП)';
+      case 'ditch_pt': return 'Противотанковый ров';
+      case 'escarp': return 'Эскарп';
+      case 'counterscarp': return 'Контрэскарп';
+      case 'abatis': return 'Лесной завал';
       default: return 'Линейный объект';
     }
   }
@@ -643,6 +720,9 @@ export class FortificationCalculationService {
       case 'ukrytie': return 'Укрытие для техники';
       case 'ukrytie_zhb': return 'Укрытие ЖБ';
       case 'sps1': return 'СПС';
+      case 'fort_shelter_kvs_u': return 'Убежище КВС-У (ФВУ-100)';
+      case 'fort_shelter_kvs_a': return 'Убежище КВС-А (ФВУ-50)';
+      case 'fort_fake_trench': return 'Ложный окоп / позиция';
       default: return 'Точечный элемент';
     }
   }

@@ -46,7 +46,7 @@ export class ElevationProfileComponent implements OnChanges {
     }
   }
 
-  generateProfileData() {
+  async generateProfileData() {
     if (!this.coordinates || this.coordinates.length < 2) {
       this.profilePoints = [];
       this.totalDistanceM = 0;
@@ -58,79 +58,14 @@ export class ElevationProfileComponent implements OnChanges {
       return;
     }
 
-    const points: ElevationPoint[] = [];
-    let accDist = 0;
-    let gain = 0;
-    let loss = 0;
-    let minE = Infinity;
-    let maxE = -Infinity;
-    let maxSlope = 0;
-
-    const stepM = 25;
-    let lastPt: [number, number] | null = null;
-    let lastElev: number | null = null;
-    let lastAccDist = 0;
-
-    for (let i = 0; i < this.coordinates.length - 1; i++) {
-      const p1 = this.coordinates[i];
-      const p2 = this.coordinates[i + 1];
-      const segDist = this.getDistance(p1, p2);
-      const steps = Math.max(1, Math.ceil(segDist / stepM));
-
-      for (let s = 0; s < steps; s++) {
-        const t = s / steps;
-        const lng = p1[0] + (p2[0] - p1[0]) * t;
-        const lat = p1[1] + (p2[1] - p1[1]) * t;
-        const pt: [number, number] = [lng, lat];
-
-        if (lastPt) {
-          accDist += this.getDistance(lastPt, pt);
-        }
-
-        const rawElev = this.terrainService.getElevationAt(lng, lat) || 120;
-        const elev = Math.round(rawElev * 10) / 10;
-
-        let slopeP = 0;
-        let slopeDeg = 0;
-
-        if (lastElev !== null) {
-          const deltaH = elev - lastElev;
-          const deltaD = Math.max(0.1, accDist - lastAccDist);
-          slopeP = (deltaH / deltaD) * 100;
-          slopeDeg = Math.atan2(deltaH, deltaD) * (180 / Math.PI);
-
-          if (deltaH > 0) gain += deltaH;
-          if (deltaH < 0) loss += Math.abs(deltaH);
-
-          if (Math.abs(slopeP) > Math.abs(maxSlope)) {
-            maxSlope = slopeP;
-          }
-        }
-
-        if (elev < minE) minE = elev;
-        if (elev > maxE) maxE = elev;
-
-        points.push({
-          distanceM: accDist,
-          elevationM: elev,
-          slopePercent: parseFloat(slopeP.toFixed(1)),
-          slopeDegrees: parseFloat(slopeDeg.toFixed(1)),
-          coord: pt
-        });
-
-        lastPt = pt;
-        lastElev = elev;
-        lastAccDist = accDist;
-      }
-    }
-
-    this.profilePoints = points;
-    this.totalDistanceM = accDist;
-    this.minElevation = minE === Infinity ? 0 : minE;
-    this.maxElevation = maxE === -Infinity ? 0 : maxE;
-    this.elevationGainM = Math.round(gain);
-    this.elevationLossM = Math.round(loss);
-    this.maxSlopePercent = parseFloat(maxSlope.toFixed(1));
+    const res = await this.terrainService.getElevationProfile(this.coordinates, 25);
+    this.profilePoints = res.points;
+    this.totalDistanceM = res.totalDistanceM;
+    this.minElevation = res.minElevation;
+    this.maxElevation = res.maxElevation;
+    this.elevationGainM = res.elevationGainM;
+    this.elevationLossM = res.elevationLossM;
+    this.maxSlopePercent = res.maxSlopePercent;
 
     setTimeout(() => this.drawProfileCanvas(), 50);
   }

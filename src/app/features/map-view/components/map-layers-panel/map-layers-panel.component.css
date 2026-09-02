@@ -195,7 +195,7 @@
 }
 
 .form-btn.confirm {
-  background-color: #2563eb;
+  background-color: var(--color-primary);
   color: #ffffff;
 }
 
@@ -413,5 +413,5 @@
 }
 
 .zoom-to-element-btn:hover {
-  color: #2563eb;
+  color: var(--color-primary);
 }

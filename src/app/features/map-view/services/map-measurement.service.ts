@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import maplibregl from 'maplibre-gl';
+import { CoordinateConverterService } from '../../../core/services/coordinate-converter.service';
 
 export interface GeodesyMeasurementInfo {
   distance: number;
@@ -8,6 +9,8 @@ export interface GeodesyMeasurementInfo {
   bearingTrueStr: string;
   bearingMag: number;
   bearingMagStr: string;
+  gridBearing?: number;
+  gridBearingStr?: string;
   areaM2?: number;
   areaStr?: string;
 }
@@ -16,12 +19,21 @@ export interface GeodesyMeasurementInfo {
   providedIn: 'root'
 })
 export class MapMeasurementService {
+  readonly coordConverter: CoordinateConverterService;
   readonly isMeasuring = signal<boolean>(false);
   readonly measurementResult = signal<string | null>(null);
   readonly geodesyInfo = signal<GeodesyMeasurementInfo | null>(null);
 
   private readonly magneticDeclination = 8.0;
   private measurementPoints: [number, number][] = [];
+
+  constructor() {
+    try {
+      this.coordConverter = inject(CoordinateConverterService, { optional: true }) || new CoordinateConverterService();
+    } catch {
+      this.coordConverter = new CoordinateConverterService();
+    }
+  }
 
   initLayers(map: maplibregl.Map) {
     const doInit = () => {
@@ -40,10 +52,28 @@ export class MapMeasurementService {
             id: 'measurement-fill',
             type: 'fill',
             source: 'measurement-data',
-            filter: ['==', '$type', 'Polygon'] as any,
+            filter: ['match', ['geometry-type'], ['Polygon', 'MultiPolygon'], true, false],
             paint: {
-              'fill-color': '#eb3b5a',
-              'fill-opacity': 0.15
+              'fill-color': '#e11d48',
+              'fill-opacity': 0.18
+            }
+          });
+        }
+
+        if (!map.getLayer('measurement-line-casing')) {
+          map.addLayer({
+            id: 'measurement-line-casing',
+            type: 'line',
+            source: 'measurement-data',
+            filter: ['match', ['geometry-type'], ['LineString', 'MultiLineString'], true, false],
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': '#ffffff',
+              'line-width': 5.5,
+              'line-opacity': 0.95
             }
           });
         }
@@ -53,11 +83,15 @@ export class MapMeasurementService {
             id: 'measurement-line',
             type: 'line',
             source: 'measurement-data',
-            filter: ['in', '$type', 'LineString', 'Polygon'] as any,
+            filter: ['match', ['geometry-type'], ['LineString', 'MultiLineString'], true, false],
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
             paint: {
-              'line-color': '#eb3b5a',
-              'line-width': 3,
-              'line-dasharray': [2, 2]
+              'line-color': '#e11d48',
+              'line-width': 3.5,
+              'line-dasharray': [3, 2]
             }
           });
         }
@@ -67,11 +101,11 @@ export class MapMeasurementService {
             id: 'measurement-points',
             type: 'circle',
             source: 'measurement-data',
-            filter: ['==', '$type', 'Point'] as any,
+            filter: ['match', ['geometry-type'], ['Point', 'MultiPoint'], true, false],
             paint: {
-              'circle-radius': 5,
-              'circle-color': '#eb3b5a',
-              'circle-stroke-width': 1.5,
+              'circle-radius': 6,
+              'circle-color': '#e11d48',
+              'circle-stroke-width': 2,
               'circle-stroke-color': '#ffffff'
             }
           });
@@ -114,7 +148,6 @@ export class MapMeasurementService {
 
     this.measurementPoints.push(coords);
     this.updateMeasurementLayers(map);
-
     this.recalculateGeodesy();
   }
 
@@ -122,6 +155,10 @@ export class MapMeasurementService {
     if (this.isMeasuring()) {
       map.getCanvas().style.cursor = '';
       this.isMeasuring.set(false);
+      this.measurementPoints = [];
+      this.measurementResult.set(null);
+      this.geodesyInfo.set(null);
+      this.updateMeasurementLayers(map);
     }
   }
 
@@ -145,6 +182,13 @@ export class MapMeasurementService {
     const bearingTrue = this.calculateBearing(p1, p2);
     const bearingMag = (bearingTrue - this.magneticDeclination + 360) % 360;
 
+    const gk1 = this.coordConverter.wgs84ToGaussKruger(p1[1], p1[0]);
+    const gk2 = this.coordConverter.wgs84ToGaussKruger(p2[1], p2[0]);
+    const dX = gk2.x - gk1.x;
+    const dY = gk2.y - gk1.y;
+    const gridAngleRad = Math.atan2(dY, dX);
+    const gridBearing = ((gridAngleRad * 180.0 / Math.PI) + 360.0) % 360.0;
+
     let areaM2: number | undefined = undefined;
     let areaStr: string | undefined = undefined;
 
@@ -166,6 +210,8 @@ export class MapMeasurementService {
       bearingTrueStr: `${bearingTrue.toFixed(1)}°`,
       bearingMag: parseFloat(bearingMag.toFixed(1)),
       bearingMagStr: `${bearingMag.toFixed(1)}°`,
+      gridBearing: parseFloat(gridBearing.toFixed(1)),
+      gridBearingStr: `${gridBearing.toFixed(1)}°`,
       areaM2,
       areaStr
     };
@@ -229,6 +275,7 @@ export class MapMeasurementService {
   }
 
   private updateMeasurementLayers(map: maplibregl.Map) {
+    this.initLayers(map);
     const source = map.getSource('measurement-data') as maplibregl.GeoJSONSource;
     if (!source) return;
 
@@ -247,6 +294,17 @@ export class MapMeasurementService {
         });
       });
 
+      if (points.length >= 2) {
+        features.push({
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: points.length >= 3 ? [...points, points[0]] : points
+          }
+        });
+      }
+
       if (points.length >= 3) {
         features.push({
           type: 'Feature',
@@ -254,15 +312,6 @@ export class MapMeasurementService {
           geometry: {
             type: 'Polygon',
             coordinates: [[...points, points[0]]]
-          }
-        });
-      } else if (points.length === 2) {
-        features.push({
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: points
           }
         });
       }

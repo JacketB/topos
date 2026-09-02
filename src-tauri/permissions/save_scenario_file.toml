@@ -4,5 +4,10 @@ description = "Allows the frontend to save scenario files into the downloads dir
 
 [permission.commands]
 allow = [
-  "save_scenario_file"
+  "save_scenario_file",
+  "choose_save_path",
+  "choose_open_path",
+  "choose_directory",
+  "save_scenario_to_path",
+  "read_file_content"
 ]

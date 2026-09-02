@@ -1,6 +1,6 @@
 export type MapInteractionMode = 'pan' | 'edit' | 'select';
 
-export type TacticalLineMode = 'none' | 'trench' | 'comm_open' | 'comm_covered' | 'wire' | 'march_route' | 'march';
+export type TacticalLineMode = 'none' | 'simple_line' | 'line' | 'trench' | 'comm_open' | 'comm_covered' | 'wire' | 'ditch_pt' | 'escarp' | 'counterscarp' | 'abatis' | 'march_route' | 'march' | 'area_polygon' | 'text_box';
 
 export type ColumnType = 'wheel' | 'caterpillar' | 'mixed' | 'foot';
 
@@ -19,14 +19,32 @@ export interface PlacedSymbolProperties {
   angle?: number;
   color?: string;
   isLinear?: boolean;
+  isPolygon?: boolean;
+  isText?: boolean;
   lineType?: string;
+  lineStyle?: 'solid' | 'dashed' | 'dashdot' | 'double_solid' | 'double_solid_dashed' | string;
+  lineWidth?: number;
+  fillOpacity?: number;
+  lineDashArray?: number[];
+  textSize?: number;
+  textColor?: string;
+  textHaloColor?: string;
+  textHaloWidth?: number;
   origCoords?: [number, number][];
   isSmooth?: boolean;
+  areaHa?: number;
+  perimeterKm?: number;
+  lineLengthKm?: number;
   fortProfile?: string;
   fortDepth?: number;
   fortWidth?: number;
   fortLength?: number;
   fortRevetment?: string;
+  hasPatrol?: boolean;
+  patrolStyle?: 'solid' | 'dashed';
+  patrolAngle?: number;
+  patrolLength?: number;
+  patrolRadius?: number;
   [key: string]: any;
 }
 

@@ -1,4 +1,5 @@
 import { Injectable, signal, inject, computed, effect } from '@angular/core';
+import { Router } from '@angular/router';
 import maplibregl from 'maplibre-gl';
 import { TacticalSymbolsService } from '../services/tactical-symbols.service';
 import { TacticalMapService } from '../services/tactical-map.service';
@@ -8,16 +9,23 @@ import { MapMeasurementService } from '../services/map-measurement.service';
 import { MapLayersService } from '../services/map-layers.service';
 import { SCALE_PRESETS, ScalePreset } from '../consts/map-scale.const';
 import { FortificationCalculationService } from '../services/fortification-calculation.service';
-import { MarchRouteService, ColumnType, MarchRoute } from '../services/march-route.service';
+import { MarchRouteService, ColumnType, MarchRoute, BelarusPlace } from '../services/march-route.service';
 import { PlaybackService } from '../services/playback.service';
 import { MarchOrderService, MarchOrderElement } from '../services/march-order.service';
 import { ImageOverlayService, MapImageOverlay } from '../services/image-overlay.service';
 import { TacticalAnalyticsService } from '../services/tactical-analytics.service';
+import { ProjectManagerService } from '../../../core/services/project-manager.service';
+import { CoordinateConverterService } from '../../../core/services/coordinate-converter.service';
+import { Sk42GridService } from '../../../core/services/sk42-grid.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MapViewModel {
+  readonly router = inject(Router);
+  readonly projectManagerService = inject(ProjectManagerService);
+  readonly coordConverterService = inject(CoordinateConverterService);
+  readonly sk42GridService = inject(Sk42GridService);
   readonly imageOverlayService = inject(ImageOverlayService);
   readonly symbolsService = inject(TacticalSymbolsService);
   readonly tacticalMapService = inject(TacticalMapService);
@@ -31,6 +39,9 @@ export class MapViewModel {
   readonly marchOrderService = inject(MarchOrderService);
   readonly tacticalAnalyticsService = inject(TacticalAnalyticsService);
 
+  readonly isLeftSidebarOpen = signal<boolean>(true);
+  readonly activeSidebarTab = signal<'symbols' | 'properties'>('symbols');
+
   readonly scalePresets = SCALE_PRESETS;
   readonly isMapExportOpen = signal(false);
   readonly isHelpModalOpen = signal(false);
@@ -38,8 +49,30 @@ export class MapViewModel {
   readonly isAppReady = signal<boolean>(false);
   readonly sidebarWidth = signal<number>(340);
   readonly bearing = signal<number>(0);
-  readonly cursorCoords = signal<string>('53.9000 С.Ш., 27.5600 В.Д.');
-  readonly centerCoords = signal<string>('53.9000 С.Ш., 27.5600 В.Д.');
+  
+  readonly centerLatLon = signal<[number, number]>([53.9022, 27.5618]);
+  readonly cursorLatLon = signal<[number, number] | null>(null);
+
+  readonly centerCoords = computed(() => {
+    const [lat, lon] = this.centerLatLon();
+    return this.coordConverterService.formatCoordinates(lat, lon);
+  });
+
+  readonly cursorCoords = computed(() => {
+    const pt = this.cursorLatLon();
+    if (!pt) return this.centerCoords();
+    return this.coordConverterService.formatCoordinates(pt[0], pt[1]);
+  });
+
+  readonly coordinateDetails = computed(() => {
+    const [lat, lon] = this.centerLatLon();
+    return this.coordConverterService.getCoordinateDetails(lat, lon);
+  });
+
+  cycleCoordinateFormat() {
+    this.coordConverterService.cycleNextFormat();
+  }
+
   readonly currentScale = signal<number>(50000);
   readonly isScaleMenuOpen = signal<boolean>(false);
   readonly isQuickLayersMenuOpen = signal<boolean>(false);
@@ -59,6 +92,27 @@ export class MapViewModel {
 
   readonly isMeasuring = this.mapMeasurementService.isMeasuring;
   readonly measurementResult = this.mapMeasurementService.measurementResult;
+  readonly is3D = signal<boolean>(false);
+  readonly terrainExaggeration = signal<number>(3.0);
+  readonly isHillshadeEnabled = signal<boolean>(true);
+  readonly is3DBuildingsEnabled = signal<boolean>(true);
+  readonly hillshadeIntensity = signal<'soft' | 'standard' | 'contrast'>('contrast');
+  readonly hillshadeSunAngle = signal<number>(315);
+  readonly isTerrainSettingsOpen = signal<boolean>(false);
+
+  readonly hillshadeExaggerationValue = computed(() => {
+    const intensity = this.hillshadeIntensity();
+    if (intensity === 'soft') return 0.45;
+    if (intensity === 'standard') return 0.75;
+    return 0.95;
+  });
+
+  readonly hillshadeShadowColor = computed(() => {
+    const intensity = this.hillshadeIntensity();
+    if (intensity === 'soft') return '#334155';
+    if (intensity === 'standard') return '#1e293b';
+    return '#0f172a';
+  });
 
   // Поповер библиотеки знаков и управление тулбаром
   readonly isSymbolLibraryOpen = signal<boolean>(false);
@@ -139,7 +193,7 @@ export class MapViewModel {
     }
     return filtered.filter(f => {
       if (f.properties?.isLinear) {
-        return ['trench', 'comm_open', 'comm_covered', 'wire'].includes(f.properties.lineType);
+        return ['trench', 'comm_open', 'comm_covered', 'wire', 'ditch_pt', 'escarp', 'counterscarp', 'abatis'].includes(f.properties.lineType);
       }
       return !!this.fortificationService.pointNorms[f.properties?.symbol];
     });
@@ -218,18 +272,6 @@ export class MapViewModel {
       }
     });
 
-    // Синхронизируем вершины waypoints при рисовании маршрута
-    effect(() => {
-      const mode = this.activeLineMode();
-      const coords = this.activeLineCoords();
-      if (mode === 'march_route') {
-        this.tacticalMapService.updateMarchWaypointsSource(coords);
-      } else {
-        this.tacticalMapService.updateMarchWaypointsSource(undefined);
-      }
-    });
-
-    // Реактивно пересчитываем характеристики маршрута
     effect(() => {
       const selected = this.selectedPlacedSymbol();
       const mode = this.activeLineMode();
@@ -258,20 +300,66 @@ export class MapViewModel {
         this.selectedMarchRouteStats.set(null);
       }
     });
+
+    effect(() => {
+      this.tacticalMapService.placedSymbols();
+      this.showPlacesAlongRoute();
+      this.marchKilometerStepKm();
+      this.syncAllMarchOverlays();
+    });
+
+    effect(() => {
+      const placed = this.tacticalMapService.selectedPlacedSymbol();
+      const selTemplate = this.selectedSymbol();
+      const lineMode = this.activeLineMode();
+      if (placed || selTemplate || lineMode !== 'none') {
+        this.activeSidebarTab.set('properties');
+        this.isLeftSidebarOpen.set(true);
+      }
+    });
+
+    this.loadRoutePlannerState();
+    this.loadTerrainSettings();
+
+    effect(() => {
+      this.originPoint();
+      this.destinationPoint();
+      this.waypoints();
+      this.activeColumnType();
+      this.isNightMarch();
+      this.showPlacesAlongRoute();
+      this.marchKilometerStepKm();
+      this.calculatedRoute();
+      this.saveRoutePlannerState();
+    });
+
+    effect(() => {
+      this.is3D();
+      this.terrainExaggeration();
+      this.isHillshadeEnabled();
+      this.is3DBuildingsEnabled();
+      this.hillshadeIntensity();
+      this.hillshadeSunAngle();
+      this.saveTerrainSettings();
+    });
   }
 
-  closeAllPopupsExcept(except?: 'areaReport' | 'marchOrder' | 'routePlanner' | 'fortPlanner' | 'imageOverlay' | 'categoryDropdown' | 'quickLayers' | 'toggleMap' | 'scale' | 'elevationProfile') {
+  closeAllPopupsExcept(except?: 'areaReport' | 'marchOrder' | 'routePlanner' | 'fortPlanner' | 'imageOverlay' | 'categoryDropdown' | 'quickLayers' | 'toggleMap' | 'scale' | 'elevationProfile' | 'engineeringCalc' | 'terrainSettings') {
     if (except !== 'areaReport') this.isAreaReportOpen.set(false);
     if (except !== 'marchOrder') this.isMarchOrderOpen.set(false);
     if (except !== 'routePlanner') this.isRoutePlannerOpen.set(false);
     if (except !== 'fortPlanner') this.isFortPlannerOpen.set(false);
+    if (except !== 'engineeringCalc') this.isEngineeringCalcOpen.set(false);
     if (except !== 'imageOverlay') this.isImageOverlayPanelOpen.set(false);
     if (except !== 'categoryDropdown') this.activeCategoryDropdown.set(null);
     if (except !== 'quickLayers') this.isQuickLayersMenuOpen.set(false);
     if (except !== 'toggleMap') this.isToogleMapMenuOpen.set(false);
     if (except !== 'scale') this.isScaleMenuOpen.set(false);
     if (except !== 'elevationProfile') this.isElevationProfileOpen.set(false);
+    if (except !== 'terrainSettings') this.isTerrainSettingsOpen.set(false);
   }
+
+  readonly isEngineeringCalcOpen = signal<boolean>(false);
 
   readonly isElevationProfileOpen = signal<boolean>(false);
   readonly elevationProfileCoords = signal<[number, number][]>([]);
@@ -400,8 +488,88 @@ export class MapViewModel {
   });
   readonly waypoints = signal<any[]>([]);
   readonly calculatedRoute = signal<MarchRoute | null>(null);
+  readonly pickingRoutePoint = signal<'origin' | 'destination' | number | null>(null);
+  readonly showPlacesAlongRoute = signal<boolean>(true);
+  readonly marchKilometerStepKm = signal<number>(10);
+  readonly marchPlacesAlongRoute = signal<Array<BelarusPlace & { distanceAlongRouteKm: number; distanceFromRouteKm: number }>>([]);
+
+  setPickingRoutePoint(target: 'origin' | 'destination' | number | null) {
+    if (this.pickingRoutePoint() === target) {
+      this.pickingRoutePoint.set(null);
+    } else {
+      this.pickingRoutePoint.set(target);
+    }
+  }
+
+  setPickedRoutePoint(coords: [number, number]) {
+    const target = this.pickingRoutePoint();
+    if (target === 'origin') {
+      this.originPoint.update(p => ({ ...p, name: `Координаты (${coords[1].toFixed(4)}, ${coords[0].toFixed(4)})`, coords }));
+    } else if (target === 'destination') {
+      this.destinationPoint.update(p => ({ ...p, name: `Координаты (${coords[1].toFixed(4)}, ${coords[0].toFixed(4)})`, coords }));
+    } else if (typeof target === 'number') {
+      this.waypoints.update(list => {
+        const updated = [...list];
+        if (updated[target]) {
+          updated[target] = { ...updated[target], name: `Координаты (${coords[1].toFixed(4)}, ${coords[0].toFixed(4)})`, coords };
+        }
+        return updated;
+      });
+    }
+    this.pickingRoutePoint.set(null);
+  }
+
+  setMarchKilometerStep(step: number) {
+    this.marchKilometerStepKm.set(step);
+  }
+
+  toggleShowPlacesAlongRoute() {
+    this.showPlacesAlongRoute.update(v => !v);
+  }
+
+  async syncAllMarchOverlays() {
+    const placed = this.tacticalMapService.placedSymbols();
+    const marchFeatures = placed.filter(
+      (f: any) => f.properties?.lineType === 'march_route' || f.properties?.symbol === 'march_route'
+    );
+
+    if (marchFeatures.length === 0) {
+      this.marchPlacesAlongRoute.set([]);
+      this.tacticalMapService.updateMarchPlacesSource([]);
+      this.tacticalMapService.updateMarchKilometersSource([]);
+      return;
+    }
+
+    const allPlaces: Array<BelarusPlace & { distanceAlongRouteKm: number; distanceFromRouteKm: number }> = [];
+    const allKmMarks: Array<{ km: number; label: string; coords: [number, number]; bearing?: number }> = [];
+
+    for (const mf of marchFeatures) {
+      const coords = ((mf.geometry as any)?.coordinates || mf.properties?.origCoords) as [number, number][] | undefined;
+      if (!coords || coords.length < 2) continue;
+
+      const overlays = await this.marchRouteService.getMarchOverlays(
+        coords,
+        4.5,
+        this.marchKilometerStepKm(),
+        this.showPlacesAlongRoute()
+      );
+
+      for (const p of overlays.places) {
+        if (!allPlaces.some(existing => existing.name.toLowerCase() === p.name.toLowerCase() && Math.abs(existing.distanceAlongRouteKm - p.distanceAlongRouteKm) < 1.0)) {
+          allPlaces.push(p);
+        }
+      }
+      allKmMarks.push(...overlays.kilometerMarks);
+    }
+
+    allPlaces.sort((a, b) => a.distanceAlongRouteKm - b.distanceAlongRouteKm);
+    this.marchPlacesAlongRoute.set(allPlaces);
+    this.tacticalMapService.updateMarchPlacesSource(this.showPlacesAlongRoute() ? allPlaces : []);
+    this.tacticalMapService.updateMarchKilometersSource(allKmMarks);
+  }
 
   clearMarchRoute() {
+    this.pickingRoutePoint.set(null);
     this.originPoint.set({
       id: 'origin',
       label: 'A',
@@ -419,6 +587,8 @@ export class MapViewModel {
     this.waypoints.set([]);
     this.calculatedRoute.set(null);
     this.selectedMarchRouteStats.set(null);
+    this.marchPlacesAlongRoute.set([]);
+    this.tacticalMapService.updateMarchPlacesSource([]);
 
     this.tacticalMapService.placedSymbols.update(prev =>
       prev.filter((f: any) => f.properties?.lineType !== 'march_route')
@@ -426,6 +596,51 @@ export class MapViewModel {
 
     try {
       localStorage.removeItem('topos_route_planner_state');
+    } catch {}
+  }
+
+  saveRoutePlannerState() {
+    try {
+      const orig = this.originPoint();
+      const dest = this.destinationPoint();
+      const wps = this.waypoints();
+      const colType = this.activeColumnType();
+      const isNight = this.isNightMarch();
+      const showPlaces = this.showPlacesAlongRoute();
+      const kmStep = this.marchKilometerStepKm();
+      const route = this.calculatedRoute();
+
+      const state = {
+        originPoint: orig,
+        destinationPoint: dest,
+        waypoints: wps,
+        activeColumnType: colType,
+        isNightMarch: isNight,
+        showPlacesAlongRoute: showPlaces,
+        marchKilometerStepKm: kmStep,
+        calculatedRoute: route
+      };
+
+      localStorage.setItem('topos_route_planner_state', JSON.stringify(state));
+    } catch {}
+  }
+
+  loadRoutePlannerState() {
+    try {
+      const stored = localStorage.getItem('topos_route_planner_state');
+      if (!stored) return;
+      const state = JSON.parse(stored);
+      if (state.originPoint) this.originPoint.set(state.originPoint);
+      if (state.destinationPoint) this.destinationPoint.set(state.destinationPoint);
+      if (Array.isArray(state.waypoints)) this.waypoints.set(state.waypoints);
+      if (state.activeColumnType) this.activeColumnType.set(state.activeColumnType);
+      if (state.isNightMarch !== undefined) this.isNightMarch.set(state.isNightMarch);
+      if (state.showPlacesAlongRoute !== undefined) this.showPlacesAlongRoute.set(state.showPlacesAlongRoute);
+      if (state.marchKilometerStepKm !== undefined) this.marchKilometerStepKm.set(state.marchKilometerStepKm);
+      if (state.calculatedRoute) {
+        this.calculatedRoute.set(state.calculatedRoute);
+        this.selectedMarchRouteStats.set(state.calculatedRoute);
+      }
     } catch {}
   }
 
@@ -449,7 +664,7 @@ export class MapViewModel {
     this.isMarchOrderOpen.set(true);
   }
 
-  drawMarchRouteOnMap(coords: [number, number][], stats: MarchRoute) {
+  async drawMarchRouteOnMap(coords: [number, number][], stats: MarchRoute) {
     this.selectedMarchRouteStats.set(stats);
     if (!coords || coords.length < 2) return;
 
@@ -462,7 +677,9 @@ export class MapViewModel {
         lineType: 'march_route',
         name: 'Маршрут марша',
         color: '#466bf7',
-        width: 4
+        width: 4,
+        origCoords: coords,
+        routeStats: stats
       },
       geometry: {
         type: 'LineString',
@@ -474,6 +691,8 @@ export class MapViewModel {
       ...prev.filter((f: any) => f.properties?.lineType !== 'march_route'),
       feature as any
     ]);
+
+    await this.syncAllMarchOverlays();
   }
 
   readonly isFortPlannerOpen = signal<boolean>(false);
@@ -483,6 +702,13 @@ export class MapViewModel {
       this.closeAllPopupsExcept('fortPlanner');
     }
     this.isFortPlannerOpen.update(v => !v);
+  }
+
+  toggleEngineeringCalc() {
+    if (!this.isEngineeringCalcOpen()) {
+      this.closeAllPopupsExcept('engineeringCalc');
+    }
+    this.isEngineeringCalcOpen.update(v => !v);
   }
 
   readonly isImageOverlayPanelOpen = signal<boolean>(false);
@@ -632,12 +858,35 @@ export class MapViewModel {
 
   private mapInstance: maplibregl.Map | null = null;
 
-  setMapInstance(map: maplibregl.Map) {
+  setMapInstance(map: maplibregl.Map | null) {
     this.mapInstance = map;
+    this.tacticalMapService.init(map);
     if (map) {
       this.imageOverlayService.init(map);
-      this.tacticalAnalyticsService.initLayers(map);
+      this.sk42GridService.init(map);
+      if (map.isStyleLoaded()) {
+        this.tacticalAnalyticsService.initLayers(map);
+      } else {
+        map.once('load', () => {
+          this.tacticalAnalyticsService.initLayers(map);
+        });
+      }
+      const pending = this.projectManagerService.pendingLoadProjectData();
+      if (pending) {
+        this.tacticalMapService.importScenarioData(pending);
+        this.projectManagerService.pendingLoadProjectData.set(null);
+      }
     }
+  }
+
+  toggleSk42Grid() {
+    this.sk42GridService.toggleGrid(this.mapInstance || undefined);
+  }
+
+  navigateToProjects() {
+    const data = this.tacticalMapService.exportScenarioData();
+    this.projectManagerService.saveProjectState(data);
+    this.router.navigate(['/projects']);
   }
 
   getMapInstance(): maplibregl.Map | null {
@@ -706,13 +955,7 @@ export class MapViewModel {
     const map = this.getMapInstance();
     if (map) {
       const center = map.getCenter();
-      const lat = center.lat;
-      const lng = center.lng;
-      const latDir = lat >= 0 ? 'С.Ш.' : 'Ю.Ш.';
-      const lngDir = lng >= 0 ? 'В.Д.' : 'З.Д.';
-      this.cursorCoords.set(
-        `${Math.abs(lat).toFixed(4)} ${latDir}, ${Math.abs(lng).toFixed(4)} ${lngDir}`
-      );
+      this.centerLatLon.set([center.lat, center.lng]);
     }
   }
 
@@ -792,6 +1035,104 @@ export class MapViewModel {
   resetBearing() {
     if (this.mapInstance) {
       this.mapInstance.resetNorth({ duration: 500 });
+    }
+  }
+
+  toggleTerrainSettings(event?: Event) {
+    if (event) event.stopPropagation();
+    const next = !this.isTerrainSettingsOpen();
+    if (next) {
+      this.closeAllPopupsExcept('terrainSettings');
+    }
+    this.isTerrainSettingsOpen.set(next);
+  }
+
+  setTerrainExaggeration(val: number) {
+    const clamped = Math.max(1.0, Math.min(6.0, Math.round(val * 10) / 10));
+    this.terrainExaggeration.set(clamped);
+    const map = this.getMapInstance();
+    if (map && this.is3D() && map.getSource('terrain-source')) {
+      map.setTerrain({ source: 'terrain-source', exaggeration: clamped });
+    }
+  }
+
+  setTerrainPitch(pitch: number) {
+    const map = this.getMapInstance();
+    if (map) {
+      map.easeTo({ pitch, duration: 500 });
+    }
+  }
+
+  toggleHillshade() {
+    this.isHillshadeEnabled.update(v => !v);
+  }
+
+  toggle3DBuildings() {
+    this.is3DBuildingsEnabled.update(v => !v);
+  }
+
+  setHillshadeIntensity(mode: 'soft' | 'standard' | 'contrast') {
+    this.hillshadeIntensity.set(mode);
+  }
+
+  setHillshadeSunAngle(angle: number) {
+    this.hillshadeSunAngle.set(angle);
+  }
+
+  saveTerrainSettings() {
+    try {
+      const data = {
+        is3D: this.is3D(),
+        terrainExaggeration: this.terrainExaggeration(),
+        isHillshadeEnabled: this.isHillshadeEnabled(),
+        is3DBuildingsEnabled: this.is3DBuildingsEnabled(),
+        hillshadeIntensity: this.hillshadeIntensity(),
+        hillshadeSunAngle: this.hillshadeSunAngle()
+      };
+      localStorage.setItem('topos_terrain_settings', JSON.stringify(data));
+    } catch {}
+  }
+
+  loadTerrainSettings() {
+    try {
+      const stored = localStorage.getItem('topos_terrain_settings');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (typeof parsed.terrainExaggeration === 'number') {
+          this.terrainExaggeration.set(parsed.terrainExaggeration);
+        }
+        if (typeof parsed.isHillshadeEnabled === 'boolean') {
+          this.isHillshadeEnabled.set(parsed.isHillshadeEnabled);
+        }
+        if (typeof parsed.is3DBuildingsEnabled === 'boolean') {
+          this.is3DBuildingsEnabled.set(parsed.is3DBuildingsEnabled);
+        }
+        if (parsed.hillshadeIntensity) {
+          this.hillshadeIntensity.set(parsed.hillshadeIntensity);
+        }
+        if (typeof parsed.hillshadeSunAngle === 'number') {
+          this.hillshadeSunAngle.set(parsed.hillshadeSunAngle);
+        }
+      }
+    } catch {}
+  }
+
+  toggle3D() {
+    const next = !this.is3D();
+    this.is3D.set(next);
+    const map = this.getMapInstance();
+    if (map) {
+      if (next) {
+        if (map.getSource('terrain-source')) {
+          map.setTerrain({ source: 'terrain-source', exaggeration: this.terrainExaggeration() });
+        }
+        if (map.getPitch() < 20) {
+          map.easeTo({ pitch: 55, duration: 600 });
+        }
+      } else {
+        map.setTerrain(null as any);
+        map.easeTo({ pitch: 0, duration: 400 });
+      }
     }
   }
 
@@ -908,9 +1249,20 @@ export class MapViewModel {
     this.playbackService.speedMultiplier.set(speed);
   }
 
-  readonly activeLineMode = signal<'none' | 'trench' | 'comm_open' | 'comm_covered' | 'wire' | string>('none');
+  readonly activeLineMode = signal<'none' | 'simple_line' | 'line' | 'trench' | 'comm_open' | 'comm_covered' | 'wire' | 'area_polygon' | 'text_box' | string>('none');
   readonly activeLineCoords = signal<[number, number][]>([]);
   readonly activeLineFlipSide = signal<boolean>(false);
+  readonly isLineDashed = signal<boolean>(false);
+  readonly activeLineStyle = signal<'solid' | 'dashed' | 'dashdot' | 'double_solid' | 'double_solid_dashed'>('solid');
+
+  toggleLineDashed() {
+    this.isLineDashed.update(v => !v);
+  }
+
+  setLineStyle(style: 'solid' | 'dashed' | 'dashdot' | 'double_solid' | 'double_solid_dashed') {
+    this.activeLineStyle.set(style);
+    this.updateDrawingPreview();
+  }
 
   readonly activeLineModeDisplayName = computed(() => {
     const mode = this.activeLineMode();
@@ -918,21 +1270,32 @@ export class MapViewModel {
     if (mode === 'comm_open') return 'Открытый ход сообщения';
     if (mode === 'comm_covered') return 'Крытый ход сообщения';
     if (mode === 'wire') return 'Колючая проволока (МЗП)';
+    if (mode === 'ditch_pt') return 'Противотанковый ров';
+    if (mode === 'escarp') return 'Эскарп';
+    if (mode === 'counterscarp') return 'Контрэскарп';
+    if (mode === 'abatis') return 'Лесной завал';
     if (mode === 'point') return 'Точка (ориентир)';
     if (mode === 'arrow_attack') return 'Стрелка гл. удара';
     if (mode === 'arrow_supporting') return 'Стрелка вспом. удара';
     if (mode === 'arrow_retreat') return 'Стрелка отхода';
     if (mode === 'march_route') return 'Маршрут марша';
+    if (mode === 'area_polygon' || mode === 'area') return 'Район / Зона';
+    if (mode === 'text_box') return 'Текстовый блок';
+    if (mode === 'simple_line' || mode === 'line') return 'Линия';
     return 'Линия';
   });
 
   selectSymbol(symbol: any) {
-    if (symbol.id === 'trench_line' || symbol.id === 'wire_line' || symbol.id === 'comm_open_line' || symbol.id === 'comm_covered_line' || symbol.id === 'march_route' || (symbol.id && symbol.id.startsWith('arrow_'))) {
+    if (symbol.id === 'trench_line' || symbol.id === 'wire_line' || symbol.id === 'comm_open_line' || symbol.id === 'comm_covered_line' || symbol.id === 'ditch_pt_line' || symbol.id === 'escarp_line' || symbol.id === 'counterscarp_line' || symbol.id === 'abatis_line' || symbol.id === 'march_route' || (symbol.id && symbol.id.startsWith('arrow_'))) {
       this.tacticalMapService.clearSymbolSelection();
       let mode = 'wire';
       if (symbol.id === 'trench_line') mode = 'trench';
       else if (symbol.id === 'comm_open_line') mode = 'comm_open';
       else if (symbol.id === 'comm_covered_line') mode = 'comm_covered';
+      else if (symbol.id === 'ditch_pt_line') mode = 'ditch_pt';
+      else if (symbol.id === 'escarp_line') mode = 'escarp';
+      else if (symbol.id === 'counterscarp_line') mode = 'counterscarp';
+      else if (symbol.id === 'abatis_line') mode = 'abatis';
       else if (symbol.id === 'march_route') mode = 'march_route';
       else if (symbol.id && symbol.id.startsWith('arrow_')) mode = symbol.id;
       this.startDrawingLine(mode);
@@ -942,7 +1305,7 @@ export class MapViewModel {
     }
   }
 
-  startDrawingLine(mode: 'trench' | 'comm_open' | 'comm_covered' | 'wire' | string) {
+  startDrawingLine(mode: 'trench' | 'comm_open' | 'comm_covered' | 'wire' | 'ditch_pt' | 'escarp' | 'counterscarp' | 'abatis' | string) {
     this.tacticalMapService.interactionMode.set('edit');
     this.activeLineMode.set(mode);
     this.activeLineCoords.set([]);
@@ -950,7 +1313,7 @@ export class MapViewModel {
   }
 
   placePointIcon(coords: [number, number]) {
-    const color = '#ef4444'; // Изначально все заграждения и точки красного цвета
+    const color = '#ef4444';
     const iconId = `tochka_c_${color.replace('#', '')}`;
     const newSymbol = {
       type: 'Feature',
@@ -985,23 +1348,61 @@ export class MapViewModel {
       this.placePointIcon(coord);
       return;
     }
-    this.activeLineCoords.update(prev => [...prev, coord]);
+    if (this.activeLineMode() === 'text_box') {
+      this.tacticalMapService.placeTextBox(coord);
+      this.cancelDrawingLine();
+      return;
+    }
+    const currentCoords = this.activeLineCoords();
+    if ((this.activeLineMode() === 'area_polygon' || this.activeLineMode() === 'area') && currentCoords.length >= 3) {
+      const first = currentCoords[0];
+      const dx = coord[0] - first[0];
+      const dy = coord[1] - first[1];
+      const distDeg = Math.sqrt(dx * dx + dy * dy);
+      if (distDeg < 0.003) {
+        this.finishDrawingLine();
+        return;
+      }
+    }
+    let targetCoord = coord;
+    if (
+      this.activeLineMode() === 'march_route' &&
+      this.isSnapToRoadEnabled() &&
+      this.mapInstance
+    ) {
+      targetCoord = this.marchRouteService.snapPointToNearestRoad(this.mapInstance, coord);
+    }
+    this.activeLineCoords.update(prev => [...prev, targetCoord]);
     this.updateDrawingPreview();
   }
 
   finishDrawingLine() {
     const mode = this.activeLineMode();
     const coords = this.activeLineCoords();
+    if ((mode === 'area_polygon' || mode === 'area') && coords.length >= 3) {
+      this.tacticalMapService.placeLinearSymbol(coords, 'area_polygon', 'Район обороны', this.activeLineFlipSide(), this.isLineSmooth(), this.isLineDashed());
+      this.cancelDrawingLine();
+      return;
+    }
+    if ((mode === 'simple_line' || mode === 'line') && coords.length >= 2) {
+      this.tacticalMapService.placeLinearSymbol(coords, 'simple_line', 'Линия', this.activeLineFlipSide(), this.isLineSmooth(), false, this.activeLineStyle());
+      this.cancelDrawingLine();
+      return;
+    }
     if (mode !== 'none' && coords.length >= 2) {
-      let name = 'Проволочное заграждение (МЗП)';
-      if (mode === 'trench') name = 'Траншея (МО СССР)';
+      let name = 'Проволочное заграждение';
+      if (mode === 'trench') name = 'Траншея';
       else if (mode === 'comm_open') name = 'Открытый ход сообщения';
-      else if (mode === 'comm_covered') name = 'Крытый ход сообщения (перекрытая щель)';
+      else if (mode === 'comm_covered') name = 'Крытый ход сообщения';
+      else if (mode === 'ditch_pt') name = 'Противотанковый ров';
+      else if (mode === 'escarp') name = 'Эскарп';
+      else if (mode === 'counterscarp') name = 'Контрэскарп';
+      else if (mode === 'abatis') name = 'Лесной завал';
       else if (mode === 'arrow_attack') name = 'Стрелка главного удара';
       else if (mode === 'arrow_supporting') name = 'Стрелка вспомогательного удара';
       else if (mode === 'arrow_retreat') name = 'Стрелка отхода';
       else if (mode === 'march_route') name = 'Маршрут марша';
-      this.tacticalMapService.placeLinearSymbol(coords, mode, name, this.activeLineFlipSide(), this.isLineSmooth());
+      this.tacticalMapService.placeLinearSymbol(coords, mode, name, this.activeLineFlipSide(), this.isLineSmooth(), this.isLineDashed());
     }
     this.cancelDrawingLine();
   }
@@ -1082,12 +1483,23 @@ export class MapViewModel {
     if (coords.length < 1) return;
 
     const mode = this.activeLineMode();
-    const previewColor = mode === 'wire' ? '#000000' : '#ef4444';
+    const isArea = mode === 'area_polygon' || mode === 'area';
+    const previewColor = mode === 'wire' ? '#000000' : (isArea ? (this.tacticalMapService.templateCustomColor() || '#ef4444') : '#ef4444');
 
     if (!this.mapInstance.getSource('drawing-preview')) {
       this.mapInstance.addSource('drawing-preview', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] }
+      });
+      this.mapInstance.addLayer({
+        id: 'drawing-preview-fill-layer',
+        type: 'fill',
+        source: 'drawing-preview',
+        filter: ['==', '$type', 'Polygon'],
+        paint: {
+          'fill-color': previewColor,
+          'fill-opacity': 0.2
+        }
       });
       this.mapInstance.addLayer({
         id: 'drawing-preview-layer',
@@ -1096,30 +1508,71 @@ export class MapViewModel {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
           'line-color': previewColor,
-          'line-width': 3.5,
+          'line-width': 3.0,
           'line-dasharray': [2, 2]
         }
       });
     }
 
     const source = this.mapInstance.getSource('drawing-preview') as maplibregl.GeoJSONSource;
-    if (source && coords.length >= 2) {
-      let previewCoords = coords;
-      if (this.isLineSmooth() && coords.length >= 3) {
-        previewCoords = this.tacticalMapService.trenchGeometryService.interpolateCatmullRom(coords, 12);
+    if (source) {
+      if (isArea && coords.length >= 3) {
+        let previewCoords = coords;
+        if (this.isLineSmooth()) {
+          previewCoords = this.tacticalMapService.trenchGeometryService.interpolateClosedCatmullRom(coords, 10);
+        }
+        const closed = [...previewCoords, previewCoords[0]];
+        source.setData({
+          type: 'FeatureCollection',
+          features: [{
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'Polygon', coordinates: [closed] }
+          }]
+        });
+      } else if (coords.length >= 2) {
+        if (mode === 'simple_line' || mode === 'line') {
+          const geom = this.tacticalMapService.trenchGeometryService.generateLinearGeometry(coords, 'simple_line', this.activeLineFlipSide(), this.isLineSmooth(), 3, this.activeLineStyle());
+          source.setData({
+            type: 'FeatureCollection',
+            features: [{
+              type: 'Feature',
+              properties: {},
+              geometry: geom
+            }]
+          });
+        } else {
+          let previewCoords = coords;
+          if (this.isLineSmooth() && coords.length >= 3) {
+            previewCoords = this.tacticalMapService.trenchGeometryService.interpolateCatmullRom(coords, 12);
+          }
+          source.setData({
+            type: 'FeatureCollection',
+            features: [{
+              type: 'Feature',
+              properties: {},
+              geometry: { type: 'LineString', coordinates: previewCoords }
+            }]
+          });
+        }
+      } else if (coords.length === 1) {
+        source.setData({
+          type: 'FeatureCollection',
+          features: [{
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'Point', coordinates: coords[0] }
+          }]
+        });
       }
-      source.setData({
-        type: 'FeatureCollection',
-        features: [{
-          type: 'Feature',
-          properties: {},
-          geometry: { type: 'LineString', coordinates: previewCoords }
-        }]
-      });
     }
 
     if (this.mapInstance.getLayer('drawing-preview-layer')) {
       this.mapInstance.setPaintProperty('drawing-preview-layer', 'line-color', previewColor);
+      this.mapInstance.setPaintProperty('drawing-preview-layer', 'line-dasharray', this.isLineDashed() ? [3, 3] : [1, 0]);
+    }
+    if (this.mapInstance.getLayer('drawing-preview-fill-layer')) {
+      this.mapInstance.setPaintProperty('drawing-preview-fill-layer', 'fill-color', previewColor);
     }
   }
 
@@ -1190,33 +1643,13 @@ export class MapViewModel {
   }
 
   async exportScenario() {
-    try {
-      const data = this.tacticalMapService.exportScenarioData();
-      const filename = `scenario_${new Date().toISOString().slice(0, 10)}.tps`;
-      const jsonStr = JSON.stringify(data, null, 2);
+    const data = this.tacticalMapService.exportScenarioData();
+    await this.projectManagerService.saveProject(data);
+  }
 
-      const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
-
-      if (isTauri) {
-        const { invoke } = await import('@tauri-apps/api/core');
-        const encoder = new TextEncoder();
-        const bytes = encoder.encode(jsonStr);
-        const savedPath = await invoke<string>('save_scenario_file', { filename, content: Array.from(bytes) });
-        alert(`Сценарий сохранен в загрузки:\n${savedPath}`);
-      } else {
-        const blob = new Blob([jsonStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-    } catch (e) {
-      console.error('Ошибка экспорта сценария:', e);
-    }
+  async exportScenarioWithName(name: string) {
+    const data = this.tacticalMapService.exportScenarioData();
+    await this.projectManagerService.saveProjectAs(data, name);
   }
 
   importScenario(event: Event) {

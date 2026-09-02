@@ -31,7 +31,8 @@
         "silent": true
       },
       "nsis": {
-        "installMode": "both"
+        "installMode": "both",
+        "compression": "lzma"
       }
     },
     "resources": [
@@ -39,6 +40,8 @@
       "assets/belarus_topomap_200k.pmtiles",
       "assets/belarus_graph.json",
       "assets/belarus_places.json",
+      "assets/belarus_dem.bin",
+      "assets/fonts/**/*",
       "sidecar-renderer/**/*"
     ],
     "icon": [

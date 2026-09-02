@@ -1,0 +1,35 @@
+[[permission]]
+identifier = "allow-get-elevation-at"
+description = "Allows frontend to query elevation at coordinates"
+
+[permission.commands]
+allow = [
+  "get_elevation_at"
+]
+
+[[permission]]
+identifier = "allow-get-slope-bearing"
+description = "Allows frontend to query slope bearing at coordinates"
+
+[permission.commands]
+allow = [
+  "get_slope_bearing"
+]
+
+[[permission]]
+identifier = "allow-get-elevation-profile"
+description = "Allows frontend to get elevation profile of polyline"
+
+[permission.commands]
+allow = [
+  "get_elevation_profile"
+]
+
+[[permission]]
+identifier = "allow-calculate-viewshed"
+description = "Allows frontend to calculate parallel raycasting viewshed"
+
+[permission.commands]
+allow = [
+  "calculate_viewshed"
+]

@@ -3,6 +3,10 @@ export interface TacticalSymbol {
   name: string;
   symbol: string;
   size?: number;
+  hasPatrol?: boolean;
+  patrolStyle?: 'solid' | 'dashed';
+  patrolLength?: number;
+  patrolAngle?: number;
 }
 
 export interface SymbolCategory {
@@ -485,6 +489,16 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
     name: "Управление, Разведка и Связь",
     symbols: [
       {
+        id: "patrol_pair",
+        name: "Парный патруль",
+        symbol: "patrol_pair",
+        size: 0.08,
+        hasPatrol: true,
+        patrolStyle: "solid",
+        patrolLength: 200,
+        patrolAngle: 0
+      },
+      {
         id: "rknp",
         name: "Район КНП",
         symbol: "rknp",
@@ -670,6 +684,12 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
     id: "medical",
     name: "Медицинские подразделения",
     symbols: [
+      {
+        id: "med_mp",
+        name: "МП",
+        symbol: "med_mp",
+        size: 0.08
+      },
       {
         id: "med_bat",
         name: "Мед. батальон",

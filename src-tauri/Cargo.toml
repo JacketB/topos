@@ -29,3 +29,6 @@ wgpu = "0.19"
 image = { version = "0.25", features = ["png"] }
 tokio = { version = "1.35", features = ["full"] }
 reqwest = { version = "0.11", features = ["json"] }
+rayon = "1.10"
+rstar = "0.12"
+rfd = "0.14"

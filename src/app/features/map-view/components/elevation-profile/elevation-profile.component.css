@@ -86,7 +86,7 @@
 }
 
 .stat-value.highlight {
-  color: #2563eb;
+  color: var(--color-primary, #466bf7);
 }
 
 .stat-value.danger {

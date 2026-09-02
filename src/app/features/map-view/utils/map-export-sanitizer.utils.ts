@@ -1,5 +1,5 @@
 export class MapExportSanitizerUtils {
-  static sanitizeStyleForNative(styleObj: any): any {
+  static sanitizeStyleForNative(styleObj: any, dpiRatio: number = 1.0): any {
     if (!styleObj || !Array.isArray(styleObj.layers)) return styleObj;
     const cloned = structuredClone(styleObj);
 
@@ -12,10 +12,28 @@ export class MapExportSanitizerUtils {
 
       const op = expr[0];
       if (op === 'coalesce') {
-        return expr[1] ? sanitizeExpr(expr[1]) : expr;
+        return ['coalesce', ...expr.slice(1).map((item: any) => sanitizeExpr(item))];
       }
 
       return expr.map((item: any) => sanitizeExpr(item));
+    };
+
+    const scaleNumberOrExpr = (val: any, ratio: number): any => {
+      if (typeof val === 'number') {
+        return val * ratio;
+      }
+      if (Array.isArray(val)) {
+        if (val[0] === 'interpolate' && Array.isArray(val[2]) && val[2][0] === 'zoom') {
+          const clonedArr = [...val];
+          for (let i = 3; i < clonedArr.length; i += 2) {
+            if (typeof clonedArr[i + 1] === 'number') {
+              clonedArr[i + 1] = clonedArr[i + 1] * ratio;
+            }
+          }
+          return clonedArr;
+        }
+      }
+      return val;
     };
 
     for (const layer of cloned.layers) {
@@ -33,6 +51,22 @@ export class MapExportSanitizerUtils {
           delete layer.paint['fill-pattern'];
         }
 
+        if (layer.paint['line-width'] !== undefined) {
+          layer.paint['line-width'] = scaleNumberOrExpr(layer.paint['line-width'], dpiRatio);
+        }
+        if (layer.paint['circle-radius'] !== undefined) {
+          layer.paint['circle-radius'] = scaleNumberOrExpr(layer.paint['circle-radius'], dpiRatio);
+        }
+        if (layer.paint['circle-stroke-width'] !== undefined) {
+          layer.paint['circle-stroke-width'] = scaleNumberOrExpr(layer.paint['circle-stroke-width'], dpiRatio);
+        }
+        if (layer.paint['text-halo-width'] !== undefined) {
+          layer.paint['text-halo-width'] = scaleNumberOrExpr(layer.paint['text-halo-width'], dpiRatio);
+        } else if (layer.type === 'symbol') {
+          layer.paint['text-halo-width'] = 2.0 * dpiRatio;
+          layer.paint['text-halo-color'] = '#ffffff';
+        }
+
         for (const prop of Object.keys(layer.paint)) {
           layer.paint[prop] = sanitizeExpr(layer.paint[prop]);
         }
@@ -43,25 +77,50 @@ export class MapExportSanitizerUtils {
           layer.layout[prop] = sanitizeExpr(layer.layout[prop]);
         }
 
-        if (layer.type === 'symbol' && (layer.id.startsWith('tactical_') || layer.source === 'tactical-symbols')) {
-          if (!layer.layout) layer.layout = {};
-          layer.layout['text-field'] = '{name}';
-          layer.layout['text-font'] = ['Noto Sans Regular'];
-          layer.layout['text-size'] = 16;
-          layer.layout['text-offset'] = [0, 1.8];
-          layer.layout['text-anchor'] = 'top';
-          layer.layout['text-allow-overlap'] = true;
-          layer.layout['text-ignore-placement'] = true;
+        if (layer.type === 'symbol') {
+          if (!layer.layout['text-font'] || (Array.isArray(layer.layout['text-font']) && layer.layout['text-font'].length > 1)) {
+            layer.layout['text-font'] = ['Noto Sans Regular'];
+          }
 
-          if (!layer.paint) layer.paint = {};
-          layer.paint['text-color'] = '#000000';
-          layer.paint['text-halo-color'] = '#ffffff';
-          layer.paint['text-halo-width'] = 4.0;
+          if (layer.id === 'march_places_dots') {
+            layer.layout = layer.layout || {};
+            layer.layout['visibility'] = 'none';
+          } else if (layer.id === 'march_places_labels') {
+            layer.layout['text-size'] = scaleNumberOrExpr(layer.layout['text-size'] || 13, dpiRatio);
+            layer.layout['text-padding'] = 6 * dpiRatio;
+            layer.layout['text-allow-overlap'] = false;
+            layer.layout['text-ignore-placement'] = false;
+            layer.layout['text-anchor'] = ['coalesce', ['get', 'textAnchor'], 'center'];
+            layer.layout['text-offset'] = ['coalesce', ['get', 'textOffset'], ['literal', [0, 0]]];
+          } else if (layer.id === 'place_labels' || layer.source === 'belarus-data' && layer['source-layer'] === 'place') {
+            const marchPlacesSource = cloned.sources?.['march-places'];
+            const hasActiveMarchPlaces = marchPlacesSource?.data?.features && marchPlacesSource.data.features.length > 0;
+            if (hasActiveMarchPlaces) {
+              layer.layout['visibility'] = 'none';
+            } else {
+              layer.layout['text-size'] = [
+                'interpolate', ['linear'], ['zoom'],
+                4, Math.max(8, 6 * dpiRatio),
+                7, Math.max(9, 7.5 * dpiRatio),
+                10, Math.max(11, 9 * dpiRatio),
+                14, Math.max(13, 11 * dpiRatio)
+              ];
+              layer.layout['text-allow-overlap'] = false;
+              layer.layout['text-ignore-placement'] = false;
+              layer.layout['text-padding'] = 2 * dpiRatio;
+            }
+          } else if (layer.layout['text-size'] !== undefined) {
+            layer.layout['text-size'] = scaleNumberOrExpr(layer.layout['text-size'], dpiRatio);
+          }
+
+          if (layer.id.startsWith('tactical_') || layer.source === 'tactical-symbols') {
+            layer.layout['text-field'] = '';
+          }
         }
       }
     }
 
-    cloned.glyphs = 'https://cdn.jsdelivr.net/gh/openmaptiles/fonts@gh-pages/{fontstack}/{range}.pbf';
+    cloned.glyphs = 'http://topos.localhost/fonts/{fontstack}/{range}.pbf';
 
     const baseLayers: any[] = [];
     const overlayLayers: any[] = [];
@@ -77,8 +136,12 @@ export class MapExportSanitizerUtils {
              id.startsWith('viewshed-') || 
              id.startsWith('layer-img-overlay-') ||
              id.startsWith('layer-') ||
+             id.startsWith('march_') ||
              src.startsWith('src-img-overlay-') ||
              src.startsWith('src-') ||
+             src === 'march-places' ||
+             src === 'march-kilometers' ||
+             src === 'playback-source' ||
              type === 'raster' ||
              src === 'tactical-symbols' || 
              src === 'tactical-lines' || 
@@ -103,7 +166,7 @@ export class MapExportSanitizerUtils {
     return cloned;
   }
 
-  static enrichGeoJsonForNative(data: any): any {
+  static enrichGeoJsonForNative(data: any, dpiRatio: number = 1.0): any {
     if (!data || typeof data !== 'object') return data;
     const cloned = structuredClone(data);
 
@@ -123,7 +186,9 @@ export class MapExportSanitizerUtils {
           props.color = props.symbol ? '#ef4444' : '#854d0e';
         }
         if (props.lineWidth === undefined) {
-          props.lineWidth = 3.5;
+          props.lineWidth = 3.5 * dpiRatio;
+        } else if (typeof props.lineWidth === 'number') {
+          props.lineWidth = props.lineWidth * dpiRatio;
         }
         if (props.fillOpacity === undefined) {
           props.fillOpacity = 0.4;
@@ -134,7 +199,7 @@ export class MapExportSanitizerUtils {
     return cloned;
   }
 
-  static enrichFeaturesArrayForNative(features: any[]): any[] {
+  static enrichFeaturesArrayForNative(features: any[], dpiRatio: number = 1.0): any[] {
     if (!Array.isArray(features)) return [];
     return features.map(f => {
       const feat = structuredClone(f);
@@ -142,7 +207,7 @@ export class MapExportSanitizerUtils {
       const props = feat.properties;
 
       if (feat.geometry && feat.geometry.type === 'Point') {
-        props.size = 0.07;
+        props.size = props.symbol === 'text_box' ? 0 : 0.07;
       }
 
       if (props.symbol && !props.iconId) {
@@ -155,7 +220,9 @@ export class MapExportSanitizerUtils {
         props.color = props.symbol ? '#ef4444' : '#854d0e';
       }
       if (props.lineWidth === undefined) {
-        props.lineWidth = 3.5;
+        props.lineWidth = 3.5 * dpiRatio;
+      } else if (typeof props.lineWidth === 'number') {
+        props.lineWidth = props.lineWidth * dpiRatio;
       }
       if (props.fillOpacity === undefined) {
         props.fillOpacity = 0.4;

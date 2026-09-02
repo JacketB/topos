@@ -33,9 +33,16 @@ export class NativeMapExportService {
     imagesJson: string
   ): Promise<string> {
     try {
+      const normalizedBearing = ((params.bearing % 360) + 360) % 360;
+      const clampedPitch = Math.max(0, Math.min(60, params.pitch || 0));
+      const safeParams: NativeMapExportParams = {
+        ...params,
+        bearing: normalizedBearing,
+        pitch: clampedPitch
+      };
       const { invoke } = await import('@tauri-apps/api/core');
       const savedPath = await invoke<string>('export_map_native', {
-        params,
+        params: safeParams,
         styleJson,
         geojsonData,
         imagesJson

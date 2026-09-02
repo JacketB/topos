@@ -74,6 +74,12 @@
               <span class="geodesy-label">Азимут магнитный (&alpha;<sub>m</sub>):</span>
               <span class="geodesy-val">{{ g.bearingMagStr }}</span>
             </div>
+            @if (g.gridBearingStr) {
+              <div class="geodesy-row">
+                <span class="geodesy-label">Дирекционный угол (&alpha;<sub>дир</sub>):</span>
+                <span class="geodesy-val">{{ g.gridBearingStr }}</span>
+              </div>
+            }
             @if (g.areaStr) {
               <div class="geodesy-row area">
                 <span class="geodesy-label">Площадь участка:</span>
@@ -155,14 +161,27 @@
                           (click)="vm.imageOverlayService.setLocked(overlay.id, !overlay.locked)"
                           [title]="overlay.locked ? 'Разблокировать трансформер' : 'Зафиксировать на карте'"
                         >
-                          @if (overlay.locked) { 🔒 } @else { 🔓 }
+                          @if (overlay.locked) {
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                          } @else {
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                              <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                            </svg>
+                          }
                         </button>
                         <button 
                           class="image-overlay-action-btn delete" 
                           (click)="vm.imageOverlayService.removeOverlay(overlay.id)"
                           title="Удалить оверлей"
                         >
-                          🗑
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
                         </button>
                       </div>
                     </div>
@@ -207,8 +226,45 @@
   <!-- Статус бар -->
   <footer class="app-status-bar">
     <div class="status-left">
-      <span class="status-dot" [class.ready]="vm.isAppReady()"></span>
-      <span class="status-text">{{ vm.isAppReady() ? 'Система готова' : 'Инициализация и загрузка карты...' }}</span>
+      <button 
+        type="button" 
+        class="status-project-btn" 
+        (click)="vm.projectManagerService.openProjectModal()" 
+        [title]="'Проект: ' + vm.projectManagerService.currentProject().name + (vm.projectManagerService.currentProject().filePath ? '\nПуть: ' + vm.projectManagerService.currentProject().filePath : '\n(Новый проект, не сохранен на диск)') + '\nКликните для управления проектом'"
+      >
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span class="status-project-name">{{ vm.projectManagerService.currentProject().name }}</span>
+      </button>
+
+      <span class="status-separator"></span>
+
+      @if (vm.projectManagerService.saveStatus(); as s) {
+        <div class="status-save-indicator" [class.saved]="s.state === 'saved'" [class.saving]="s.state === 'saving'" [class.error]="s.state === 'error'">
+          @if (s.state === 'saving') {
+            <svg class="status-spin" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
+          } @else if (s.state === 'saved') {
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          }
+          <span class="status-save-text">{{ s.message }}</span>
+        </div>
+      } @else {
+        <div class="status-ready-indicator">
+          <span class="status-dot" [class.ready]="vm.isAppReady()"></span>
+          <span class="status-text">{{ vm.isAppReady() ? 'Готов' : 'Загрузка...' }}</span>
+        </div>
+      }
     </div>
 
     <div class="status-center">
@@ -248,9 +304,26 @@
     </div>
 
     <div class="status-right">
-      <span class="coords-label">Координаты прицела:</span>
-      <div class="coords-value-wrapper">
-        <span class="coords-value">{{ vm.centerCoords() }}</span>
+      <span class="coords-label">Координаты:</span>
+      <button 
+        type="button" 
+        class="coords-format-badge" 
+        (click)="vm.cycleCoordinateFormat()" 
+        [title]="'Текущая система координат: ' + vm.coordConverterService.getFormatLabel() + '.\nНажмите для переключения формата (СК-42 X/Y, СК-42 Лист, WGS-84 ГМС, WGS-84 Градусы, СК-42 Геодезич.)'"
+      >
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        <span>{{ vm.coordConverterService.currentFormat() === 'SK42_RECTANGULAR' ? 'СК-42 X/Y' : (vm.coordConverterService.currentFormat() === 'SK42_TACTICAL' ? 'СК-42 Лист' : (vm.coordConverterService.currentFormat() === 'WGS84_DMS' ? 'ГМС' : (vm.coordConverterService.currentFormat() === 'WGS84_DECIMAL' ? 'WGS-84' : 'СК-42 BL'))) }}</span>
+      </button>
+      <div 
+        class="coords-value-box" 
+        (click)="vm.cycleCoordinateFormat()" 
+        [title]="'Кликните для переключения формата координат.\n' + vm.coordinateDetails().gaussKruger.formattedX + '\n' + vm.coordinateDetails().gaussKruger.formattedY + '\nЛист: ' + vm.coordinateDetails().topoSheet.sheet50k + '\nWGS-84: ' + vm.coordinateDetails().wgs84Dms"
+      >
+        <span class="coords-value-text">{{ vm.cursorCoords() }}</span>
       </div>
     </div>
   </footer>
@@ -262,6 +335,10 @@
 <!-- Модальное окно планировщика Ганта фортификации -->
 @if (vm.isFortPlannerOpen()) {
   <app-fortification-planner style="display: contents;" />
+}
+
+@if (vm.isEngineeringCalcOpen()) {
+  <app-engineering-calculator-modal style="display: contents;" />
 }
 
 <!-- Оверлей экспорта фрагмента карты -->

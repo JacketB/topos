@@ -210,10 +210,31 @@ export class TacticalAnalyticsService {
     });
   }
 
-  private calculateAndRenderViewshed(center: [number, number], map: maplibregl.Map) {
+  private async calculateAndRenderViewshed(center: [number, number], map: maplibregl.Map) {
     if (!map || !map.isStyleLoaded()) return;
     const source = map.getSource('viewshed-data') as maplibregl.GeoJSONSource;
     if (!source) return;
+
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const viewshedGeoJson = await invoke<any>('calculate_viewshed', {
+        center,
+        observer_height_m: this.observerHeightM(),
+        observerHeightM: this.observerHeightM(),
+        target_height_m: this.targetHeightM(),
+        targetHeightM: this.targetHeightM(),
+        max_radius_m: this.maxRadiusM(),
+        maxRadiusM: this.maxRadiusM(),
+        num_rays: 180,
+        numRays: 180,
+        steps_per_ray: 30,
+        stepsPerRay: 30,
+      });
+      if (viewshedGeoJson && viewshedGeoJson.features) {
+        source.setData(viewshedGeoJson);
+        return;
+      }
+    } catch {}
 
     const baseElev = this.terrainService.getElevationAt(center[0], center[1]) || 150;
     const obsTotalElev = baseElev + this.observerHeightM();

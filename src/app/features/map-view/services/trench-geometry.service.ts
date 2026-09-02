@@ -54,24 +54,275 @@ export class TrenchGeometryService {
     return result;
   }
 
-  /**
-   * Генерирует MultiLineString с осью и зубцами/штриховкой для траншеи (МО СССР 1984),
-   * открытых и перекрытых ходов сообщения или крестиками для проволочного заграждения с коррекцией проекции Меркатора.
-   * Опционально выполняет сглаживание линии по алгоритму Catmull-Rom.
-   */
-  generateLinearGeometry(origCoords: [number, number][], lineType: TacticalLineType, flipSide: boolean = false, isSmooth: boolean = false, lineWidth: number = 3): any {
+  interpolateClosedCatmullRom(points: [number, number][], pointsPerSegment: number = 10): [number, number][] {
+    const n = points.length;
+    if (n < 3) return points;
+
+    const result: [number, number][] = [];
+
+    for (let i = 0; i < n; i++) {
+      const p0 = points[(i - 1 + n) % n];
+      const p1 = points[i];
+      const p2 = points[(i + 1) % n];
+      const p3 = points[(i + 2) % n];
+
+      for (let j = 0; j < pointsPerSegment; j++) {
+        const t = j / pointsPerSegment;
+        const t2 = t * t;
+        const t3 = t2 * t;
+
+        const x = 0.5 * (
+          (2 * p1[0]) +
+          (-p0[0] + p2[0]) * t +
+          (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 +
+          (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3
+        );
+
+        const y = 0.5 * (
+          (2 * p1[1]) +
+          (-p0[1] + p2[1]) * t +
+          (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 +
+          (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3
+        );
+
+        result.push([x, y]);
+      }
+    }
+
+    return result;
+  }
+
+  calculateLineLengthKm(coords: [number, number][]): { lengthM: number; lengthKm: number } {
+    if (!coords || coords.length < 2) return { lengthM: 0, lengthKm: 0 };
+    let totalM = 0;
+    const n = coords.length;
+    let meanLat = 0;
+    for (let i = 0; i < n; i++) meanLat += coords[i][1];
+    meanLat = (meanLat / n) * (Math.PI / 180);
+    const cosLat = Math.cos(meanLat);
+    const mPerDegLat = 111132.954 - 559.822 * Math.cos(2 * meanLat);
+    const mPerDegLng = 111412.84 * cosLat - 93.5 * Math.cos(3 * meanLat);
+
+    for (let i = 0; i < n - 1; i++) {
+      const dx = (coords[i + 1][0] - coords[i][0]) * mPerDegLng;
+      const dy = (coords[i + 1][1] - coords[i][1]) * mPerDegLat;
+      totalM += Math.sqrt(dx * dx + dy * dy);
+    }
+    return { lengthM: totalM, lengthKm: totalM / 1000 };
+  }
+
+  getPolylineCumulativeDists(points: [number, number][]): { cum: number[]; cosLat: number } {
+    const n = points.length;
+    if (n < 2) return { cum: [0], cosLat: 1 };
+    let meanLat = 0;
+    for (let i = 0; i < n; i++) meanLat += points[i][1];
+    meanLat = (meanLat / n) * (Math.PI / 180);
+    const cosLat = Math.cos(meanLat);
+    const cum = [0];
+    for (let i = 0; i < n - 1; i++) {
+      const dx = (points[i + 1][0] - points[i][0]) * cosLat;
+      const dy = points[i + 1][1] - points[i][1];
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      cum.push(cum[cum.length - 1] + dist);
+    }
+    return { cum, cosLat };
+  }
+
+  getPointAtDistance(points: [number, number][], targetDist: number, cum: number[], cosLat: number): [number, number] {
+    if (targetDist <= 0) return points[0];
+    if (targetDist >= cum[cum.length - 1]) return points[points.length - 1];
+    for (let i = 0; i < cum.length - 1; i++) {
+      if (cum[i] <= targetDist && targetDist <= cum[i + 1]) {
+        const segLen = cum[i + 1] - cum[i];
+        if (segLen <= 0) return points[i];
+        const ratio = (targetDist - cum[i]) / segLen;
+        const x = points[i][0] + (points[i + 1][0] - points[i][0]) * ratio;
+        const y = points[i][1] + (points[i + 1][1] - points[i][1]) * ratio;
+        return [x, y];
+      }
+    }
+    return points[points.length - 1];
+  }
+
+  discretizeToDashes(points: [number, number][], dashLen: number = 0.00014, gapLen: number = 0.00009): [number, number][][] {
+    if (!points || points.length < 2) return [points || []];
+    const { cum, cosLat } = this.getPolylineCumulativeDists(points);
+    const totalLen = cum[cum.length - 1];
+    if (totalLen <= 0) return [points];
+    const res: [number, number][][] = [];
+    let cur = 0;
+    while (cur < totalLen) {
+      const dEnd = Math.min(totalLen, cur + dashLen);
+      const pStart = this.getPointAtDistance(points, cur, cum, cosLat);
+      const pEnd = this.getPointAtDistance(points, dEnd, cum, cosLat);
+      const segPts: [number, number][] = [pStart];
+      for (let i = 0; i < cum.length; i++) {
+        if (cur < cum[i] && cum[i] < dEnd) {
+          segPts.push(points[i]);
+        }
+      }
+      segPts.push(pEnd);
+      res.push(segPts);
+      cur += dashLen + gapLen;
+    }
+    return res.length > 0 ? res : [points];
+  }
+
+  discretizeToDashDot(points: [number, number][], dashLen: number = 0.00065, dotLen: number = 0.00012, gapLen: number = 0.00025): [number, number][][] {
+    if (!points || points.length < 2) return [points || []];
+    const { cum, cosLat } = this.getPolylineCumulativeDists(points);
+    const totalLen = cum[cum.length - 1];
+    if (totalLen <= 0) return [points];
+    const res: [number, number][][] = [];
+    let cur = 0;
+    while (cur < totalLen) {
+      const pDashStart = this.getPointAtDistance(points, cur, cum, cosLat);
+      const pDashEnd = this.getPointAtDistance(points, Math.min(totalLen, cur + dashLen), cum, cosLat);
+      res.push([pDashStart, pDashEnd]);
+      cur += dashLen + gapLen;
+      if (cur >= totalLen) break;
+
+      const pDotStart = this.getPointAtDistance(points, cur, cum, cosLat);
+      const pDotEnd = this.getPointAtDistance(points, Math.min(totalLen, cur + dotLen), cum, cosLat);
+      res.push([pDotStart, pDotEnd]);
+      cur += dotLen + gapLen;
+    }
+    return res.length > 0 ? res : [points];
+  }
+
+  offsetPolyline(points: [number, number][], offsetDist: number): [number, number][] {
+    if (!points || points.length < 2) return points || [];
+    const n = points.length;
+    const res: [number, number][] = [];
+    let meanLat = 0;
+    for (let i = 0; i < n; i++) meanLat += points[i][1];
+    meanLat = (meanLat / n) * (Math.PI / 180);
+    const cosLat = Math.cos(meanLat);
+
+    for (let i = 0; i < n; i++) {
+      const p = points[i];
+      let dx = 0;
+      let dy = 0;
+      if (i === 0) {
+        dx = (points[1][0] - p[0]) * cosLat;
+        dy = points[1][1] - p[1];
+      } else if (i === n - 1) {
+        dx = (p[0] - points[n - 2][0]) * cosLat;
+        dy = p[1] - points[n - 2][1];
+      } else {
+        dx = (points[i + 1][0] - points[i - 1][0]) * cosLat;
+        dy = points[i + 1][1] - points[i - 1][1];
+      }
+      const length = Math.sqrt(dx * dx + dy * dy);
+      if (length === 0) {
+        res.push(p);
+        continue;
+      }
+      const nx = -dy / length;
+      const ny = dx / length;
+      res.push([p[0] + (nx / cosLat) * offsetDist, p[1] + ny * offsetDist]);
+    }
+    return res;
+  }
+
+  calculatePolygonAreaAndPerimeter(coords: [number, number][]): { areaM2: number; areaHa: number; areaKm2: number; perimeterKm: number } {
+    if (!coords || coords.length < 3) {
+      return { areaM2: 0, areaHa: 0, areaKm2: 0, perimeterKm: 0 };
+    }
+
+    const n = coords.length;
+    let meanLat = 0;
+    for (let i = 0; i < n; i++) meanLat += coords[i][1];
+    meanLat = (meanLat / n) * (Math.PI / 180);
+    const cosLat = Math.cos(meanLat);
+
+    const mPerDegLat = 111132.954 - 559.822 * Math.cos(2 * meanLat);
+    const mPerDegLng = 111412.84 * cosLat - 93.5 * Math.cos(3 * meanLat);
+
+    let areaSum = 0;
+    let perimeterM = 0;
+
+    for (let i = 0; i < n; i++) {
+      const p1 = coords[i];
+      const p2 = coords[(i + 1) % n];
+
+      const x1 = p1[0] * mPerDegLng;
+      const y1 = p1[1] * mPerDegLat;
+      const x2 = p2[0] * mPerDegLng;
+      const y2 = p2[1] * mPerDegLat;
+
+      areaSum += (x1 * y2 - x2 * y1);
+
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      perimeterM += Math.sqrt(dx * dx + dy * dy);
+    }
+
+    const areaM2 = Math.abs(areaSum) * 0.5;
+    const areaHa = areaM2 / 10000;
+    const areaKm2 = areaM2 / 1000000;
+    const perimeterKm = perimeterM / 1000;
+
+    return { areaM2, areaHa, areaKm2, perimeterKm };
+  }
+
+  generateAreaPolygonGeometry(origCoords: [number, number][], isSmooth: boolean = false): any {
+    if (!origCoords || origCoords.length < 3) {
+      return { type: 'Polygon', coordinates: [origCoords ? [...origCoords, origCoords[0] || [0, 0]] : []] };
+    }
+
+    const baseCoords = (isSmooth && origCoords.length >= 3)
+      ? this.interpolateClosedCatmullRom(origCoords, 10)
+      : origCoords;
+
+    const ring = [...baseCoords, baseCoords[0]];
+    return {
+      type: 'Polygon',
+      coordinates: [ring]
+    };
+  }
+
+  generateLinearGeometry(origCoords: [number, number][], lineType: TacticalLineType, flipSide: boolean = false, isSmooth: boolean = false, lineWidth: number = 3, lineStyle: string = 'solid'): any {
     if (!origCoords || origCoords.length < 2) {
       return { type: 'LineString', coordinates: origCoords || [] };
+    }
+
+    if (lineType === 'area_polygon' || lineType === 'area') {
+      return this.generateAreaPolygonGeometry(origCoords, isSmooth);
     }
 
     if (lineType && lineType.startsWith('arrow_')) {
       return this.generateArrowGeometry(origCoords, lineType, isSmooth, lineWidth);
     }
 
-    // Применяем сглаживание Catmull-Rom, если установлен флаг и точек достаточно для кривой
     const activeCoords = (isSmooth && origCoords.length >= 3)
       ? this.interpolateCatmullRom(origCoords, 12)
       : origCoords;
+
+    if (lineType === 'simple_line' || lineType === 'line') {
+      if (lineStyle === 'dashed') {
+        const dashes = this.discretizeToDashes(activeCoords, 0.00045, 0.0003);
+        return { type: 'MultiLineString', coordinates: dashes };
+      }
+      if (lineStyle === 'dashdot') {
+        const dashDots = this.discretizeToDashDot(activeCoords, 0.00065, 0.00012, 0.00025);
+        return { type: 'MultiLineString', coordinates: dashDots };
+      }
+      if (lineStyle === 'double_solid') {
+        const d = Math.max(0.000035, lineWidth * 0.00002);
+        const left = this.offsetPolyline(activeCoords, d);
+        const right = this.offsetPolyline(activeCoords, -d);
+        return { type: 'MultiLineString', coordinates: [left, right] };
+      }
+      if (lineStyle === 'double_solid_dashed') {
+        const d = Math.max(0.000035, lineWidth * 0.00002);
+        const left = this.offsetPolyline(activeCoords, d);
+        const right = this.offsetPolyline(activeCoords, -d);
+        const rightDashes = this.discretizeToDashes(right, 0.00045, 0.0003);
+        return { type: 'MultiLineString', coordinates: [left, ...rightDashes] };
+      }
+      return { type: 'LineString', coordinates: activeCoords };
+    }
 
     const lines: [number, number][][] = [activeCoords];
 
@@ -182,21 +433,21 @@ export class TrenchGeometryService {
       }
     }
 
-    // Для остальных типов с повторяющимися элементами по всей длине (trench, wire)
-    if (lineType === 'trench' || lineType === 'wire') {
-      // Шаг вдоль линии (в градусах, где 0.00009 градусов ≈ 10 метров)
-      let step = 0.00018; // ~20 метров для колючей проволоки
-      if (lineType === 'trench') step = 0.00009; // ровно 10 метров по ТЗ (одна ресничка на 10 м)
+    if (['trench', 'wire', 'ditch_pt', 'escarp', 'counterscarp', 'abatis'].includes(lineType)) {
+      let step = 0.00018;
+      if (lineType === 'trench') step = 0.00009;
+      else if (lineType === 'ditch_pt') step = 0.00012;
+      else if (lineType === 'escarp' || lineType === 'counterscarp') step = 0.00010;
+      else if (lineType === 'abatis') step = 0.00015;
 
-      // Длина штриха/зубца
       let toothLen = 0.00009;
       if (lineType === 'trench') toothLen = 0.000035;
       else if (lineType === 'wire') toothLen = 0.000028;
+      else if (lineType === 'ditch_pt') toothLen = 0.000045;
+      else if (lineType === 'escarp' || lineType === 'counterscarp') toothLen = 0.000040;
+      else if (lineType === 'abatis') toothLen = 0.000035;
 
       const sideMult = flipSide ? -1 : 1;
-      
-      // Накопленное расстояние от последней поставленной реснички (в градусах Меркатора)
-      // Инициализируем значением step, чтобы первая ресничка гарантированно рисовалась в самом начале линии
       let distanceSinceLastTooth = step;
 
       for (let i = 0; i < activeCoords.length - 1; i++) {
@@ -218,20 +469,22 @@ export class TrenchGeometryService {
         const dLng = (nxM * toothLen) / (cosLat || 1);
         const dLat = nyM * toothLen;
 
-        let currentT = 0; // Локальный параметр интерполяции на сегменте (от 0 до 1)
+        const tangentLng = ((dxM / segmentDist) * toothLen) / (cosLat || 1);
+        const tangentLat = (dyM / segmentDist) * toothLen;
+
+        let currentT = 0;
 
         while (currentT < 1) {
           const neededDist = step - distanceSinceLastTooth;
           const remainingSegmentDist = segmentDist * (1 - currentT);
 
           if (remainingSegmentDist >= neededDist) {
-            // Точка расстановки находится внутри текущего сегмента
             if (segmentDist > 0) {
               currentT += neededDist / segmentDist;
             } else {
               currentT = 1;
             }
-            distanceSinceLastTooth = 0; // Сбрасываем накопленный шаг
+            distanceSinceLastTooth = 0;
 
             const cx = p1[0] + dx * currentT;
             const cy = p1[1] + dy * currentT;
@@ -251,11 +504,37 @@ export class TrenchGeometryService {
                 [cx - halfLng - dLng, cy - halfLat - dLat],
                 [cx + halfLng + dLng, cy + halfLat + dLat]
               ]);
+            } else if (lineType === 'ditch_pt') {
+              lines.push([
+                [cx - tangentLng * 0.5, cy - tangentLat * 0.5],
+                [cx + dLng, cy + dLat]
+              ]);
+              lines.push([
+                [cx + dLng, cy + dLat],
+                [cx + tangentLng * 0.5, cy + tangentLat * 0.5]
+              ]);
+            } else if (lineType === 'escarp') {
+              lines.push([[cx, cy], [cx + dLng, cy + dLat]]);
+              lines.push([
+                [cx + dLng - tangentLng * 0.4, cy + dLat - tangentLat * 0.4],
+                [cx + dLng + tangentLng * 0.4, cy + dLat + tangentLat * 0.4]
+              ]);
+            } else if (lineType === 'counterscarp') {
+              lines.push([[cx, cy], [cx - dLng, cy - dLat]]);
+              lines.push([
+                [cx - dLng - tangentLng * 0.4, cy - dLat - tangentLat * 0.4],
+                [cx - dLng + tangentLng * 0.4, cy - dLat + tangentLat * 0.4]
+              ]);
+            } else if (lineType === 'abatis') {
+              lines.push([[cx - dLng * 0.7, cy - dLat * 0.7], [cx + dLng * 0.7, cy + dLat * 0.7]]);
+              lines.push([
+                [cx - tangentLng * 0.6 + dLng * 0.4, cy - tangentLat * 0.6 + dLat * 0.4],
+                [cx + tangentLng * 0.6 - dLng * 0.4, cy + tangentLat * 0.6 - dLat * 0.4]
+              ]);
             }
           } else {
-            // Текущий сегмент заканчивается раньше, чем накопится необходимый шаг
             distanceSinceLastTooth += remainingSegmentDist;
-            currentT = 1.0; // Переходим к следующему сегменту
+            currentT = 1.0;
           }
         }
       }
@@ -485,6 +764,134 @@ export class TrenchGeometryService {
       type: 'Polygon',
       coordinates: [polygonCoords]
     };
+  }
+
+  generatePatrolGeometry(
+    center: [number, number],
+    angleDeg: number = 0,
+    lengthM: number = 400,
+    radiusM: number = 25,
+    isDashed: boolean = false
+  ): [number, number][][] {
+    const centerLng = center[0];
+    const centerLat = center[1];
+    const latRad = (centerLat * Math.PI) / 180;
+    const mPerLat = 111320.0;
+    const mPerLng = 111320.0 * Math.cos(latRad);
+
+    const alpha = (angleDeg * Math.PI) / 180;
+    const uX = Math.sin(alpha);
+    const uY = Math.cos(alpha);
+    const vX = Math.cos(alpha);
+    const vY = -Math.sin(alpha);
+
+    const d0 = 15.0;
+    const L = lengthM;
+    const R = Math.max(16.0, Math.min(32.0, radiusM || L * 0.08));
+    const lTail = Math.max(25.0, Math.min(50.0, L * 0.12));
+    const W = Math.max(14.0, Math.min(22.0, R * 0.85));
+    const wingAngle = (25 * Math.PI) / 180;
+
+    const toLngLat = (xM: number, yM: number): [number, number] => [
+      centerLng + xM / mPerLng,
+      centerLat + yM / mPerLat
+    ];
+
+    const p1StartX = d0 * uX;
+    const p1StartY = d0 * uY;
+    const p1TurnX = p1StartX + L * uX;
+    const p1TurnY = p1StartY + L * uY;
+
+    const c1X = p1TurnX + R * vX;
+    const c1Y = p1TurnY + R * vY;
+
+    const branch1Pts: [number, number][] = [toLngLat(p1StartX, p1StartY), toLngLat(p1TurnX, p1TurnY)];
+    const steps = 16;
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      const ptX = c1X - R * vX * Math.cos(Math.PI * t) + R * uX * Math.sin(Math.PI * t);
+      const ptY = c1Y - R * vY * Math.cos(Math.PI * t) + R * uY * Math.sin(Math.PI * t);
+      branch1Pts.push(toLngLat(ptX, ptY));
+    }
+
+    const p1ArcEndX = c1X + R * vX;
+    const p1ArcEndY = c1Y + R * vY;
+    const p1EndX = p1ArcEndX - lTail * uX;
+    const p1EndY = p1ArcEndY - lTail * uY;
+    branch1Pts.push(toLngLat(p1EndX, p1EndY));
+
+    const w1Cos = W * Math.cos(wingAngle);
+    const w1Sin = W * Math.sin(wingAngle);
+
+    const arrow1Left: [number, number] = toLngLat(
+      p1EndX + w1Cos * uX + w1Sin * vX,
+      p1EndY + w1Cos * uY + w1Sin * vY
+    );
+    const arrow1Right: [number, number] = toLngLat(
+      p1EndX + w1Cos * uX - w1Sin * vX,
+      p1EndY + w1Cos * uY - w1Sin * vY
+    );
+    const p1EndLngLat = toLngLat(p1EndX, p1EndY);
+
+    const arrow1WingL: [number, number][] = [arrow1Left, p1EndLngLat];
+    const arrow1WingR: [number, number][] = [arrow1Right, p1EndLngLat];
+
+    const p2StartX = -d0 * uX;
+    const p2StartY = -d0 * uY;
+    const p2TurnX = p2StartX - L * uX;
+    const p2TurnY = p2StartY - L * uY;
+
+    const c2X = p2TurnX - R * vX;
+    const c2Y = p2TurnY - R * vY;
+
+    const branch2Pts: [number, number][] = [toLngLat(p2StartX, p2StartY), toLngLat(p2TurnX, p2TurnY)];
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      const ptX = c2X + R * vX * Math.cos(Math.PI * t) - R * uX * Math.sin(Math.PI * t);
+      const ptY = c2Y + R * vY * Math.cos(Math.PI * t) - R * uY * Math.sin(Math.PI * t);
+      branch2Pts.push(toLngLat(ptX, ptY));
+    }
+
+    const p2ArcEndX = c2X - R * vX;
+    const p2ArcEndY = c2Y - R * vY;
+    const p2EndX = p2ArcEndX + lTail * uX;
+    const p2EndY = p2ArcEndY + lTail * uY;
+    branch2Pts.push(toLngLat(p2EndX, p2EndY));
+
+    const arrow2Left: [number, number] = toLngLat(
+      p2EndX - w1Cos * uX + w1Sin * vX,
+      p2EndY - w1Cos * uY + w1Sin * vY
+    );
+    const arrow2Right: [number, number] = toLngLat(
+      p2EndX - w1Cos * uX - w1Sin * vX,
+      p2EndY - w1Cos * uY - w1Sin * vY
+    );
+    const p2EndLngLat = toLngLat(p2EndX, p2EndY);
+
+    const arrow2WingL: [number, number][] = [arrow2Left, p2EndLngLat];
+    const arrow2WingR: [number, number][] = [arrow2Right, p2EndLngLat];
+
+    if (isDashed) {
+      const dashed1 = this.discretizeToDashes(branch1Pts, 0.00012, 0.00008);
+      const dashed2 = this.discretizeToDashes(branch2Pts, 0.00012, 0.00008);
+      return [
+        ...dashed1,
+        arrow1WingL,
+        arrow1WingR,
+        ...dashed2,
+        arrow2WingL,
+        arrow2WingR
+      ];
+    } else {
+      return [
+        branch1Pts,
+        arrow1WingL,
+        arrow1WingR,
+        branch2Pts,
+        arrow2WingL,
+        arrow2WingR
+      ];
+    }
   }
 }
 

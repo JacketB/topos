@@ -8,13 +8,31 @@
         </svg>
         Схема походного порядка и оперативно-тактический расчет марша
       </span>
-      <button class="mo-close-btn" (click)="vm.toggleMarchOrder()">✕</button>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="export-excel-btn" (click)="exportToExcel()" title="Экспорт расчета марша в Excel (.xlsx)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="8" y1="13" x2="16" y2="13"></line>
+            <line x1="8" y1="17" x2="16" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          Экспорт в Excel
+        </button>
+        <button class="mo-close-btn" (click)="vm.toggleMarchOrder()">✕</button>
+      </div>
     </div>
 
     <div class="mo-body">
       @let res = advancedResult();
 
-      <div style="background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+      <div style="background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
+          <div style="font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Личный состав</div>
+          <div style="font-size: 16px; font-weight: 800; color: #7c3aed; margin-top: 2px;">{{ res.totalManpower }} <span style="font-size: 10px; color: #64748b;">чел.</span></div>
+          <div style="font-size: 9px; color: #64748b; margin-top: 2px;">О: {{ res.totalOfficers }} | С: {{ res.totalSergeants }} | Р: {{ res.totalSoldiers }}</div>
+        </div>
+
         <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
           <div style="font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Всего техники</div>
           <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 2px;">{{ res.totalVehicles }} <span style="font-size: 10px; color: #64748b;">ед.</span></div>
@@ -23,7 +41,7 @@
 
         <div style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
           <div style="font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Исходный Рубеж (ИР)</div>
-          <div style="font-size: 16px; font-weight: 800; color: #2563eb; margin-top: 2px;">{{ res.irDistanceKm }} <span style="font-size: 10px; color: #64748b;">км</span></div>
+          <div style="font-size: 16px; font-weight: 800; color: var(--color-primary, #466bf7); margin-top: 2px;">{{ res.irDistanceKm }} <span style="font-size: 10px; color: #64748b;">км</span></div>
           <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Выход к ИР: {{ res.timeToIrMin | number:'1.1-1' }} мин</div>
         </div>
 
@@ -79,13 +97,13 @@
       <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
         <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center;">
           <span>Схема движения походной колонны (Голова колонны слева)</span>
-          <span style="font-weight: 600; color: #2563eb; text-transform: none;">Всего сил: {{ vm.marchOrderElements().length }} подр.</span>
+          <span style="font-weight: 600; color: var(--color-primary, #466bf7); text-transform: none;">Всего сил: {{ vm.marchOrderElements().length }} подр.</span>
         </div>
 
         <div style="display: flex; align-items: center; overflow-x: auto; padding: 10px 4px; min-height: 90px; scrollbar-width: thin;">
           <div style="display: flex; flex-direction: column; align-items: center; min-width: 80px; justify-content: center; border-right: 2px dashed #cbd5e1; padding-right: 12px; margin-right: 8px;">
-            <span style="font-size: 10px; font-weight: 700; color: #2563eb; text-transform: uppercase;">Движение</span>
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 4px;">
+            <span style="font-size: 10px; font-weight: 700; color: var(--color-primary, #466bf7); text-transform: uppercase;">Движение</span>
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary, #466bf7); margin-top: 4px;">
               <line x1="19" y1="12" x2="5" y2="12"></line>
               <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
@@ -93,24 +111,26 @@
 
           @for (el of vm.marchOrderElements(); track el.id; let idx = $index; let last = $last) {
             <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-              <div style="background-color: white; border: 1.5px solid #2563eb; border-radius: 6px; padding: 8px 12px; width: 190px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 3px; position: relative;">
+              <div style="background-color: white; border: 1.5px solid var(--color-primary, #466bf7); border-radius: 6px; padding: 8px 12px; width: 190px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 3px; position: relative;">
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <img [src]="'symbols/' + el.icon + '.svg'" alt="" style="width: 20px; height: 20px; object-fit: contain;" />
                   <span style="font-size: 11px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 140px;" [title]="el.name">
                     {{ el.name }}
                   </span>
                 </div>
-                <div style="font-size: 9px; color: #64748b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [title]="el.composition">
-                  {{ el.composition }}
-                </div>
-                <div style="font-size: 9px; color: #3b82f6; font-weight: 600; display: flex; justify-content: space-between;">
+                @if (el.composition) {
+                  <div style="font-size: 9px; color: #64748b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [title]="el.composition">
+                    {{ el.composition }}
+                  </div>
+                }
+                <div style="font-size: 9px; color: var(--color-primary, #466bf7); font-weight: 600; display: flex; justify-content: space-between;">
                   <span>Техника: {{ el.vehicleCount }} ед.</span>
                   <span>(дист. {{ el.vehicleDistance }}{{ el.vehicleDistanceUnit }})</span>
                 </div>
                 <div style="font-size: 9px; color: #10b981; font-weight: 700; border-top: 1px dashed #e2e8f0; padding-top: 2px; text-align: right;">
                   Глубина: {{ vm.getMarchOrderUnitLengthKm(el) * 1000 | number:'1.0-0' }} м
                 </div>
-                <span style="position: absolute; top: -6px; left: -6px; background-color: #2563eb; color: white; font-size: 8px; font-weight: 800; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">
+                <span style="position: absolute; top: -6px; left: -6px; background-color: var(--color-primary, #466bf7); color: white; font-size: 8px; font-weight: 800; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">
                   {{ idx + 1 }}
                 </span>
               </div>
@@ -144,15 +164,16 @@
 
         <div style="display: flex; flex-direction: column; width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background-color: white;">
           <div style="display: flex; background-color: #f1f5f9; color: #475569; font-weight: 700; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; user-select: none;">
-            <div style="width: 60px; text-align: center; flex-shrink: 0;">Порядок</div>
-            <div style="flex: 1.5; min-width: 120px; padding-left: 10px;">Подразделение</div>
-            <div style="width: 110px; flex-shrink: 0;">Иконка</div>
-            <div style="width: 90px; flex-shrink: 0; text-align: center;">Техника (ед)</div>
-            <div style="width: 80px; flex-shrink: 0; text-align: center;">Дл. техн (м)</div>
-            <div style="width: 120px; flex-shrink: 0; text-align: center;">Дист. внутри</div>
-            <div style="width: 80px; flex-shrink: 0; text-align: right;">Глубина</div>
-            <div style="width: 130px; text-align: right; padding-right: 15px; flex-shrink: 0;">Дист. до след.</div>
-            <div style="width: 80px; text-align: center; flex-shrink: 0;">Действия</div>
+            <div style="width: 50px; text-align: center; flex-shrink: 0;">Порядок</div>
+            <div style="flex: 1.3; min-width: 110px; padding-left: 8px;">Подразделение</div>
+            <div style="width: 100px; flex-shrink: 0;">Иконка</div>
+            <div style="width: 140px; flex-shrink: 0; text-align: center;">Л/с (О / С / Р / Все)</div>
+            <div style="width: 75px; flex-shrink: 0; text-align: center;">Техника (ед)</div>
+            <div style="width: 75px; flex-shrink: 0; text-align: center;">Дл. техн (м)</div>
+            <div style="width: 110px; flex-shrink: 0; text-align: center;">Дист. внутри</div>
+            <div style="width: 75px; flex-shrink: 0; text-align: right;">Глубина</div>
+            <div style="width: 120px; text-align: right; padding-right: 12px; flex-shrink: 0;">Дист. до след.</div>
+            <div style="width: 70px; text-align: center; flex-shrink: 0;">Действия</div>
           </div>
 
           <div 
@@ -165,12 +186,12 @@
                 cdkDrag
                 style="display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; background-color: white; transition: background-color 0.15s ease;"
               >
-                <div style="width: 60px; display: flex; align-items: center; justify-content: center; gap: 4px; user-select: none; flex-shrink: 0;">
+                <div style="width: 50px; display: flex; align-items: center; justify-content: center; gap: 4px; user-select: none; flex-shrink: 0;">
                   <span cdkDragHandle style="color: #94a3b8; font-weight: 700; font-size: 13px; cursor: grab;" title="Перетащите для изменения порядка">⋮⋮</span>
                   <span style="font-size: 10px; font-weight: 700; color: #64748b;">#{{ idx + 1 }}</span>
                 </div>
 
-                <div style="flex: 1.5; min-width: 120px; padding-left: 10px;">
+                <div style="flex: 1.3; min-width: 110px; padding-left: 8px;">
                   <input 
                     type="text" 
                     class="vs-input" 
@@ -180,12 +201,12 @@
                   />
                 </div>
 
-                <div style="width: 110px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <div style="width: 100px; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
                   <img [src]="'symbols/' + el.icon + '.svg'" alt="" style="width: 18px; height: 18px; object-fit: contain;" />
                   <select 
                     [value]="el.icon" 
                     (change)="onMarchOrderIconChange(el.id, $event)"
-                    style="font-size: 10px; padding: 2px; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; background: white; width: 75px;"
+                    style="font-size: 10px; padding: 2px; border-radius: 4px; border: 1px solid #cbd5e1; outline: none; background: white; width: 68px;"
                   >
                     <option value="bmp_svoy1">БМП</option>
                     <option value="btr_svoy1">БТР</option>
@@ -201,24 +222,57 @@
                   </select>
                 </div>
 
-                <div style="width: 90px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <div style="width: 140px; display: flex; align-items: center; justify-content: center; gap: 3px; flex-shrink: 0;">
+                  <input 
+                    type="number" 
+                    class="vs-input" 
+                    [value]="el.officersCount || 0" 
+                    (input)="onMarchOrderPersonnelChange(el.id, 'officersCount', $event)"
+                    style="width: 26px; font-size: 10px; padding: 2px 2px; text-align: center;"
+                    title="Офицеры"
+                    min="0"
+                  />
+                  <input 
+                    type="number" 
+                    class="vs-input" 
+                    [value]="el.sergeantsCount || 0" 
+                    (input)="onMarchOrderPersonnelChange(el.id, 'sergeantsCount', $event)"
+                    style="width: 26px; font-size: 10px; padding: 2px 2px; text-align: center;"
+                    title="Сержанты"
+                    min="0"
+                  />
+                  <input 
+                    type="number" 
+                    class="vs-input" 
+                    [value]="el.soldiersCount || 0" 
+                    (input)="onMarchOrderPersonnelChange(el.id, 'soldiersCount', $event)"
+                    style="width: 30px; font-size: 10px; padding: 2px 2px; text-align: center;"
+                    title="Солдаты / Рядовые"
+                    min="0"
+                  />
+                  <span style="font-size: 9.5px; font-weight: 700; color: #7c3aed; background-color: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 4px; padding: 1px 3px; min-width: 20px; text-align: center;" title="Всего л/с">
+                    {{ (el.officersCount || 0) + (el.sergeantsCount || 0) + (el.soldiersCount || 0) }}
+                  </span>
+                </div>
+
+                <div style="width: 75px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                   <input 
                     type="number" 
                     class="vs-input" 
                     [value]="el.vehicleCount" 
                     (input)="onMarchOrderVehicleCountChange(el.id, $event)"
-                    style="width: 50px; font-size: 11px; padding: 3px 6px; text-align: center;"
+                    style="width: 44px; font-size: 11px; padding: 3px 4px; text-align: center;"
                     min="1"
                   />
                 </div>
 
-                <div style="width: 80px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <div style="width: 75px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                   <input 
                     type="number" 
                     class="vs-input" 
                     [value]="el.vehicleLength" 
                     (input)="onMarchOrderVehicleLengthChange(el.id, $event)"
-                    style="width: 50px; font-size: 11px; padding: 3px 6px; text-align: center;"
+                    style="width: 44px; font-size: 11px; padding: 3px 4px; text-align: center;"
                     min="1"
                     step="0.1"
                   />
@@ -274,25 +328,32 @@
                   <button 
                     (click)="vm.moveMarchOrderElement(idx, 'up')" 
                     [disabled]="first"
-                    style="border: none; background: none; font-size: 9px; cursor: pointer; color: #475569; padding: 2px; opacity: first ? 0.3 : 1;"
+                    style="border: none; background: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; padding: 3px; border-radius: 3px; opacity: first ? 0.3 : 1;"
                     title="Переместить вперед"
                   >
-                    ▲
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
                   </button>
                   <button 
                     (click)="vm.moveMarchOrderElement(idx, 'down')" 
                     [disabled]="last"
-                    style="border: none; background: none; font-size: 9px; cursor: pointer; color: #475569; padding: 2px; opacity: last ? 0.3 : 1;"
+                    style="border: none; background: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; padding: 3px; border-radius: 3px; opacity: last ? 0.3 : 1;"
                     title="Переместить назад"
                   >
-                    ▼
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
                   </button>
                   <button 
                     (click)="vm.removeMarchOrderElement(el.id)"
-                    style="border: none; background: none; color: #ef4444; font-weight: 700; cursor: pointer; font-size: 13px; margin-left: 6px;"
+                    style="border: none; background: none; color: #ef4444; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 3px; margin-left: 4px; border-radius: 3px;"
                     title="Удалить из колонны"
                   >
-                    ✕
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -304,7 +365,7 @@
 
     <div class="mo-footer">
       <div style="font-size: 11px; color: #475569; display: flex; gap: 16px; align-items: center;">
-        <span>Глубина колонны: <strong style="font-size: 12px; color: #2563eb;">{{ res.totalDepthKm | number:'1.2-2' }} км ({{ res.totalDepthM }} м)</strong></span>
+        <span>Глубина колонны: <strong style="font-size: 12px; color: var(--color-primary, #466bf7);">{{ res.totalDepthKm | number:'1.2-2' }} км ({{ res.totalDepthM }} м)</strong></span>
         <span>Расчетное время: <strong style="font-size: 13px; color: #15803d;">{{ res.totalMarchTimeFormatted }}</strong></span>
       </div>
       <button class="fort-btn secondary" (click)="vm.toggleMarchOrder()">Закрыть</button>

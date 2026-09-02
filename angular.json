@@ -21,7 +21,11 @@
             "assets": [
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "public",
+                "ignore": [
+                  "assets/belarus_graph.json",
+                  "assets/belarus_dem.bin"
+                ]
               }
             ],
             "styles": [

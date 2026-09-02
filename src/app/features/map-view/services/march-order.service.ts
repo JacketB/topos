@@ -11,7 +11,73 @@ export interface MarchOrderElement {
   vehicleDistanceUnit: 'm' | 'km';
   distanceToNext: number;
   distanceUnit: 'm' | 'km';
+  officersCount?: number;
+  sergeantsCount?: number;
+  soldiersCount?: number;
 }
+
+const DEFAULT_MARCH_ELEMENTS: MarchOrderElement[] = [
+  {
+    id: 'el_1',
+    name: 'Головной дозор (ГД)',
+    icon: 'bmp_svoy1',
+    composition: '',
+    vehicleCount: 3,
+    vehicleLength: 6.7,
+    vehicleDistance: 50,
+    vehicleDistanceUnit: 'm',
+    distanceToNext: 5,
+    distanceUnit: 'km',
+    officersCount: 1,
+    sergeantsCount: 3,
+    soldiersCount: 18
+  },
+  {
+    id: 'el_2',
+    name: 'Головная походная застава (ГПЗ)',
+    icon: 'btr_svoy1',
+    composition: '',
+    vehicleCount: 31,
+    vehicleLength: 7.5,
+    vehicleDistance: 50,
+    vehicleDistanceUnit: 'm',
+    distanceToNext: 10,
+    distanceUnit: 'km',
+    officersCount: 6,
+    sergeantsCount: 15,
+    soldiersCount: 80
+  },
+  {
+    id: 'el_3',
+    name: 'Главные силы (ГС)',
+    icon: 'tank_svoy1',
+    composition: '',
+    vehicleCount: 110,
+    vehicleLength: 8.0,
+    vehicleDistance: 50,
+    vehicleDistanceUnit: 'm',
+    distanceToNext: 5,
+    distanceUnit: 'km',
+    officersCount: 28,
+    sergeantsCount: 70,
+    soldiersCount: 350
+  },
+  {
+    id: 'el_4',
+    name: 'Тыловая походная застава (ТПО)',
+    icon: 'truck_svoy',
+    composition: '',
+    vehicleCount: 18,
+    vehicleLength: 8.5,
+    vehicleDistance: 50,
+    vehicleDistanceUnit: 'm',
+    distanceToNext: 0,
+    distanceUnit: 'm',
+    officersCount: 3,
+    sergeantsCount: 8,
+    soldiersCount: 40
+  }
+];
 
 @Injectable({
   providedIn: 'root'
@@ -19,13 +85,39 @@ export interface MarchOrderElement {
 export class MarchOrderService {
   readonly elements = signal<MarchOrderElement[]>([]);
 
+  constructor() {
+    this.loadElements();
+  }
+
+  private loadElements() {
+    try {
+      const stored = localStorage.getItem('topos_march_order_elements');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.elements.set(parsed);
+          return;
+        }
+      }
+    } catch {}
+    this.elements.set(DEFAULT_MARCH_ELEMENTS);
+  }
+
+  private saveElements() {
+    try {
+      localStorage.setItem('topos_march_order_elements', JSON.stringify(this.elements()));
+    } catch {}
+  }
+
   addElement(element: Omit<MarchOrderElement, 'id'>) {
     const id = 'element_' + Math.random().toString(36).substr(2, 9);
     this.elements.update(prev => [...prev, { ...element, id }]);
+    this.saveElements();
   }
 
   removeElement(id: string) {
     this.elements.update(prev => prev.filter(el => el.id !== id));
+    this.saveElements();
   }
 
   updateElement(id: string, updates: Partial<Omit<MarchOrderElement, 'id'>>) {
@@ -35,6 +127,7 @@ export class MarchOrderService {
       }
       return el;
     }));
+    this.saveElements();
   }
 
   moveElement(index: number, direction: 'up' | 'down') {
@@ -44,12 +137,19 @@ export class MarchOrderService {
       list[index] = list[index - 1];
       list[index - 1] = temp;
       this.elements.set(list);
+      this.saveElements();
     } else if (direction === 'down' && index < list.length - 1) {
       const temp = list[index];
       list[index] = list[index + 1];
       list[index + 1] = temp;
       this.elements.set(list);
+      this.saveElements();
     }
+  }
+
+  setElements(elements: MarchOrderElement[]) {
+    this.elements.set(elements);
+    this.saveElements();
   }
 
   getUnitLengthKm(el: MarchOrderElement): number {
@@ -126,8 +226,17 @@ export class MarchOrderService {
       return `${hrs} ч. ${mins} мин.`;
     };
 
+    const totalOfficers = list.reduce((sum, el) => sum + (el.officersCount || 0), 0);
+    const totalSergeants = list.reduce((sum, el) => sum + (el.sergeantsCount || 0), 0);
+    const totalSoldiers = list.reduce((sum, el) => sum + (el.soldiersCount || 0), 0);
+    const totalManpower = totalOfficers + totalSergeants + totalSoldiers;
+
     return {
       totalVehicles,
+      totalOfficers,
+      totalSergeants,
+      totalSoldiers,
+      totalManpower,
       totalDepthM,
       totalDepthKm,
       irDistanceKm,

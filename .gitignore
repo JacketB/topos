@@ -30,6 +30,10 @@ yarn-error.log
 !.vscode/mcp.json
 .history/*
 
+# Python cache
+__pycache__/
+*.py[cod]
+
 # Miscellaneous
 /.angular/cache
 .sass-cache/
@@ -49,15 +53,35 @@ Thumbs.db
 /topos_portable
 /topos_portable_x86
 *.zip
+*.tar
+*.gz
+*.7z
 *.msi
+*.exe
+*.jar
+
+# Scratch and temporary report files
 /index.md
 /log.md
 /plan.md
+*_error.txt
+temp_*.txt
+found_*.txt
+audit_result.txt
+upgrade_plan.txt
+terrain_downloader.html
+
+# Large GIS data, DEM and Map tiles (managed separately)
+/data
+/data/*
 *.pmtiles
 *.pbf
+*.bin
 /scripts/temp
 /scripts/temp/*
 public/assets/belarus_graph.json
 src-tauri/assets/belarus_graph.json
-
-
+public/assets/belarus_dem.bin
+src-tauri/assets/belarus_dem.bin
+public/assets/terrain.pmtiles
+src-tauri/assets/terrain.pmtiles

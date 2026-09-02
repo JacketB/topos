@@ -1,0 +1,170 @@
+<div class="project-modal-overlay" (click)="projectService.closeProjectModal()">
+  <div class="project-modal-panel" (click)="$event.stopPropagation()">
+    
+    <!-- Modal Header -->
+    <div class="project-modal-header">
+      <div class="header-brand">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary, #466bf7);">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <div>
+          <h3 class="brand-title">Topos GIS — Управление проектами</h3>
+          <span class="brand-sub">Текущий проект: <strong>{{ projectService.currentProject().name }}</strong></span>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="projectService.closeProjectModal()" title="Закрыть">✕</button>
+    </div>
+
+    <!-- Modal Content -->
+    <div class="project-modal-body">
+
+      <!-- Left Column: Primary Actions -->
+      <div class="actions-column">
+        <h4 class="column-title">Действия с проектом</h4>
+
+        <button class="action-card-btn primary" (click)="onCreateNewClick()">
+          <div class="btn-icon-wrapper">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </div>
+          <div class="btn-text-block">
+            <span class="btn-main-label">Создать новый проект</span>
+            <span class="btn-sub-label">Очистить карту и начать новый сценарий</span>
+          </div>
+        </button>
+
+        <button class="action-card-btn" (click)="onBrowseFileClick()">
+          <div class="btn-icon-wrapper">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>
+          </div>
+          <div class="btn-text-block">
+            <span class="btn-main-label">Открыть из файла...</span>
+            <span class="btn-sub-label">Импорт проекта (.tps / .json) с диска</span>
+          </div>
+        </button>
+
+        <button class="action-card-btn" (click)="onQuickSave()">
+          <div class="btn-icon-wrapper">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+          </div>
+          <div class="btn-text-block">
+            <span class="btn-main-label">Быстрое сохранение</span>
+            <span class="btn-sub-label">Сохранить изменения текущего проекта</span>
+          </div>
+        </button>
+
+        <button class="action-card-btn" (click)="onSaveAsClick()">
+          <div class="btn-icon-wrapper">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+            </svg>
+          </div>
+          <div class="btn-text-block">
+            <span class="btn-main-label">Сохранить проект как...</span>
+            <span class="btn-sub-label">Экспорт с выбором имени и папки</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- Right Column: Recent Projects & Dialogs -->
+      <div class="recents-column">
+
+        @if (isCreateMode()) {
+          <div class="dialog-box">
+            <h4 class="dialog-title">Создание нового проекта</h4>
+            <div class="form-group">
+              <label class="form-label">Наименование проекта:</label>
+              <input 
+                type="text" 
+                class="form-input" 
+                [ngModel]="newProjectName()" 
+                (ngModelChange)="newProjectName.set($event)" 
+                placeholder="Введите название проекта..."
+                autofocus
+              />
+            </div>
+            <div class="dialog-actions">
+              <button class="dialog-btn secondary" (click)="onCancelCreate()">Отмена</button>
+              <button class="dialog-btn primary" (click)="onConfirmCreate()">Создать проект</button>
+            </div>
+          </div>
+        }
+
+        @if (isSaveAsMode()) {
+          <div class="dialog-box">
+            <h4 class="dialog-title">Сохранение проекта с новым именем</h4>
+            <div class="form-group">
+              <label class="form-label">Имя файла / проекта:</label>
+              <input 
+                type="text" 
+                class="form-input" 
+                [ngModel]="saveAsProjectName()" 
+                (ngModelChange)="saveAsProjectName.set($event)" 
+                placeholder="Введите имя файла проекта..."
+                autofocus
+              />
+            </div>
+            <div class="dialog-actions">
+              <button class="dialog-btn secondary" (click)="onCancelSaveAs()">Отмена</button>
+              <button class="dialog-btn primary" (click)="onConfirmSaveAs()">Сохранить на диск</button>
+            </div>
+          </div>
+        }
+
+        @if (!isCreateMode() && !isSaveAsMode()) {
+          <div class="recents-header">
+            <h4 class="column-title">Последние открытые проекты</h4>
+            <span class="recents-count">{{ projectService.recentProjects().length }} проектов</span>
+          </div>
+
+          <div class="recents-list">
+            @for (proj of projectService.recentProjects(); track proj.id) {
+              <div 
+                class="recent-item" 
+                [class.active]="proj.id === projectService.currentProject().id"
+                (click)="onOpenRecent(proj)"
+              >
+                <div class="recent-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                </div>
+                <div class="recent-details">
+                  <div class="recent-name-row">
+                    <span class="recent-name">{{ proj.name }}</span>
+                    @if (proj.id === projectService.currentProject().id) {
+                      <span class="active-badge">Текущий</span>
+                    }
+                  </div>
+                  <div class="recent-meta">
+                    <span>Обновлен: {{ proj.updatedAt | date:'dd.MM.yyyy HH:mm' }}</span>
+                    <span>Знаков: {{ proj.symbolsCount }}</span>
+                    <span>Линий: {{ proj.linesCount }}</span>
+                  </div>
+                </div>
+                <button class="recent-delete-btn" (click)="onDeleteRecent(proj, $event)" title="Удалить из списка">✕</button>
+              </div>
+            } @empty {
+              <div class="empty-recents">Нет сохраненных проектов</div>
+            }
+          </div>
+        }
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
