@@ -6,22 +6,7 @@ export const mapLayers = [
       'background-color': '#eef3e8'
     }
   },
-  {
-    id: 'hillshade_layer',
-    type: 'hillshade',
-    source: 'terrain-source',
-    layout: {
-      visibility: 'visible'
-    },
-    paint: {
-      'hillshade-exaggeration': 0.85,
-      'hillshade-shadow-color': '#1e293b',
-      'hillshade-highlight-color': '#ffffff',
-      'hillshade-accent-color': '#0f172a',
-      'hillshade-illumination-direction': 315,
-      'hillshade-illumination-anchor': 'viewport'
-    }
-  },
+
   {
     id: 'landcover_grass',
     type: 'fill',
@@ -254,42 +239,7 @@ export const mapLayers = [
       'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0, 14, 0.85]
     }
   },
-  {
-    id: '3d_buildings',
-    type: 'fill-extrusion',
-    source: 'belarus-data',
-    'source-layer': 'building',
-    minzoom: 13,
-    layout: {
-      visibility: 'visible'
-    },
-    paint: {
-      'fill-extrusion-color': [
-        'interpolate',
-        ['linear'],
-        ['coalesce', ['get', 'render_height'], ['*', ['coalesce', ['get', 'levels'], 1], 3.2], 8],
-        0, '#f1f5f9',
-        15, '#e2e8f0',
-        35, '#cbd5e1',
-        70, '#94a3b8'
-      ],
-      'fill-extrusion-height': [
-        'interpolate',
-        ['linear'],
-        ['zoom'],
-        13, 0,
-        14.5,
-        ['coalesce', ['get', 'render_height'], ['*', ['coalesce', ['get', 'levels'], 1], 3.2], 6]
-      ],
-      'fill-extrusion-base': [
-        'coalesce',
-        ['get', 'render_min_height'],
-        ['get', 'min_height'],
-        0
-      ],
-      'fill-extrusion-opacity': 0.88
-    }
-  },
+
   {
     id: 'water_labels',
     type: 'symbol',

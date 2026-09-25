@@ -17,6 +17,7 @@ import { TacticalAnalyticsService } from '../services/tactical-analytics.service
 import { ProjectManagerService } from '../../../core/services/project-manager.service';
 import { CoordinateConverterService } from '../../../core/services/coordinate-converter.service';
 import { Sk42GridService } from '../../../core/services/sk42-grid.service';
+import { Fortification3dProfileType, FortificationCustomParams } from '../components/fortification-3d-modal/fortification-3d-modal.component';
 
 @Injectable({
   providedIn: 'root'
@@ -92,27 +93,8 @@ export class MapViewModel {
 
   readonly isMeasuring = this.mapMeasurementService.isMeasuring;
   readonly measurementResult = this.mapMeasurementService.measurementResult;
-  readonly is3D = signal<boolean>(false);
+  readonly is3D = computed(() => this.isTerrain3dModalOpen());
   readonly terrainExaggeration = signal<number>(3.0);
-  readonly isHillshadeEnabled = signal<boolean>(true);
-  readonly is3DBuildingsEnabled = signal<boolean>(true);
-  readonly hillshadeIntensity = signal<'soft' | 'standard' | 'contrast'>('contrast');
-  readonly hillshadeSunAngle = signal<number>(315);
-  readonly isTerrainSettingsOpen = signal<boolean>(false);
-
-  readonly hillshadeExaggerationValue = computed(() => {
-    const intensity = this.hillshadeIntensity();
-    if (intensity === 'soft') return 0.45;
-    if (intensity === 'standard') return 0.75;
-    return 0.95;
-  });
-
-  readonly hillshadeShadowColor = computed(() => {
-    const intensity = this.hillshadeIntensity();
-    if (intensity === 'soft') return '#334155';
-    if (intensity === 'standard') return '#1e293b';
-    return '#0f172a';
-  });
 
   // Поповер библиотеки знаков и управление тулбаром
   readonly isSymbolLibraryOpen = signal<boolean>(false);
@@ -301,11 +283,32 @@ export class MapViewModel {
       }
     });
 
+    let lastMarchHash = '';
     effect(() => {
-      this.tacticalMapService.placedSymbols();
-      this.showPlacesAlongRoute();
-      this.marchKilometerStepKm();
-      this.syncAllMarchOverlays();
+      const placed = this.tacticalMapService.placedSymbols();
+      const showPlaces = this.showPlacesAlongRoute();
+      const stepKm = this.marchKilometerStepKm();
+      const marchFeatures = placed.filter(
+        (f: any) => f.properties?.lineType === 'march_route' || f.properties?.symbol === 'march_route'
+      );
+      if (marchFeatures.length === 0) {
+        if (lastMarchHash !== 'empty') {
+          lastMarchHash = 'empty';
+          this.marchPlacesAlongRoute.set([]);
+          this.tacticalMapService.updateMarchPlacesSource([]);
+          this.tacticalMapService.updateMarchKilometersSource([]);
+        }
+        return;
+      }
+      const currentHash = `${showPlaces}_${stepKm}_` + marchFeatures.map((f: any) => {
+        const coords = ((f.geometry as any)?.coordinates || f.properties?.origCoords);
+        return `${f.properties?.id}_${coords ? coords.length : 0}_${coords ? coords[0] : ''}_${coords ? coords[coords.length - 1] : ''}`;
+      }).join('|');
+
+      if (currentHash !== lastMarchHash) {
+        lastMarchHash = currentHash;
+        this.syncAllMarchOverlays();
+      }
     });
 
     effect(() => {
@@ -333,18 +336,10 @@ export class MapViewModel {
       this.saveRoutePlannerState();
     });
 
-    effect(() => {
-      this.is3D();
-      this.terrainExaggeration();
-      this.isHillshadeEnabled();
-      this.is3DBuildingsEnabled();
-      this.hillshadeIntensity();
-      this.hillshadeSunAngle();
-      this.saveTerrainSettings();
-    });
+
   }
 
-  closeAllPopupsExcept(except?: 'areaReport' | 'marchOrder' | 'routePlanner' | 'fortPlanner' | 'imageOverlay' | 'categoryDropdown' | 'quickLayers' | 'toggleMap' | 'scale' | 'elevationProfile' | 'engineeringCalc' | 'terrainSettings') {
+  closeAllPopupsExcept(except?: 'areaReport' | 'marchOrder' | 'routePlanner' | 'fortPlanner' | 'imageOverlay' | 'categoryDropdown' | 'quickLayers' | 'toggleMap' | 'scale' | 'elevationProfile' | 'engineeringCalc' | 'fortification3d') {
     if (except !== 'areaReport') this.isAreaReportOpen.set(false);
     if (except !== 'marchOrder') this.isMarchOrderOpen.set(false);
     if (except !== 'routePlanner') this.isRoutePlannerOpen.set(false);
@@ -356,10 +351,38 @@ export class MapViewModel {
     if (except !== 'toggleMap') this.isToogleMapMenuOpen.set(false);
     if (except !== 'scale') this.isScaleMenuOpen.set(false);
     if (except !== 'elevationProfile') this.isElevationProfileOpen.set(false);
-    if (except !== 'terrainSettings') this.isTerrainSettingsOpen.set(false);
+    if (except !== 'fortification3d') this.isFortification3dModalOpen.set(false);
   }
 
   readonly isEngineeringCalcOpen = signal<boolean>(false);
+  readonly isFortification3dModalOpen = signal<boolean>(false);
+  readonly fortification3dInitialProfile = signal<Fortification3dProfileType | null>(null);
+  readonly fortification3dCustomParams = signal<FortificationCustomParams | null>(null);
+
+  openFortification3d(profile?: Fortification3dProfileType, customParams?: FortificationCustomParams) {
+    if (profile) {
+      this.fortification3dInitialProfile.set(profile);
+    }
+    if (customParams) {
+      this.fortification3dCustomParams.set(customParams);
+    } else {
+      this.fortification3dCustomParams.set(null);
+    }
+    this.closeAllPopupsExcept('fortification3d');
+    this.isFortification3dModalOpen.set(true);
+  }
+
+  closeFortification3d() {
+    this.isFortification3dModalOpen.set(false);
+  }
+
+  toggleFortification3d() {
+    if (this.isFortification3dModalOpen()) {
+      this.closeFortification3d();
+    } else {
+      this.openFortification3d();
+    }
+  }
 
   readonly isElevationProfileOpen = signal<boolean>(false);
   readonly elevationProfileCoords = signal<[number, number][]>([]);
@@ -425,15 +448,23 @@ export class MapViewModel {
   }
 
   toggleRangeRingsForSelected() {
-    const selected = this.selectedPlacedSymbol();
     const map = this.getMapInstance();
     if (!map) return;
 
+    if (this.tacticalAnalyticsService.isRangeRingsActive()) {
+      this.tacticalAnalyticsService.toggleRangeRings(null, map);
+      return;
+    }
+
+    this.isCrosshairVisible.set(true);
+
+    const selected = this.selectedPlacedSymbol();
     let center: [number, number] | null = null;
     if (selected?.geometry?.coordinates) {
       center = selected.geometry.type === 'Point' 
         ? selected.geometry.coordinates as [number, number]
         : (selected.geometry.coordinates as any)[0] as [number, number];
+      map.easeTo({ center, duration: 250 });
     } else {
       const c = map.getCenter();
       center = [c.lng, c.lat];
@@ -443,15 +474,23 @@ export class MapViewModel {
   }
 
   toggleViewshedForSelected() {
-    const selected = this.selectedPlacedSymbol();
     const map = this.getMapInstance();
     if (!map) return;
 
+    if (this.tacticalAnalyticsService.isViewshedActive()) {
+      this.tacticalAnalyticsService.toggleViewshed(null, map);
+      return;
+    }
+
+    this.isCrosshairVisible.set(true);
+
+    const selected = this.selectedPlacedSymbol();
     let center: [number, number] | null = null;
     if (selected?.geometry?.coordinates) {
       center = selected.geometry.type === 'Point' 
         ? selected.geometry.coordinates as [number, number]
         : (selected.geometry.coordinates as any)[0] as [number, number];
+      map.easeTo({ center, duration: 250 });
     } else {
       const c = map.getCenter();
       center = [c.lng, c.lat];
@@ -709,6 +748,113 @@ export class MapViewModel {
       this.closeAllPopupsExcept('engineeringCalc');
     }
     this.isEngineeringCalcOpen.update(v => !v);
+  }
+
+  readonly isTerrain3dModalOpen = signal<boolean>(false);
+  readonly terrain3dBbox = signal<[number, number, number, number] | null>(null);
+  readonly terrain3dTextureUrl = signal<string | null>(null);
+  readonly terrain3dBuildings = signal<any[]>([]);
+
+  async openTerrain3dForBbox(bbox: [number, number, number, number]) {
+    this.terrain3dBbox.set(bbox);
+    if (this.mapInstance) {
+      try {
+        const dataUrl = await this.captureMapSnapshot();
+        if (dataUrl) {
+          this.terrain3dTextureUrl.set(dataUrl);
+        }
+
+        const availLayers = ['buildings', 'building'].filter(
+          id => !!this.mapInstance?.getLayer(id)
+        );
+        if (availLayers.length > 0) {
+          const buildingFeatures = this.mapInstance.queryRenderedFeatures(undefined, {
+            layers: availLayers
+          });
+          if (buildingFeatures && buildingFeatures.length > 0) {
+            this.terrain3dBuildings.set(
+              buildingFeatures.map(f => ({
+                geometry: f.geometry,
+                properties: f.properties
+              }))
+            );
+          } else {
+            this.terrain3dBuildings.set([]);
+          }
+        } else {
+          this.terrain3dBuildings.set([]);
+        }
+      } catch {
+        this.terrain3dTextureUrl.set(null);
+        this.terrain3dBuildings.set([]);
+      }
+    }
+    this.isTerrain3dModalOpen.set(true);
+  }
+
+  private captureMapSnapshot(): Promise<string | null> {
+    return new Promise((resolve) => {
+      if (!this.mapInstance) return resolve(null);
+      const map = this.mapInstance;
+      let handled = false;
+
+      const doCapture = () => {
+        if (handled) return;
+        handled = true;
+        try {
+          const canvas = map.getCanvas();
+          if (canvas && canvas.width > 0 && canvas.height > 0) {
+            const offscreen = document.createElement('canvas');
+            offscreen.width = canvas.width;
+            offscreen.height = canvas.height;
+            const ctx = offscreen.getContext('2d');
+            if (ctx) {
+              ctx.fillStyle = '#eef3e8';
+              ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+              ctx.drawImage(canvas, 0, 0);
+              resolve(offscreen.toDataURL('image/jpeg', 0.95));
+              return;
+            }
+            resolve(canvas.toDataURL('image/jpeg', 0.95));
+            return;
+          }
+          resolve(null);
+        } catch {
+          resolve(null);
+        }
+      };
+
+      map.once('render', doCapture);
+      map.triggerRepaint();
+
+      setTimeout(() => {
+        doCapture();
+      }, 300);
+    });
+  }
+
+  async openTerrain3dForCurrentView() {
+    if (!this.mapInstance) return;
+    const bounds = this.mapInstance.getBounds();
+    const bbox: [number, number, number, number] = [
+      bounds.getWest(),
+      bounds.getSouth(),
+      bounds.getEast(),
+      bounds.getNorth()
+    ];
+    await this.openTerrain3dForBbox(bbox);
+  }
+
+  toggleTerrain3dModal() {
+    if (this.isTerrain3dModalOpen()) {
+      this.isTerrain3dModalOpen.set(false);
+    } else {
+      this.openTerrain3dForCurrentView();
+    }
+  }
+
+  closeTerrain3dModal() {
+    this.isTerrain3dModalOpen.set(false);
   }
 
   readonly isImageOverlayPanelOpen = signal<boolean>(false);
@@ -1038,56 +1184,17 @@ export class MapViewModel {
     }
   }
 
-  toggleTerrainSettings(event?: Event) {
-    if (event) event.stopPropagation();
-    const next = !this.isTerrainSettingsOpen();
-    if (next) {
-      this.closeAllPopupsExcept('terrainSettings');
-    }
-    this.isTerrainSettingsOpen.set(next);
-  }
+
 
   setTerrainExaggeration(val: number) {
     const clamped = Math.max(1.0, Math.min(6.0, Math.round(val * 10) / 10));
     this.terrainExaggeration.set(clamped);
-    const map = this.getMapInstance();
-    if (map && this.is3D() && map.getSource('terrain-source')) {
-      map.setTerrain({ source: 'terrain-source', exaggeration: clamped });
-    }
-  }
-
-  setTerrainPitch(pitch: number) {
-    const map = this.getMapInstance();
-    if (map) {
-      map.easeTo({ pitch, duration: 500 });
-    }
-  }
-
-  toggleHillshade() {
-    this.isHillshadeEnabled.update(v => !v);
-  }
-
-  toggle3DBuildings() {
-    this.is3DBuildingsEnabled.update(v => !v);
-  }
-
-  setHillshadeIntensity(mode: 'soft' | 'standard' | 'contrast') {
-    this.hillshadeIntensity.set(mode);
-  }
-
-  setHillshadeSunAngle(angle: number) {
-    this.hillshadeSunAngle.set(angle);
   }
 
   saveTerrainSettings() {
     try {
       const data = {
-        is3D: this.is3D(),
-        terrainExaggeration: this.terrainExaggeration(),
-        isHillshadeEnabled: this.isHillshadeEnabled(),
-        is3DBuildingsEnabled: this.is3DBuildingsEnabled(),
-        hillshadeIntensity: this.hillshadeIntensity(),
-        hillshadeSunAngle: this.hillshadeSunAngle()
+        terrainExaggeration: this.terrainExaggeration()
       };
       localStorage.setItem('topos_terrain_settings', JSON.stringify(data));
     } catch {}
@@ -1101,39 +1208,12 @@ export class MapViewModel {
         if (typeof parsed.terrainExaggeration === 'number') {
           this.terrainExaggeration.set(parsed.terrainExaggeration);
         }
-        if (typeof parsed.isHillshadeEnabled === 'boolean') {
-          this.isHillshadeEnabled.set(parsed.isHillshadeEnabled);
-        }
-        if (typeof parsed.is3DBuildingsEnabled === 'boolean') {
-          this.is3DBuildingsEnabled.set(parsed.is3DBuildingsEnabled);
-        }
-        if (parsed.hillshadeIntensity) {
-          this.hillshadeIntensity.set(parsed.hillshadeIntensity);
-        }
-        if (typeof parsed.hillshadeSunAngle === 'number') {
-          this.hillshadeSunAngle.set(parsed.hillshadeSunAngle);
-        }
       }
     } catch {}
   }
 
   toggle3D() {
-    const next = !this.is3D();
-    this.is3D.set(next);
-    const map = this.getMapInstance();
-    if (map) {
-      if (next) {
-        if (map.getSource('terrain-source')) {
-          map.setTerrain({ source: 'terrain-source', exaggeration: this.terrainExaggeration() });
-        }
-        if (map.getPitch() < 20) {
-          map.easeTo({ pitch: 55, duration: 600 });
-        }
-      } else {
-        map.setTerrain(null as any);
-        map.easeTo({ pitch: 0, duration: 400 });
-      }
-    }
+    this.toggleTerrain3dModal();
   }
 
   setSidebarWidth(width: number) {
@@ -1192,6 +1272,10 @@ export class MapViewModel {
 
   updatePlacedSymbolProperty(key: string, value: any) {
     this.tacticalMapService.updatePlacedSymbolProperty(key, value);
+  }
+
+  updatePlacedSymbolProperties(props: Record<string, any>) {
+    this.tacticalMapService.updatePlacedSymbolProperties(props);
   }
 
   updateTemplateSize(size: number) {
@@ -1577,7 +1661,12 @@ export class MapViewModel {
   }
 
   deletePlacedSymbol() {
-    this.tacticalMapService.deleteSelectedPlacedSymbol();
+    const multi = this.tacticalMapService.selectedPlacedSymbols();
+    if (multi && multi.length > 0) {
+      this.tacticalMapService.deleteSelectedPlacedSymbols();
+    } else {
+      this.tacticalMapService.deleteSelectedPlacedSymbol();
+    }
   }
 
   toggleQuickLayer(groupId: string) {

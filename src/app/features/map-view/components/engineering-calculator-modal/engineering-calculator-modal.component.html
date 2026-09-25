@@ -3,16 +3,19 @@
     
     <!-- Header -->
     <div class="eng-calc-header">
-      <span class="eng-calc-title">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary, #466bf7); margin-right: 6px;">
+      <div class="eng-calc-header-title">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="eng-calc-main-icon">
           <rect x="4" y="2" width="16" height="20" rx="2"></rect>
           <line x1="8" y1="6" x2="16" y2="6"></line>
           <line x1="16" y1="14" x2="16" y2="18"></line>
           <path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M8 18h.01M12 18h.01"></path>
         </svg>
-        Военно-инженерные расчеты заграждений и узлов заграждений (УЗ)
-      </span>
-      <div style="display: flex; align-items: center; gap: 8px;">
+        <div>
+          <span class="eng-calc-title">Военно-инженерный расчетный комплекс МОРБ</span>
+          <span class="eng-calc-sub">МВЗ, рубежи ПОЗ, разграждение, переправы, маскировка и невзрывные заграждения</span>
+        </div>
+      </div>
+      <div class="eng-calc-header-actions">
         <button class="export-excel-btn" (click)="exportAllToExcel()" title="Экспорт всех расчетов в Excel (.xlsx)">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -21,7 +24,7 @@
             <line x1="8" y1="17" x2="16" y2="17"></line>
             <polyline points="10 9 9 9 8 9"></polyline>
           </svg>
-          Экспорт всех расчетов в Excel
+          Экспорт всех расчетов (.xlsx)
         </button>
         <button class="eng-calc-close-btn" (click)="vm.toggleEngineeringCalc()" title="Закрыть калькулятор">✕</button>
       </div>
@@ -31,71 +34,88 @@
     <div class="eng-calc-tabs">
       <button 
         class="tab-btn" 
-        [class.active]="activeTab() === 'mvz_infantry'" 
-        (click)="activeTab.set('mvz_infantry')"
+        [class.active]="activeTab() === 'mvz'" 
+        (click)="activeTab.set('mvz')"
       >
-        МВЗ Саперы (вручную)
+        Минные поля (МВЗ)
       </button>
       <button 
         class="tab-btn" 
-        [class.active]="activeTab() === 'mvz_tech'" 
-        (click)="activeTab.set('mvz_tech')"
+        [class.active]="activeTab() === 'poz'" 
+        (click)="activeTab.set('poz')"
       >
-        МВЗ Заградители (ГМЗ)
+        Рубежи ПОЗ
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab() === 'breaching'" 
+        (click)="activeTab.set('breaching')"
+      >
+        Разминирование и проходы
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab() === 'crossings'" 
+        (click)="activeTab.set('crossings')"
+      >
+        Переправы и мосты
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab() === 'camouflage'" 
+        (click)="activeTab.set('camouflage')"
+      >
+        Маскировка и ВТО
       </button>
       <button 
         class="tab-btn" 
         [class.active]="activeTab() === 'nz'" 
         (click)="activeTab.set('nz')"
       >
-        Невзрывные заграждения и разрушения
-      </button>
-      <button 
-        class="tab-btn" 
-        [class.active]="activeTab() === 'uz'" 
-        (click)="activeTab.set('uz')"
-      >
-        Узел заграждений (УЗ)
+        НЗ и разрушения
       </button>
     </div>
 
     <!-- Body -->
     <div class="eng-calc-body">
 
-      <!-- TAB 1: MVZ INFANTRY -->
-      @if (activeTab() === 'mvz_infantry') {
-        @let inf = infantryCalc();
-        @let curMine = currentInfantryMine();
+      <!-- TAB 1: MVZ -->
+      @if (activeTab() === 'mvz') {
+        @let res = mvzCalc();
+        @let cur = currentMvzMine();
 
         <div class="calc-grid">
-          <!-- Left: Input Form -->
           <div class="calc-card">
-            <h4 class="card-title">Исходные данные минного поля</h4>
+            <h4 class="card-title">Параметры минного поля и способ установки</h4>
 
             <div class="form-row">
-              <label class="form-label">Марка инженерной мины:</label>
-              <select class="form-input select" [ngModel]="infantryMineName()" (ngModelChange)="infantryMineName.set($event)">
-                <option value="ТМ-62М">ТМ-62М (ПТМ нажимная, 750 шт/км)</option>
-                <option value="ТМ-62П3">ТМ-62П3 (ПТМ неметаллическая, 750 шт/км)</option>
-                <option value="ТМ-72">ТМ-72 (ПТМ противоднищевая, 350 шт/км)</option>
-                <option value="ТМ-89">ТМ-89 (ПТМ кумулятивная, 350 шт/км)</option>
-                <option value="ПМН-2">ПМН-2 (ППМ фугасная, 2000 шт/км)</option>
-                <option value="ПМН-4">ПМН-4 (ППМ фугасная, 2000 шт/км)</option>
-                <option value="ПОМЗ-2М">ПОМЗ-2М (ППМ осколочная, 250 шт/км)</option>
-                <option value="ОЗМ-72">ОЗМ-72 (ППМ выпрыгивающая, 50 шт/км)</option>
-                <option value="МОН-50">МОН-50 (ППМ направленная, 30 шт/км)</option>
-                <option value="ПФМ-1С">ПФМ-1С (ППМ кассетная, 4000 шт/км)</option>
+              <label class="form-label">Марка мины:</label>
+              <select class="form-input select" [ngModel]="mvzMineId()" (ngModelChange)="mvzMineId.set($event)">
+                @for (m of minesCatalog; track m.id) {
+                  <option [value]="m.id">{{ m.name }} ({{ m.typeLabel }}, норм. {{ m.standardDensityPerKm }} шт/км)</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Способ установки:</label>
+              <select class="form-input select" [ngModel]="mvzDeployMethod()" (ngModelChange)="mvzDeployMethod.set($event)">
+                <option value="gmz3">Гусеничный заградитель ГМЗ-3 (БК 208 мин)</option>
+                <option value="gmz2">Гусеничный заградитель ГМЗ-2 (БК 178 мин)</option>
+                <option value="pmz4">Прицепной заградитель ПМЗ-4 (БК 200 мин)</option>
+                <option value="umz">Универсальный заградитель УМЗ (кассетное)</option>
+                <option value="manual_sapper">Вручную строевым расчетом саперов</option>
               </select>
             </div>
 
             <div class="form-row">
               <label class="form-label">Протяженность по фронту (м):</label>
-              <input type="number" class="form-input" [ngModel]="infantryFrontM()" (ngModelChange)="infantryFrontM.set(+$event)" min="10" step="50" />
+              <input type="number" class="form-input" [ngModel]="mvzFrontM()" (ngModelChange)="mvzFrontM.set(+$event)" min="10" step="100" />
             </div>
 
             <div class="form-row">
               <label class="form-label">Количество рядов:</label>
-              <select class="form-input select" [ngModel]="infantryRows()" (ngModelChange)="infantryRows.set(+$event)">
+              <select class="form-input select" [ngModel]="mvzRows()" (ngModelChange)="mvzRows.set(+$event)">
                 <option [value]="1">1 ряд</option>
                 <option [value]="2">2 ряда</option>
                 <option [value]="3">3 ряда</option>
@@ -104,417 +124,680 @@
             </div>
 
             <div class="form-row">
-              <label class="form-label">Шаг минирования (м между минами):</label>
-              <select class="form-input select" [ngModel]="infantryStepM()" (ngModelChange)="infantryStepM.set(+$event)">
-                @for (step of curMine.steps; track step) {
+              <label class="form-label">Шаг минирования в ряду (м):</label>
+              <select class="form-input select" [ngModel]="mvzStepM()" (ngModelChange)="mvzStepM.set(+$event)">
+                @for (step of cur.allowedStepsM; track step) {
                   <option [value]="step">{{ step }} м</option>
                 }
               </select>
             </div>
 
             <div class="form-row">
-              <label class="form-label">Назначенное подразделение:</label>
-              <select class="form-input select" [ngModel]="infantryUnit()" (ngModelChange)="infantryUnit.set($event)">
-                <option value="squad">Саперное отделение (8 чел)</option>
-                <option value="platoon">Саперный взвод (24 чел)</option>
-                <option value="company">Саперная рота (72 чел)</option>
+              <label class="form-label">Категория грунта / поверхность:</label>
+              <select class="form-input select" [ngModel]="mvzSoil()" (ngModelChange)="mvzSoil.set($event)">
+                <option value="ground">Открытый грунт (на поверхность)</option>
+                <option value="sod">Дерновой покров (с маскировкой)</option>
+                <option value="snow">Снежный покров</option>
               </select>
             </div>
 
             <div class="form-row">
-              <label class="form-label">Норма выкладки (мин/чел-ч):</label>
-              <input type="number" class="form-input" [ngModel]="infantryRatePerHr()" (ngModelChange)="infantryRatePerHr.set(+$event)" min="1" step="1" />
+              <label class="form-label">Количество заградителей / техники:</label>
+              <input type="number" class="form-input" [ngModel]="mvzVehicles()" (ngModelChange)="mvzVehicles.set(+$event)" min="1" max="10" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Удаление до пункта загрузки БК (км):</label>
+              <input type="number" class="form-input" [ngModel]="mvzReloadDistKm()" (ngModelChange)="mvzReloadDistKm.set(+$event)" min="1" max="50" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Мины-ловушки (неизвлекаемость):</label>
+              <div class="checkbox-wrapper">
+                <input type="checkbox" id="unremov-check" [ngModel]="mvzWithUnremovable()" (ngModelChange)="mvzWithUnremovable.set($event)" />
+                <label for="unremov-check">Устанавливать элементы неизвлекаемости (5% от БК)</label>
+              </div>
+            </div>
+
+            <div class="form-actions-inline">
+              <button class="btn-formular-print" (click)="printFormular()">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 9V2h12v7"></path>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                Сформировать и напечатать Формуляр МВЗ (PDF)
+              </button>
             </div>
           </div>
 
-          <!-- Right: Calculation Summary -->
-          <div class="calc-card results">
-            <h4 class="card-title">Результаты расчета</h4>
+          <!-- Right: Summary KPI Cards -->
+          <div class="calc-card results-card">
+            <h4 class="card-title">Результаты расчета параметров и эффективности МВЗ</h4>
 
-            <div class="stat-grid">
-              <div class="stat-box highlight">
-                <div class="stat-label">ОБЩИЙ РАСХОД МИН</div>
-                <div class="stat-val">{{ inf.totalMines }} <span class="stat-unit">шт.</span></div>
-                <div class="stat-sub">По {{ inf.minesPerRow }} шт. в каждом ряду</div>
+            <div class="kpi-grid">
+              <div class="kpi-box highlight">
+                <span class="kpi-label">Общий расход мин</span>
+                <span class="kpi-value">{{ res.totalMines }} <small>шт.</small></span>
+                <span class="kpi-sub">В ряду: {{ res.minesPerRow }} шт.</span>
               </div>
 
-              <div class="stat-box highlight">
-                <div class="stat-label">ВРЕМЯ УСТАНОВКИ</div>
-                <div class="stat-val">{{ inf.timeFormatted }}</div>
-                <div class="stat-sub">Темп: {{ inf.unitRatePerHr }} мин/час</div>
+              <div class="kpi-box">
+                <span class="kpi-label">Плотность рубежа</span>
+                <span class="kpi-value">{{ res.densityPerKm | number:'1.1-1' }} <small>мин/км</small></span>
+                <span class="kpi-sub">Глубина поля: {{ res.depthM }} м</span>
               </div>
 
-              <div class="stat-box">
-                <div class="stat-label">Фактическая плотность</div>
-                <div class="stat-val">{{ inf.densityPerKm | number:'1.1-1' }} <span class="stat-unit">мин/км</span></div>
-                <div class="stat-sub">Уставная норма: {{ curMine.normPerKm }} мин/км</div>
+              <div class="kpi-box success">
+                <span class="kpi-label">Эффективность (Wпор)</span>
+                <span class="kpi-value">{{ res.killProbabilityPct }} <small>%</small></span>
+                <span class="kpi-sub">Вероятность поражения цели</span>
               </div>
 
-              <div class="stat-box">
-                <div class="stat-label">Глубина минного поля</div>
-                <div class="stat-val">{{ inf.depthM }} <span class="stat-unit">м</span></div>
-                <div class="stat-sub">Междурядье: {{ curMine.rowDistance }} м</div>
+              <div class="kpi-box">
+                <span class="kpi-label">Масса боекомплекта</span>
+                <span class="kpi-value">{{ res.totalWeightTons | number:'1.2-2' }} <small>т</small></span>
+                <span class="kpi-sub">В т.ч. ВВ: {{ res.totalExplosiveKg | number:'1.0-0' }} кг</span>
               </div>
 
-              <div class="stat-box">
-                <div class="stat-label">Подвоз мин (Урал-4320)</div>
-                <div class="stat-val">{{ inf.trucksCount }} <span class="stat-unit">рейсов</span></div>
-                <div class="stat-sub">По 200 мин/авто (доп. челноков: {{ inf.shuttleTrips }})</div>
+              <div class="kpi-box">
+                <span class="kpi-label">Время раскладки на рубеже</span>
+                <span class="kpi-value">{{ res.deployTimeFormatted }}</span>
+                <span class="kpi-sub">Чистое время движения машин</span>
               </div>
 
-              <div class="stat-box">
-                <div class="stat-label">Личный состав саперов</div>
-                <div class="stat-val">{{ inf.manpower }} <span class="stat-unit">чел.</span></div>
-                <div class="stat-sub">Штатный расчет саперов</div>
+              <div class="kpi-box highlight-time">
+                <span class="kpi-label">ПОЛНОЕ ВРЕМЯ ЗАДАЧИ</span>
+                <span class="kpi-value">{{ res.totalMissionTimeFormatted }}</span>
+                <span class="kpi-sub">С челночными дозарядками ({{ res.shuttleTrips }} выездов)</span>
               </div>
+            </div>
+
+            <div class="summary-details">
+              <div class="detail-row">
+                <span>Потребность в автотранспорте (Урал-4320):</span>
+                <strong>{{ res.trucksNeeded }} ед.</strong>
+              </div>
+              <div class="detail-row">
+                <span>Личный состав саперов / экипажей:</span>
+                <strong>{{ res.manpower }} чел.</strong>
+              </div>
+              @if (res.unremovableMinesCount > 0) {
+                <div class="detail-row warning">
+                  <span>Мин с элементами неизвлекаемости:</span>
+                  <strong>{{ res.unremovableMinesCount }} шт.</strong>
+                </div>
+              }
             </div>
           </div>
         </div>
       }
 
-      <!-- TAB 2: MVZ TECH -->
-      @if (activeTab() === 'mvz_tech') {
-        @let tech = techCalc();
+      <!-- TAB 2: POZ -->
+      @if (activeTab() === 'poz') {
+        @let poz = pozCalc();
 
         <div class="calc-grid">
           <div class="calc-card">
-            <h4 class="card-title">Параметры механизированного минирования</h4>
+            <h4 class="card-title">Параметры противника и отряда заграждения (ПОЗ)</h4>
 
             <div class="form-row">
-              <label class="form-label">Техника минирования:</label>
-              <select class="form-input select" [ngModel]="techVehicleType()" (ngModelChange)="techVehicleType.set($event)">
-                <option value="gmz3">Гусеничный заградитель ГМЗ-3 (1 машина, БК 208 мин)</option>
-                <option value="gmz2">Гусеничный заградитель ГМЗ-2 (1 машина, БК 208 мин)</option>
-                <option value="gmz3_platoon">Взвод ГМЗ-3 (3 заградителя, БК 624 мин)</option>
+              <label class="form-label">Скорость выдвижения противника (км/ч):</label>
+              <input type="number" class="form-input" [ngModel]="pozEnemySpeedKmh()" (ngModelChange)="pozEnemySpeedKmh.set(+$event)" min="5" max="60" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Удаление противника от рубежа (км):</label>
+              <input type="number" class="form-input" [ngModel]="pozEnemyDistanceKm()" (ngModelChange)="pozEnemyDistanceKm.set(+$event)" min="1" max="100" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Удаление ПОЗ от рубежа (км):</label>
+              <input type="number" class="form-input" [ngModel]="pozMarchDistanceKm()" (ngModelChange)="pozMarchDistanceKm.set(+$event)" min="0.5" max="50" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Скорость марша ПОЗ (км/ч):</label>
+              <input type="number" class="form-input" [ngModel]="pozMarchSpeedKmh()" (ngModelChange)="pozMarchSpeedKmh.set(+$event)" min="10" max="60" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Принятие решения и приказ (мин):</label>
+              <input type="number" class="form-input" [ngModel]="pozDecisionMin()" (ngModelChange)="pozDecisionMin.set(+$event)" min="1" max="60" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Рекогносцировка рубежа (мин):</label>
+              <input type="number" class="form-input" [ngModel]="pozReconMin()" (ngModelChange)="pozReconMin.set(+$event)" min="1" max="60" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Тип заградителей ПОЗ:</label>
+              <select class="form-input select" [ngModel]="pozVehicleType()" (ngModelChange)="pozVehicleType.set($event)">
+                <option value="gmz3">Взвод заградителей ГМЗ-3</option>
+                <option value="umz">Универсальные заградители УМЗ</option>
+                <option value="pmz4">Прицепные заградители ПМЗ-4</option>
               </select>
             </div>
 
             <div class="form-row">
-              <label class="form-label">Способ раскладки мин:</label>
-              <select class="form-input select" [ngModel]="techDeployMethod()" (ngModelChange)="techDeployMethod.set($event)">
-                <option value="ground">На грунт / поверхность (скорость до 16 км/ч)</option>
-                <option value="soil">В грунт с заглублением (скорость до 6 км/ч)</option>
-                <option value="snow">В снежный покров (скорость до 10 км/ч)</option>
-              </select>
+              <label class="form-label">Количество заградителей:</label>
+              <input type="number" class="form-input" [ngModel]="pozVehicleCount()" (ngModelChange)="pozVehicleCount.set(+$event)" min="1" max="6" />
             </div>
 
             <div class="form-row">
-              <label class="form-label">Марка мины:</label>
-              <select class="form-input select" [ngModel]="techMineName()" (ngModelChange)="techMineName.set($event)">
-                <option value="ТМ-72">ТМ-72 (противоднищевая кумулятивная)</option>
-                <option value="ТМ-62М">ТМ-62М (противогусеничная нажимная)</option>
-                <option value="ТМ-62П3">ТМ-62П3 (противогусеничная неметаллическая)</option>
-                <option value="ТМ-89">ТМ-89 (противоднищевая кумулятивная)</option>
-              </select>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label">Протяженность фронта (м):</label>
-              <input type="number" class="form-input" [ngModel]="techFrontM()" (ngModelChange)="techFrontM.set(+$event)" min="50" step="100" />
-            </div>
-
-            <div class="form-row">
-              <label class="form-label">Количество рядов:</label>
-              <select class="form-input select" [ngModel]="techRows()" (ngModelChange)="techRows.set(+$event)">
-                <option [value]="1">1 ряд</option>
-                <option [value]="2">2 ряда</option>
-                <option [value]="3">3 ряда</option>
-                <option [value]="4">4 ряда</option>
-              </select>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label">Шаг раскладки (по ТТХ ГМЗ):</label>
-              <select class="form-input select" [ngModel]="techStepM()" (ngModelChange)="techStepM.set(+$event)">
-                <option [value]="4">4.0 м</option>
-                <option [value]="5.5">5.5 м</option>
-              </select>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label">Удаление пункта заряжания (км):</label>
-              <input type="number" class="form-input" [ngModel]="techReloadDistKm()" (ngModelChange)="techReloadDistKm.set(+$event)" min="1" step="1" />
+              <label class="form-label">Длина рубежа минирования (м):</label>
+              <input type="number" class="form-input" [ngModel]="pozFrontM()" (ngModelChange)="pozFrontM.set(+$event)" min="100" step="100" />
             </div>
           </div>
 
-          <div class="calc-card results">
-            <h4 class="card-title">Результаты механизированного расчета</h4>
+          <div class="calc-card results-card">
+            <h4 class="card-title">Оценка упреждения рубежей ПОЗ и цикловой график</h4>
 
-            <div class="stat-grid">
-              <div class="stat-box highlight">
-                <div class="stat-label">ОБЩИЙ РАСХОД МИН</div>
-                <div class="stat-val">{{ tech.totalMines }} <span class="stat-unit">шт.</span></div>
-                <div class="stat-sub">{{ tech.minesPerRow }} мин в каждом ряду</div>
+            <div class="status-banner" [class.success]="poz.isPreemptionGuaranteed" [class.danger]="!poz.isPreemptionGuaranteed">
+              <span class="status-title">{{ poz.isPreemptionGuaranteed ? 'УСЛОВИЕ УПРЕЖДЕНИЯ ВЫПОЛНЕНО' : 'УГРОЗА ОПОЗДАНИЯ ПОЗ НА РУБЕЖ' }}</span>
+              <span class="status-sub">
+                {{ poz.isPreemptionGuaranteed ? 'Запас времени до выхода противника: ' + poz.timeMarginFormatted : 'Дефицит времени: ' + poz.timeMarginFormatted }}
+              </span>
+            </div>
+
+            <div class="kpi-grid" style="margin-top: 12px;">
+              <div class="kpi-box">
+                <span class="kpi-label">Подход противника</span>
+                <span class="kpi-value">{{ poz.enemyApproachFormatted }}</span>
+                <span class="kpi-sub">{{ poz.enemyApproachTimeMin | number:'1.0-0' }} мин.</span>
               </div>
-
-              <div class="stat-box highlight">
-                <div class="stat-label">ПОЛНОЕ ВРЕМЯ МИНИРОВАНИЯ</div>
-                <div class="stat-val">{{ tech.totalTimeFormatted }}</div>
-                <div class="stat-sub">Раскладка + челночные дозарядки</div>
+              <div class="kpi-box highlight-time">
+                <span class="kpi-label">Готовность рубежа ПОЗ</span>
+                <span class="kpi-value">{{ poz.pozTotalReadyFormatted }}</span>
+                <span class="kpi-sub">{{ poz.pozTotalReadyTimeMin | number:'1.0-0' }} мин.</span>
               </div>
-
-              <div class="stat-box">
-                <div class="stat-label">Чистая раскладка</div>
-                <div class="stat-val">{{ (tech.deployTimeHours * 60) | number:'1.0-0' }} <span class="stat-unit">мин</span></div>
-                <div class="stat-sub">Скорость: {{ techDeployMethod() === 'soil' ? '6' : (techDeployMethod() === 'snow' ? '10' : '16') }} км/ч</div>
+              <div class="kpi-box">
+                <span class="kpi-label">Безопасное удаление</span>
+                <span class="kpi-value">{{ poz.minSafeEnemyDistanceKm | number:'1.1-1' }} <small>км</small></span>
+                <span class="kpi-sub">Мин. рубеж встречи</span>
               </div>
-
-              <div class="stat-box">
-                <div class="stat-label">Количество выездов БК</div>
-                <div class="stat-val">{{ tech.totalRuns }} <span class="stat-unit">БК</span></div>
-                <div class="stat-sub">Челночных перезарядок: {{ tech.shuttles }}</div>
+              <div class="kpi-box">
+                <span class="kpi-label">Расход мин на рубеж</span>
+                <span class="kpi-value">{{ poz.totalMines }} <small>шт.</small></span>
+                <span class="kpi-sub">Wпор = {{ poz.killProbabilityPct }}%</span>
               </div>
+            </div>
 
-              <div class="stat-box">
-                <div class="stat-label">Время челночных пробегов</div>
-                <div class="stat-val">{{ (tech.shuttleTimeHours * 60) | number:'1.0-0' }} <span class="stat-unit">мин</span></div>
-                <div class="stat-sub">Пробег 30 км/ч + зарядка кассетами</div>
+            <h5 class="timeline-title">Пошаговый график боевой работы ПОЗ:</h5>
+            <div class="poz-timeline">
+              @for (t of poz.timeline; track t.stepIndex) {
+                <div class="poz-timeline-item">
+                  <div class="timeline-time-badge">{{ t.clockFormatted }}</div>
+                  <div class="timeline-content">
+                    <span class="timeline-step-title">{{ t.title }}</span>
+                    <span class="timeline-step-desc">{{ t.description }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- TAB 3: BREACHING -->
+      @if (activeTab() === 'breaching') {
+        @let br = breachResult();
+        @let tr = trawlResult();
+        @let cl = clearingResult();
+
+        <div class="calc-grid-three">
+          <!-- Card 1: Explosive breaching UR-77 -->
+          <div class="calc-card">
+            <h4 class="card-title">1. Проделывание проходов (УР-77 / УР-83П)</h4>
+
+            <div class="form-row">
+              <label class="form-label">Способ разминирования:</label>
+              <select class="form-input select" [ngModel]="breachMethod()" (ngModelChange)="breachMethod.set($event)">
+                <option value="ur77">Установка разминирования УР-77 «Метеорит»</option>
+                <option value="ur83p">Переносная установка УР-83П</option>
+                <option value="manual_sapper">Вручную саперами (щупы и накладные заряды)</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Глубина минного поля (м):</label>
+              <input type="number" class="form-input" [ngModel]="breachMineDepthM()" (ngModelChange)="breachMineDepthM.set(+$event)" min="20" step="10" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Требуемое количество проходов:</label>
+              <input type="number" class="form-input" [ngModel]="breachCount()" (ngModelChange)="breachCount.set(+$event)" min="1" max="10" />
+            </div>
+
+            <div class="sub-results-box">
+              <div class="detail-row">
+                <span>Потребность в зарядах УЗП:</span>
+                <strong>{{ br.totalCharges }} шт. ({{ br.vehiclesOrKitsNeeded }} ед. техники)</strong>
               </div>
+              <div class="detail-row">
+                <span>Габариты готового прохода:</span>
+                <strong>{{ br.breachWidthM }} x {{ br.breachLengthM }} м</strong>
+              </div>
+              <div class="detail-row highlight">
+                <span>Время готовности прохода:</span>
+                <strong>{{ br.clearingTimeFormatted }}</strong>
+              </div>
+              <div class="detail-row warning">
+                <span>Безопасное удаление войск:</span>
+                <strong>{{ br.safetyDistanceM }} м</strong>
+              </div>
+            </div>
+          </div>
 
-              <div class="stat-box">
-                <div class="stat-label">Подвоз мин (Урал-4320)</div>
-                <div class="stat-val">{{ tech.trucksNeeded }} <span class="stat-unit">авто</span></div>
-                <div class="stat-sub">По 200 мин в кузове авто</div>
+          <!-- Card 2: Trawling KMT -->
+          <div class="calc-card">
+            <h4 class="card-title">2. Оснащение минными тралами (КМТ)</h4>
+
+            <div class="form-row">
+              <label class="form-label">Тип минного трала:</label>
+              <select class="form-input select" [ngModel]="trawlType()" (ngModelChange)="trawlType.set($event)">
+                <option value="kmt7">КМТ-7 (катково-ножевой для танков Т-72/Т-90)</option>
+                <option value="kmt8">КМТ-8 (ножевой с ЭМТ для танков)</option>
+                <option value="kmt10">КМТ-10 (колейный ножевой для БМП-2/3)</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Количество боевых машин в колонне:</label>
+              <input type="number" class="form-input" [ngModel]="trawlVehiclesCount()" (ngModelChange)="trawlVehiclesCount.set(+$event)" min="1" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Процент оснащения тралами (%):</label>
+              <input type="number" class="form-input" [ngModel]="trawlEquippedPct()" (ngModelChange)="trawlEquippedPct.set(+$event)" min="10" max="100" step="10" />
+            </div>
+
+            <div class="sub-results-box">
+              <div class="detail-row">
+                <span>Потребность в тралах:</span>
+                <strong>{{ tr.trawlsCount }} шт.</strong>
+              </div>
+              <div class="detail-row">
+                <span>Рабочая скорость траления:</span>
+                <strong>{{ tr.trawlingSpeedKmh }} км/ч</strong>
+              </div>
+              <div class="detail-row">
+                <span>Ширина очищаемой колеи:</span>
+                <strong>{{ tr.clearedWidthM }} м</strong>
+              </div>
+              <div class="detail-row highlight">
+                <span>Время прохождения рубежа:</span>
+                <strong>{{ tr.transitTimeFormatted }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Obstacle clearing IMR/BAT -->
+          <div class="calc-card">
+            <h4 class="card-title">3. Расчистка завалов и рвов (ИМР-2 / БАТ-2)</h4>
+
+            <div class="form-row">
+              <label class="form-label">Тип преграды / разрушения:</label>
+              <select class="form-input select" [ngModel]="clearingObstacleType()" (ngModelChange)="clearingObstacleType.set($event)">
+                <option value="forest_abatis">Лесной завал (деревья d 30-50 см)</option>
+                <option value="stone_ruins">Каменные завалы в застройке</option>
+                <option value="anti_tank_ditch">Противотанковый ров (засыпка)</option>
+                <option value="craters">Воронки от взрывов на дороге</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Тип инженерной машины:</label>
+              <select class="form-input select" [ngModel]="clearingVehicleType()" (ngModelChange)="clearingVehicleType.set($event)">
+                <option value="imr2">Машина разграждения ИМР-2 / ИМР-3</option>
+                <option value="bat2">Путепрокладчик БАТ-2</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Протяженность участка (м):</label>
+              <input type="number" class="form-input" [ngModel]="clearingLengthM()" (ngModelChange)="clearingLengthM.set(+$event)" min="10" step="10" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Количество машин в расчете:</label>
+              <input type="number" class="form-input" [ngModel]="clearingVehiclesCount()" (ngModelChange)="clearingVehiclesCount.set(+$event)" min="1" max="6" />
+            </div>
+
+            <div class="sub-results-box">
+              <div class="detail-row">
+                <span>Производительность по МОРБ:</span>
+                <strong>{{ cl.productivityNorm }}</strong>
+              </div>
+              <div class="detail-row">
+                <span>Ширина прохода в завале:</span>
+                <strong>{{ cl.passageWidthM }} м</strong>
+              </div>
+              <div class="detail-row highlight">
+                <span>Время проделывания прохода:</span>
+                <strong>{{ cl.clearingTimeFormatted }}</strong>
               </div>
             </div>
           </div>
         </div>
       }
 
-      <!-- TAB 3: NON-EXPLOSIVE & DESTRUCTIONS -->
+      <!-- TAB 4: CROSSINGS -->
+      @if (activeTab() === 'crossings') {
+        @let cr = crossingResult();
+
+        <div class="calc-grid">
+          <div class="calc-card">
+            <h4 class="card-title">Параметры водной преграды и состав группировки</h4>
+
+            <div class="form-row">
+              <label class="form-label">Вид переправы:</label>
+              <select class="form-input select" [ngModel]="crossingMode()" (ngModelChange)="crossingMode.set($event)">
+                <option value="amphibious_pts">Десантная переправа (транспортеры ПТС-2 / ПТС-4)</option>
+                <option value="ferry_pmp">Паромная переправа из понтонного парка ПМП</option>
+                <option value="floating_bridge_pmp">Наплавной мост из парка ПМП (60 т)</option>
+                <option value="mechanized_bridge_tmm">Тяжелый механизированный мост ТММ-3 / ТММ-6</option>
+                <option value="deep_wading_opvt">Переправа танков под водой с ОПВТ</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Ширина водной преграды (м):</label>
+              <input type="number" class="form-input" [ngModel]="crossingRiverWidthM()" (ngModelChange)="crossingRiverWidthM.set(+$event)" min="10" max="1000" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Глубина преграды (м):</label>
+              <input type="number" class="form-input" [ngModel]="crossingRiverDepthM()" (ngModelChange)="crossingRiverDepthM.set(+$event)" min="0.5" max="20" step="0.5" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Скорость течения (м/с):</label>
+              <input type="number" class="form-input" [ngModel]="crossingCurrentSpeedMs()" (ngModelChange)="crossingCurrentSpeedMs.set(+$event)" min="0.1" max="5.0" step="0.1" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Количество танков / тяжелой техники:</label>
+              <input type="number" class="form-input" [ngModel]="crossingTanksCount()" (ngModelChange)="crossingTanksCount.set(+$event)" min="0" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Количество автомобилей / БМП:</label>
+              <input type="number" class="form-input" [ngModel]="crossingTrucksCount()" (ngModelChange)="crossingTrucksCount.set(+$event)" min="0" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Количество личного состава (чел):</label>
+              <input type="number" class="form-input" [ngModel]="crossingPersonnelCount()" (ngModelChange)="crossingPersonnelCount.set(+$event)" min="0" step="10" />
+            </div>
+          </div>
+
+          <div class="calc-card results-card">
+            <h4 class="card-title">{{ cr.modeTitle }}</h4>
+
+            <div class="kpi-grid">
+              <div class="kpi-box">
+                <span class="kpi-label">Время оборудования / наводки</span>
+                <span class="kpi-value">{{ cr.assemblyTimeFormatted }}</span>
+                <span class="kpi-sub">До начала переправы</span>
+              </div>
+              <div class="kpi-box highlight-time">
+                <span class="kpi-label">ПОЛНОЕ ВРЕМЯ ПЕРЕПРАВЫ</span>
+                <span class="kpi-value">{{ cr.totalDurationFormatted }}</span>
+                <span class="kpi-sub">Все подразделения</span>
+              </div>
+              <div class="kpi-box success">
+                <span class="kpi-label">Пропускная способность</span>
+                <span class="kpi-value" style="font-size: 13px;">{{ cr.throughputPerHour }}</span>
+                <span class="kpi-sub">Темп переправы войск</span>
+              </div>
+            </div>
+
+            <h5 class="timeline-title" style="margin-top: 14px;">Потребный наряд сил и понтонно-мостовых средств:</h5>
+            <div class="summary-details">
+              @for (eq of cr.equipmentNeeded; track eq.name) {
+                <div class="detail-row">
+                  <span>{{ eq.name }}:</span>
+                  <strong>{{ eq.qty }} {{ eq.unit }}</strong>
+                </div>
+              }
+            </div>
+
+            @if (cr.warnings.length > 0) {
+              <div class="crossing-warnings">
+                @for (w of cr.warnings; track w) {
+                  <div class="warning-item">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#eab308" stroke-width="2">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                      <line x1="12" y1="9" x2="12" y2="13"></line>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <span>{{ w }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- TAB 5: CAMOUFLAGE -->
+      @if (activeTab() === 'camouflage') {
+        @let mk = maskResult();
+        @let dc = decoyResult();
+        @let ar = aerosolResult();
+
+        <div class="calc-grid-three">
+          <div class="calc-card">
+            <h4 class="card-title">1. Табельные маскировочные сети (МКТ)</h4>
+
+            <div class="form-row">
+              <label class="form-label">Тип укрываемого объекта:</label>
+              <select class="form-input select" [ngModel]="maskTargetType()" (ngModelChange)="maskTargetType.set($event)">
+                <option value="tank">Танк в окопе / на позиции (150 м²)</option>
+                <option value="bmp">БМП / БТР (110 м²)</option>
+                <option value="knp_dugout">Блиндаж / КНП (180 м²)</option>
+                <option value="artillery">Орудие / Миномет (140 м²)</option>
+                <option value="radar_station">РЛС / Радиолокатор (250 м²)</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Количество объектов:</label>
+              <input type="number" class="form-input" [ngModel]="maskTargetCount()" (ngModelChange)="maskTargetCount.set(+$event)" min="1" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Тип маскировочного комплекта:</label>
+              <select class="form-input select" [ngModel]="maskKitType()" (ngModelChange)="maskKitType.set($event)">
+                <option value="mkt2l">МКТ-2Л (растительный летний)</option>
+                <option value="mkt3l">МКТ-3Л (песчано-пустынный)</option>
+                <option value="mkt4l">МКТ-4Л (снежно-зимний)</option>
+                <option value="ts75">ТС-75 (теплорассеивающий против ВТО)</option>
+              </select>
+            </div>
+
+            <div class="sub-results-box">
+              <div class="detail-row">
+                <span>Потребность в комплектах МКТ:</span>
+                <strong>{{ mk.standardKitsNeeded }} компл.</strong>
+              </div>
+              <div class="detail-row">
+                <span>Общая площадь сетей:</span>
+                <strong>{{ mk.totalAreaM2 }} м² ({{ mk.panelsCount }} полотен)</strong>
+              </div>
+              <div class="detail-row highlight">
+                <span>Время оборудования силами расчета:</span>
+                <strong>{{ mk.setupTimeFormatted }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="calc-card">
+            <h4 class="card-title">2. Уголковые отражатели («Сфера-ПР» / ОМУ)</h4>
+
+            <div class="form-row">
+              <label class="form-label">Тип отражателя:</label>
+              <select class="form-input select" [ngModel]="decoyType()" (ngModelChange)="decoyType.set($event)">
+                <option value="sfera_pr">Уголковый отражатель «Сфера-ПР»</option>
+                <option value="omu">Отражатель маскировочный ОМУ</option>
+                <option value="thermal_pot">Тепловой ложный излучатель</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Имитируемый объект:</label>
+              <select class="form-input select" [ngModel]="decoyTargetType()" (ngModelChange)="decoyTargetType.set($event)">
+                <option value="bridge">Ложный мост через реку</option>
+                <option value="position_platoon">Ложный взводный опорный пункт</option>
+                <option value="position_battery">Ложная артиллерийская позиция</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Длина ложного объекта (м):</label>
+              <input type="number" class="form-input" [ngModel]="decoyLengthM()" (ngModelChange)="decoyLengthM.set(+$event)" min="20" step="20" />
+            </div>
+
+            <div class="sub-results-box">
+              <div class="detail-row">
+                <span>Потребность в отражателях:</span>
+                <strong>{{ dc.reflectorsCount }} шт.</strong>
+              </div>
+              <div class="detail-row">
+                <span>Тепловых имитаторов:</span>
+                <strong>{{ dc.thermalPotsCount }} шт.</strong>
+              </div>
+              <div class="detail-row">
+                <span>ЭПР ложного объекта:</span>
+                <strong>{{ dc.radarCrossSectionEchoM2 }} м²</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="calc-card">
+            <h4 class="card-title">3. Аэрозольное прикрытие (ТДА / ДМ-11)</h4>
+
+            <div class="form-row">
+              <label class="form-label">Дымовое средство:</label>
+              <select class="form-input select" [ngModel]="aerosolDevice()" (ngModelChange)="aerosolDevice.set($event)">
+                <option value="tda2m">Термодымовая машина ТДА-2М</option>
+                <option value="tda3">Термодымовая машина ТДА-3</option>
+                <option value="dm11">Дымовые шашки ДМ-11 (рубеж)</option>
+                <option value="rdg2b">Ручные дымовые гранаты РДГ-2Б</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Фронт рубежа задымления (м):</label>
+              <input type="number" class="form-input" [ngModel]="aerosolFrontM()" (ngModelChange)="aerosolFrontM.set(+$event)" min="50" step="100" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Продолжительность завесы (мин):</label>
+              <input type="number" class="form-input" [ngModel]="aerosolDurationMin()" (ngModelChange)="aerosolDurationMin.set(+$event)" min="5" max="120" />
+            </div>
+
+            <div class="sub-results-box">
+              <div class="detail-row">
+                <span>Потребность в средствах:</span>
+                <strong>{{ ar.machinesOrKitsNeeded }} ед.</strong>
+              </div>
+              <div class="detail-row">
+                <span>Расход дымосмеси / шашек:</span>
+                <strong>{{ ar.consumptionTotal }} {{ ar.consumptionUnit }}</strong>
+              </div>
+              <div class="detail-row highlight">
+                <span>Площадь экранирования:</span>
+                <strong>{{ ar.totalCoverAreaHa }} га</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- TAB 6: NZ -->
       @if (activeTab() === 'nz') {
         @let ab = abatisCalc();
         @let br = bridgeCalc();
 
         <div class="calc-grid">
-          <!-- Sub-block: Forest Abatis -->
           <div class="calc-card">
-            <h4 class="card-title">1. Лесные завалы (валка и минирование)</h4>
+            <h4 class="card-title">1. Лесные завалы (невзрывные заграждения)</h4>
 
             <div class="form-row">
               <label class="form-label">Протяженность по фронту (м):</label>
-              <input type="number" class="form-input" [ngModel]="abatisFrontM()" (ngModelChange)="abatisFrontM.set(+$event)" min="10" step="10" />
+              <input type="number" class="form-input" [ngModel]="abatisFrontM()" (ngModelChange)="abatisFrontM.set(+$event)" min="10" />
             </div>
 
             <div class="form-row">
               <label class="form-label">Глубина завала (м):</label>
-              <input type="number" class="form-input" [ngModel]="abatisDepthM()" (ngModelChange)="abatisDepthM.set(+$event)" min="10" step="5" />
+              <input type="number" class="form-input" [ngModel]="abatisDepthM()" (ngModelChange)="abatisDepthM.set(+$event)" min="10" />
             </div>
 
             <div class="form-row">
-              <label class="form-label">Способ устройства:</label>
+              <label class="form-label">Способ валки леса:</label>
               <select class="form-input select" [ngModel]="abatisMethod()" (ngModelChange)="abatisMethod.set($event)">
-                <option value="chainsaw">Бензопилами (270 чел-ч/га, 2 пилы на отделение)</option>
-                <option value="explosive">Взрывной тротилом (90 чел-ч/га)</option>
+                <option value="chainsaw">Бензопилами («Дружба» / «Урал»)</option>
+                <option value="explosive">Взрывным способом (накладные заряды)</option>
               </select>
             </div>
 
-            @if (abatisMethod() === 'explosive') {
-              <div class="form-row">
-                <label class="form-label">Средний диаметр стволов (см):</label>
-                <input type="number" class="form-input" [ngModel]="abatisTreeDiameterCm()" (ngModelChange)="abatisTreeDiameterCm.set(+$event)" min="20" max="80" step="5" />
+            <div class="sub-results-box">
+              <div class="detail-row">
+                <span>Площадь завала:</span>
+                <strong>{{ ab.areaHa | number:'1.2-3' }} га</strong>
               </div>
-            }
-
-            <div class="form-row">
-              <label class="form-label">Саперное подразделение:</label>
-              <select class="form-input select" [ngModel]="abatisUnit()" (ngModelChange)="abatisUnit.set($event)">
-                <option value="squad">Саперное отделение (8 чел)</option>
-                <option value="platoon">Саперный взвод (24 чел)</option>
-                <option value="company">Саперная рота (72 чел)</option>
-              </select>
-            </div>
-
-            <div class="form-row checkbox-row">
-              <label class="form-checkbox-label">
-                <input type="checkbox" [ngModel]="abatisWithMines()" (ngModelChange)="abatisWithMines.set($event)" />
-                Усилить лесной завал минами (ПТМ/ППМ)
-              </label>
-            </div>
-
-            @if (abatisWithMines()) {
-              <div class="form-row">
-                <label class="form-label">Количество ПТМ (шт.):</label>
-                <input type="number" class="form-input" [ngModel]="abatisPtmCount()" (ngModelChange)="abatisPtmCount.set(+$event)" min="0" step="5" />
-              </div>
-              <div class="form-row">
-                <label class="form-label">Количество ППМ (шт.):</label>
-                <input type="number" class="form-input" [ngModel]="abatisPpmCount()" (ngModelChange)="abatisPpmCount.set(+$event)" min="0" step="10" />
-              </div>
-            }
-
-            <div class="summary-box">
-              <div>Площадь завала: <strong>{{ ab.areaHa | number:'1.3-3' }} га</strong></div>
-              @if (abatisMethod() === 'explosive') {
-                <div>Расход тротила: <strong>{{ ab.totalExpKg | number:'1.1-1' }} кг ВВ</strong></div>
-              } @else {
-                <div>Потребность в бензопилах: <strong>{{ ab.chainsawsCount }} шт.</strong></div>
+              @if (ab.totalExpKg > 0) {
+                <div class="detail-row">
+                  <span>Расход взрывчатки (тротил):</span>
+                  <strong>{{ ab.totalExpKg | number:'1.0-0' }} кг</strong>
+                </div>
               }
-              <div>Трудозатраты: <strong>{{ ab.totalOverallLaborCh | number:'1.1-1' }} чел-ч</strong></div>
-              <div style="color: #047857; font-weight: 700;">Полное время: {{ ab.totalOverallTimeFormatted }}</div>
+              <div class="detail-row highlight">
+                <span>Время устройства завала:</span>
+                <strong>{{ ab.totalOverallTimeFormatted }}</strong>
+              </div>
             </div>
           </div>
 
-          <!-- Sub-block: Bridge Demolition -->
           <div class="calc-card">
-            <h4 class="card-title">2. Подготовка и разрушение мостов</h4>
+            <h4 class="card-title">2. Взрывное разрушение мостов</h4>
 
             <div class="form-row">
-              <label class="form-label">Количество мостов (шт.):</label>
-              <input type="number" class="form-input" [ngModel]="bridgeCount()" (ngModelChange)="bridgeCount.set(+$event)" min="1" step="1" />
-            </div>
-
-            <div class="form-row">
-              <label class="form-label">Тип конструкции моста:</label>
+              <label class="form-label">Конструкция моста:</label>
               <select class="form-input select" [ngModel]="bridgeType()" (ngModelChange)="bridgeType.set($event)">
-                <option value="reinforced_concrete">Железобетонный / каменно-бетонный мост</option>
-                <option value="metal">Металлический мост</option>
+                <option value="metal">Металлический балочный мост</option>
+                <option value="reinforced_concrete">Железобетонный мост</option>
                 <option value="wooden">Деревянный мост</option>
               </select>
             </div>
 
             <div class="form-row">
-              <label class="form-label">Характер подрыва:</label>
-              <select class="form-input select" [ngModel]="bridgeTarget()" (ngModelChange)="bridgeTarget.set($event)">
-                <option value="full">Мост полностью (пролеты и опоры)</option>
-                <option value="piers">Только опоры / устои</option>
-                <option value="spans">Только пролетные строения</option>
-                <option value="elements">Отдельные элементы (стойки, узлы, сваи)</option>
-              </select>
+              <label class="form-label">Количество подрываемых опор:</label>
+              <input type="number" class="form-input" [ngModel]="bridgePiersCount()" (ngModelChange)="bridgePiersCount.set(+$event)" min="0" />
             </div>
 
-            @if (bridgeTarget() === 'full' || bridgeTarget() === 'piers') {
-              <div class="form-row">
-                <label class="form-label">Количество опор (на 1 мост):</label>
-                <input type="number" class="form-input" [ngModel]="bridgePiersCount()" (ngModelChange)="bridgePiersCount.set(+$event)" min="0" step="1" />
+            <div class="form-row">
+              <label class="form-label">Количество пролетных строений:</label>
+              <input type="number" class="form-input" [ngModel]="bridgeSpansCount()" (ngModelChange)="bridgeSpansCount.set(+$event)" min="0" />
+            </div>
+
+            <div class="sub-results-box">
+              <div class="detail-row">
+                <span>Расход ВВ на мост:</span>
+                <strong>{{ br.totalExpKg | number:'1.0-0' }} кг тротила</strong>
               </div>
-            }
-
-            @if (bridgeTarget() === 'full' || bridgeTarget() === 'spans') {
-              <div class="form-row">
-                <label class="form-label">Количество пролетов (на 1 мост):</label>
-                <input type="number" class="form-input" [ngModel]="bridgeSpansCount()" (ngModelChange)="bridgeSpansCount.set(+$event)" min="0" step="1" />
+              <div class="detail-row highlight">
+                <span>Время подготовки к подрыву:</span>
+                <strong>{{ br.timeFormatted }}</strong>
               </div>
-            }
-
-            @if (bridgeTarget() === 'elements') {
-              <div class="form-row">
-                <label class="form-label">Количество элементов (на 1 мост):</label>
-                <input type="number" class="form-input" [ngModel]="bridgeElementsCount()" (ngModelChange)="bridgeElementsCount.set(+$event)" min="0" step="1" />
-              </div>
-            }
-
-            <div class="form-row">
-              <label class="form-label">Подразделение саперов:</label>
-              <select class="form-input select" [ngModel]="bridgeUnit()" (ngModelChange)="bridgeUnit.set($event)">
-                <option value="squad">Саперное отделение (8 чел)</option>
-                <option value="platoon">Саперный взвод (24 чел)</option>
-                <option value="company">Саперная рота (72 чел)</option>
-              </select>
-            </div>
-
-            <div class="summary-box">
-              <div>Общий расход тротила: <strong>{{ br.totalExpKg | number:'1.1-1' }} кг ВВ</strong></div>
-              <div>Трудоемкость подготовки: <strong>{{ br.totalLaborCh | number:'1.1-1' }} чел-ч</strong></div>
-              <div style="color: #047857; font-weight: 700;">Время подготовки: {{ br.timeFormatted }}</div>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- TAB 4: OBSTACLE NODE (UZ) -->
-      @if (activeTab() === 'uz') {
-        @let uz = uzCalc();
-
-        <div class="calc-grid">
-          <div class="calc-card">
-            <h4 class="card-title">Временные нормативы боевой работы по устройству УЗ</h4>
-
-            <div class="form-row">
-              <label class="form-label">Время получения распоряжения (чч:мм):</label>
-              <input type="time" class="form-input" [ngModel]="uzOrderTime()" (ngModelChange)="uzOrderTime.set($event)" />
-            </div>
-
-            <div class="form-row">
-              <label class="form-label">Время на принятие решения (мин):</label>
-              <input type="number" class="form-input" [ngModel]="uzDecisionMin()" (ngModelChange)="uzDecisionMin.set(+$event)" min="5" step="5" />
-            </div>
-
-            <div class="form-row">
-              <label class="form-label">Время движения к рубежу (мин):</label>
-              <input type="number" class="form-input" [ngModel]="uzMarchMin()" (ngModelChange)="uzMarchMin.set(+$event)" min="10" step="5" />
-            </div>
-
-            <div class="form-row">
-              <label class="form-label">Время рекогносцировки / разбивки (мин):</label>
-              <input type="number" class="form-input" [ngModel]="uzReconMin()" (ngModelChange)="uzReconMin.set(+$event)" min="5" step="5" />
-            </div>
-
-            <div class="form-row">
-              <label class="form-label">Время возвращения в ЗРС (мин):</label>
-              <input type="number" class="form-input" [ngModel]="uzReturnMin()" (ngModelChange)="uzReturnMin.set(+$event)" min="5" step="5" />
-            </div>
-
-            <div class="form-row">
-              <label class="form-label">Время перезарядки в ЗРС (мин):</label>
-              <input type="number" class="form-input" [ngModel]="uzReloadMin()" (ngModelChange)="uzReloadMin.set(+$event)" min="10" step="5" />
-            </div>
-          </div>
-
-          <div class="calc-card results">
-            <h4 class="card-title">График готовности рубежа и узла заграждений</h4>
-
-            <table class="calc-table">
-              <thead>
-                <tr>
-                  <th>Этап задачи</th>
-                  <th>Время на часах</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>1. Получение распоряжения</td>
-                  <td><strong>{{ uz.t0Formatted }}</strong></td>
-                </tr>
-                <tr>
-                  <td>2. Принятие решения командиром</td>
-                  <td><strong>{{ uz.t1Formatted }}</strong></td>
-                </tr>
-                <tr>
-                  <td>3. Выдвижение на исходный пункт (ИП)</td>
-                  <td><strong>{{ uz.t2Formatted }}</strong></td>
-                </tr>
-                <tr>
-                  <td>4. Прибытие на рубеж минирования</td>
-                  <td><strong>{{ uz.t3Formatted }}</strong></td>
-                </tr>
-                <tr>
-                  <td>5. Окончание разбивки минного поля</td>
-                  <td><strong>{{ uz.t4Formatted }}</strong></td>
-                </tr>
-                <tr class="highlight-row">
-                  <td>6. Готовность заграждения (установка завершена)</td>
-                  <td><strong style="color: #047857;">{{ uz.t5Formatted }}</strong> (длит. {{ uz.installFormatted }})</td>
-                </tr>
-                <tr>
-                  <td>7. Возвращение в ЗРС</td>
-                  <td><strong>{{ uz.t6Formatted }}</strong></td>
-                </tr>
-                <tr>
-                  <td>8. Полная готовность подразделения (перезарядка)</td>
-                  <td><strong>{{ uz.t7Formatted }}</strong></td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div class="mission-total">
-              Полное время выполнения задачи: <strong>{{ uz.totalMissionFormatted }}</strong>
             </div>
           </div>
         </div>
       }
 
     </div>
-
   </div>
 </div>

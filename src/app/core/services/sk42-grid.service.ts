@@ -116,7 +116,7 @@ export class Sk42GridService {
             visibility: this.isGridVisible() ? 'visible' : 'none',
             'text-field': ['get', 'label'],
             'text-size': 11,
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-font': ['Noto Sans Regular'],
             'text-anchor': 'center',
             'text-offset': [0, 0],
             'text-allow-overlap': true,

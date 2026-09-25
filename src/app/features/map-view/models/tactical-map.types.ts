@@ -27,6 +27,7 @@ export interface PlacedSymbolProperties {
   fillOpacity?: number;
   lineDashArray?: number[];
   textSize?: number;
+  fontFamily?: string;
   textColor?: string;
   textHaloColor?: string;
   textHaloWidth?: number;

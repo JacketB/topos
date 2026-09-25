@@ -20,6 +20,8 @@ export class TacticalAnalyticsService {
   readonly targetHeightM = signal<number>(2.0);
   readonly maxRadiusM = signal<number>(3000);
   readonly rangeRingsCenter = signal<[number, number] | null>(null);
+  readonly viewshedCenter = signal<[number, number] | null>(null);
+  readonly isCalculatingViewshed = signal<boolean>(false);
 
   readonly defaultRings: RangeRing[] = [
     { radiusMeters: 500, label: '500 м', color: '#10b981' },
@@ -28,56 +30,20 @@ export class TacticalAnalyticsService {
     { radiusMeters: 5000, label: '5 км', color: '#ef4444' }
   ];
 
+  private map: maplibregl.Map | null = null;
+  private hasBoundMapEvents = false;
+  private moveEndDebounceTimer: any = null;
+  private rangeRingsRaf: number | null = null;
+  private viewshedReqId = 0;
+
   initLayers(map: maplibregl.Map) {
     if (!map) return;
+    this.map = map;
+    this.bindMapEvents(map);
 
     const doInit = () => {
       try {
-        if (!map.isStyleLoaded()) return;
-
-        if (!map.getSource('range-rings-data')) {
-          map.addSource('range-rings-data', {
-            type: 'geojson',
-            data: { type: 'FeatureCollection', features: [] }
-          });
-        }
-
-        if (!map.getLayer('range-rings-line')) {
-          map.addLayer({
-            id: 'range-rings-line',
-            type: 'line',
-            source: 'range-rings-data',
-            filter: ['==', '$type', 'LineString'] as any,
-            paint: {
-              'line-color': ['get', 'color'],
-              'line-width': 2.5,
-              'line-dasharray': [4, 2]
-            }
-          });
-        }
-
-        if (!map.getLayer('range-rings-label')) {
-          map.addLayer({
-            id: 'range-rings-label',
-            type: 'symbol',
-            source: 'range-rings-data',
-            filter: ['==', '$type', 'Point'] as any,
-            layout: {
-              'text-field': ['get', 'label'],
-              'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-              'text-size': 11,
-              'text-offset': [0, -0.6],
-              'text-anchor': 'bottom',
-              'text-allow-overlap': true,
-              'text-ignore-placement': true
-            },
-            paint: {
-              'text-color': ['get', 'color'],
-              'text-halo-color': '#ffffff',
-              'text-halo-width': 2
-            }
-          });
-        }
+        if (!map.getStyle()) return;
 
         if (!map.getSource('viewshed-data')) {
           map.addSource('viewshed-data', {
@@ -111,12 +77,92 @@ export class TacticalAnalyticsService {
             }
           });
         }
+
+        if (!map.getLayer('viewshed-center')) {
+          map.addLayer({
+            id: 'viewshed-center',
+            type: 'circle',
+            source: 'viewshed-data',
+            filter: ['==', ['get', 'isCenter'], true],
+            paint: {
+              'circle-radius': 4.5,
+              'circle-color': '#0284c7',
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#ffffff'
+            }
+          });
+        }
+
+        if (!map.getSource('range-rings-data')) {
+          map.addSource('range-rings-data', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] }
+          });
+        }
+
+        if (!map.getLayer('range-rings-line')) {
+          map.addLayer({
+            id: 'range-rings-line',
+            type: 'line',
+            source: 'range-rings-data',
+            filter: ['==', '$type', 'LineString'] as any,
+            paint: {
+              'line-color': ['get', 'color'],
+              'line-width': 2.5,
+              'line-dasharray': [4, 2]
+            }
+          });
+        }
+
+        if (!map.getLayer('range-rings-label')) {
+          map.addLayer({
+            id: 'range-rings-label',
+            type: 'symbol',
+            source: 'range-rings-data',
+            filter: ['all', ['==', '$type', 'Point'], ['has', 'label']] as any,
+            layout: {
+              'text-field': ['get', 'label'],
+              'text-font': ['Noto Sans Regular'],
+              'text-size': 11,
+              'text-offset': [0, -0.6],
+              'text-anchor': 'bottom',
+              'text-allow-overlap': true,
+              'text-ignore-placement': true
+            },
+            paint: {
+              'text-color': ['get', 'color'],
+              'text-halo-color': '#ffffff',
+              'text-halo-width': 2
+            }
+          });
+        }
+
+        if (!map.getLayer('range-rings-center')) {
+          map.addLayer({
+            id: 'range-rings-center',
+            type: 'circle',
+            source: 'range-rings-data',
+            filter: ['==', ['get', 'isCenter'], true],
+            paint: {
+              'circle-radius': 4.5,
+              'circle-color': '#2563eb',
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#ffffff'
+            }
+          });
+        }
+
+        if (this.isRangeRingsActive() && this.rangeRingsCenter()) {
+          this.updateRangeRingsLayer(map, this.rangeRingsCenter());
+        }
+        if (this.isViewshedActive() && this.viewshedCenter()) {
+          this.calculateAndRenderViewshed(this.viewshedCenter()!, map);
+        }
       } catch (e) {
-        console.warn('Map style loading in progress for TacticalAnalyticsService:', e);
       }
     };
 
-    if (map.isStyleLoaded()) {
+    if (map.isStyleLoaded() || map.getStyle()) {
       doInit();
     } else {
       map.once('style.load', () => doInit());
@@ -124,53 +170,150 @@ export class TacticalAnalyticsService {
     }
   }
 
+  private bindMapEvents(map: maplibregl.Map) {
+    if (this.hasBoundMapEvents) return;
+    this.hasBoundMapEvents = true;
+
+    map.on('move', () => {
+      if (!this.isRangeRingsActive() || !this.map) return;
+      if (this.rangeRingsRaf !== null) return;
+
+      this.rangeRingsRaf = requestAnimationFrame(() => {
+        this.rangeRingsRaf = null;
+        if (!this.isRangeRingsActive() || !this.map) return;
+        const c = this.map.getCenter();
+        const center: [number, number] = [c.lng, c.lat];
+        this.rangeRingsCenter.set(center);
+        this.updateRangeRingsLayer(this.map, center);
+      });
+    });
+
+    map.on('moveend', () => {
+      if (!this.map) return;
+
+      if (this.isRangeRingsActive()) {
+        const c = this.map.getCenter();
+        const center: [number, number] = [c.lng, c.lat];
+        this.rangeRingsCenter.set(center);
+        this.updateRangeRingsLayer(this.map, center);
+      }
+
+      if (this.isViewshedActive()) {
+        if (this.moveEndDebounceTimer) {
+          clearTimeout(this.moveEndDebounceTimer);
+        }
+
+        this.moveEndDebounceTimer = setTimeout(() => {
+          if (!this.isViewshedActive() || !this.map) return;
+          const c = this.map.getCenter();
+          const center: [number, number] = [c.lng, c.lat];
+          this.viewshedCenter.set(center);
+          this.calculateAndRenderViewshed(center, this.map);
+        }, 150);
+      }
+    });
+  }
+
+  recalculateForScreenCenter() {
+    if (!this.map) return;
+    const centerObj = this.map.getCenter();
+    const center: [number, number] = [centerObj.lng, centerObj.lat];
+
+    if (this.isRangeRingsActive()) {
+      this.rangeRingsCenter.set(center);
+      this.updateRangeRingsLayer(this.map, center);
+    }
+
+    if (this.isViewshedActive()) {
+      this.viewshedCenter.set(center);
+      this.calculateAndRenderViewshed(center, this.map);
+    }
+  }
+
+  destroy() {
+    if (this.rangeRingsRaf !== null) {
+      cancelAnimationFrame(this.rangeRingsRaf);
+      this.rangeRingsRaf = null;
+    }
+    if (this.moveEndDebounceTimer) {
+      clearTimeout(this.moveEndDebounceTimer);
+      this.moveEndDebounceTimer = null;
+    }
+    this.hasBoundMapEvents = false;
+    this.map = null;
+  }
+
   toggleRangeRings(center: [number, number] | null, map: maplibregl.Map | null) {
     if (!map) return;
-    this.initLayers(map);
 
-    if (this.isRangeRingsActive() && (!center || this.isSameCenter(center, this.rangeRingsCenter()))) {
+    if (!map.getSource('range-rings-data')) {
+      this.initLayers(map);
+    }
+
+    if (this.isRangeRingsActive()) {
+      if (this.rangeRingsRaf !== null) {
+        cancelAnimationFrame(this.rangeRingsRaf);
+        this.rangeRingsRaf = null;
+      }
       this.isRangeRingsActive.set(false);
       this.rangeRingsCenter.set(null);
       this.updateRangeRingsLayer(map, null);
-    } else if (center) {
+    } else {
+      const targetCenter = center || [map.getCenter().lng, map.getCenter().lat];
       this.isRangeRingsActive.set(true);
-      this.rangeRingsCenter.set(center);
-      this.updateRangeRingsLayer(map, center);
+      this.rangeRingsCenter.set(targetCenter);
+      this.updateRangeRingsLayer(map, targetCenter);
     }
   }
 
   toggleViewshed(center: [number, number] | null, map: maplibregl.Map | null) {
     if (!map) return;
-    this.initLayers(map);
+
+    if (!map.getSource('viewshed-data')) {
+      this.initLayers(map);
+    }
 
     if (this.isViewshedActive()) {
+      if (this.moveEndDebounceTimer) {
+        clearTimeout(this.moveEndDebounceTimer);
+        this.moveEndDebounceTimer = null;
+      }
+      this.viewshedReqId++;
       this.isViewshedActive.set(false);
-      this.updateViewshedLayer(map, null);
-    } else if (center) {
+      this.viewshedCenter.set(null);
+      this.isCalculatingViewshed.set(false);
+      this.updateViewshedLayer(map);
+    } else {
+      const targetCenter = center || [map.getCenter().lng, map.getCenter().lat];
       this.isViewshedActive.set(true);
-      this.calculateAndRenderViewshed(center, map);
+      this.viewshedCenter.set(targetCenter);
+      this.calculateAndRenderViewshed(targetCenter, map);
     }
   }
 
   setObserverHeight(heightM: number) {
     this.observerHeightM.set(Math.max(0.1, heightM));
+    if (this.isViewshedActive() && this.map) {
+      this.recalculateForScreenCenter();
+    }
   }
 
   setTargetHeight(heightM: number) {
     this.targetHeightM.set(Math.max(0.0, heightM));
+    if (this.isViewshedActive() && this.map) {
+      this.recalculateForScreenCenter();
+    }
   }
 
   setMaxRadius(radiusM: number) {
     this.maxRadiusM.set(Math.max(100, radiusM));
-  }
-
-  private isSameCenter(c1: [number, number], c2: [number, number] | null): boolean {
-    if (!c2) return false;
-    return Math.abs(c1[0] - c2[0]) < 0.00001 && Math.abs(c1[1] - c2[1]) < 0.00001;
+    if (this.isViewshedActive() && this.map) {
+      this.recalculateForScreenCenter();
+    }
   }
 
   private updateRangeRingsLayer(map: maplibregl.Map, center: [number, number] | null) {
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map) return;
     const source = map.getSource('range-rings-data') as maplibregl.GeoJSONSource;
     if (!source) return;
 
@@ -180,6 +323,15 @@ export class TacticalAnalyticsService {
     }
 
     const features: any[] = [];
+
+    features.push({
+      type: 'Feature',
+      properties: { isCenter: true },
+      geometry: {
+        type: 'Point',
+        coordinates: center
+      }
+    });
 
     this.defaultRings.forEach(ring => {
       const circleCoords = this.createCirclePolygon(center, ring.radiusMeters);
@@ -211,9 +363,12 @@ export class TacticalAnalyticsService {
   }
 
   private async calculateAndRenderViewshed(center: [number, number], map: maplibregl.Map) {
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map) return;
     const source = map.getSource('viewshed-data') as maplibregl.GeoJSONSource;
     if (!source) return;
+
+    const reqId = ++this.viewshedReqId;
+    this.isCalculatingViewshed.set(true);
 
     try {
       const { invoke } = await import('@tauri-apps/api/core');
@@ -230,21 +385,44 @@ export class TacticalAnalyticsService {
         steps_per_ray: 30,
         stepsPerRay: 30,
       });
+
+      if (reqId !== this.viewshedReqId) return;
+
       if (viewshedGeoJson && viewshedGeoJson.features) {
+        viewshedGeoJson.features.push({
+          type: 'Feature',
+          properties: { isCenter: true },
+          geometry: {
+            type: 'Point',
+            coordinates: center
+          }
+        });
         source.setData(viewshedGeoJson);
+        this.isCalculatingViewshed.set(false);
         return;
       }
-    } catch {}
+    } catch {
+      if (reqId !== this.viewshedReqId) return;
+    }
 
-    const baseElev = this.terrainService.getElevationAt(center[0], center[1]) || 150;
+    const baseElev = (this.terrainService && typeof this.terrainService.getElevationAt === 'function' ? this.terrainService.getElevationAt(center[0], center[1]) : 150) || 150;
     const obsTotalElev = baseElev + this.observerHeightM();
     const targetH = this.targetHeightM();
     const maxRadius = this.maxRadiusM();
 
-    const numRays = 180;
-    const stepsPerRay = 30;
+    const numRays = 36;
+    const stepsPerRay = 15;
 
     const features: any[] = [];
+
+    features.push({
+      type: 'Feature',
+      properties: { isCenter: true },
+      geometry: {
+        type: 'Point',
+        coordinates: center
+      }
+    });
 
     for (let r = 0; r < numRays; r++) {
       const angle1 = r * (360 / numRays);
@@ -258,7 +436,7 @@ export class TacticalAnalyticsService {
         const d2 = (s / stepsPerRay) * maxRadius;
 
         const ptMid = this.destinationPoint(center, d2, midAngle);
-        const ptElev = this.terrainService.getElevationAt(ptMid[0], ptMid[1]) || 150;
+        const ptElev = (this.terrainService && typeof this.terrainService.getElevationAt === 'function' ? this.terrainService.getElevationAt(ptMid[0], ptMid[1]) : 150) || 150;
         const targetTotalElev = ptElev + targetH;
 
         const slope = (targetTotalElev - obsTotalElev) / d2;
@@ -284,14 +462,17 @@ export class TacticalAnalyticsService {
       }
     }
 
+    if (reqId !== this.viewshedReqId) return;
+
     source.setData({
       type: 'FeatureCollection',
       features
     });
+    this.isCalculatingViewshed.set(false);
   }
 
-  private updateViewshedLayer(map: maplibregl.Map, center: [number, number] | null) {
-    if (!map || !map.isStyleLoaded()) return;
+  private updateViewshedLayer(map: maplibregl.Map) {
+    if (!map) return;
     const source = map.getSource('viewshed-data') as maplibregl.GeoJSONSource;
     if (source) {
       source.setData({ type: 'FeatureCollection', features: [] });

@@ -52,6 +52,8 @@ Thumbs.db
 /src-tauri/target
 /topos_portable
 /topos_portable_x86
+/dist_release
+*.rar
 *.zip
 *.tar
 *.gz

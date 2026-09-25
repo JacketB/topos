@@ -351,3 +351,19 @@
   [isOpen]="vm.isHelpModalOpen()" 
   (close)="vm.closeHelpModal()" 
 />
+
+<app-terrain-3d-modal
+  [isOpen]="vm.isTerrain3dModalOpen()"
+  [bbox]="vm.terrain3dBbox()"
+  [mapTextureUrl]="vm.terrain3dTextureUrl()"
+  [buildings]="vm.terrain3dBuildings()"
+  (closed)="vm.closeTerrain3dModal()"
+/>
+
+<app-fortification-3d-modal
+  [isOpen]="vm.isFortification3dModalOpen()"
+  [initialProfile]="vm.fortification3dInitialProfile()"
+  [customParams]="vm.fortification3dCustomParams()"
+  (closed)="vm.closeFortification3d()"
+/>
+

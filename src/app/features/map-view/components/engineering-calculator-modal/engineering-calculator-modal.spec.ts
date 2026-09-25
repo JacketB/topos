@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { EngineeringCalculatorModalComponent, MINES_CATALOG } from './engineering-calculator-modal.component';
+import { MINES_DATABASE } from '../../services/minefield-calculation.service';
 
 describe('EngineeringCalculatorModalComponent Calculations', () => {
   it('should verify mines catalog contains primary engineering mine types', () => {
-    expect(MINES_CATALOG.length).toBeGreaterThanOrEqual(10);
-    const tm72 = MINES_CATALOG.find(m => m.name === 'ТМ-72');
+    expect(MINES_DATABASE.length).toBeGreaterThanOrEqual(10);
+    const tm72 = MINES_DATABASE.find(m => m.name === 'ТМ-72');
     expect(tm72).toBeDefined();
-    expect(tm72?.normPerKm).toBe(350);
+    expect(tm72?.standardDensityPerKm).toBe(350);
   });
 
   it('should calculate infantry MVZ parameters correctly', () => {

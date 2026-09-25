@@ -17,17 +17,18 @@
         "height": 600,
         "resizable": true,
         "fullscreen": false,
-        "devtools": true
+        "maximized": true,
+        "devtools": false
       }
     ],
     "security": {}
   },
   "bundle": {
-    "active": true,
-    "targets": "all",
+    "active": false,
+    "targets": [],
     "windows": {
       "webviewInstallMode": {
-        "type": "offlineInstaller",
+        "type": "downloadBootstrapper",
         "silent": true
       },
       "nsis": {

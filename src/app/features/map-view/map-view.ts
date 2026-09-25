@@ -19,6 +19,8 @@ import { DistrictSummaryModalComponent } from './components/district-summary-mod
 import { HelpModalComponent } from './components/help-modal/help-modal.component';
 import { RoutePlannerPanelComponent } from './components/route-planner-panel/route-planner-panel.component';
 import { EngineeringCalculatorModalComponent } from './components/engineering-calculator-modal/engineering-calculator-modal.component';
+import { Terrain3dModalComponent } from './components/terrain-3d-modal/terrain-3d-modal.component';
+import { Fortification3dModalComponent } from './components/fortification-3d-modal/fortification-3d-modal.component';
 
 @Component({
   selector: 'app-map-view',
@@ -40,7 +42,9 @@ import { EngineeringCalculatorModalComponent } from './components/engineering-ca
     DistrictSummaryModalComponent,
     HelpModalComponent,
     RoutePlannerPanelComponent,
-    EngineeringCalculatorModalComponent
+    EngineeringCalculatorModalComponent,
+    Terrain3dModalComponent,
+    Fortification3dModalComponent
   ],
   templateUrl: './map-view.html',
   styleUrl: './map-view.css',

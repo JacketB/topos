@@ -22,6 +22,7 @@ export class TacticalMapService {
   public symbolsManager = inject(TacticalSymbolsManagerService);
   public imageOverlayService = inject(ImageOverlayService);
 
+  private saveStorageTimeout: any = null;
   readonly placedSymbols = signal<any[]>(this.loadFromStorage());
 
   get activeLineMode() {
@@ -35,11 +36,14 @@ export class TacticalMapService {
   constructor() {
     effect(() => {
       const symbols = this.placedSymbols();
-      try {
-        localStorage.setItem('topos_placed_symbols', JSON.stringify(symbols));
-      } catch (e) {
-        console.error('Ошибка сохранения символов в localStorage:', e);
-      }
+      if (this.saveStorageTimeout) clearTimeout(this.saveStorageTimeout);
+      this.saveStorageTimeout = setTimeout(() => {
+        try {
+          localStorage.setItem('topos_placed_symbols', JSON.stringify(symbols));
+        } catch (e) {
+          console.error('Ошибка сохранения символов в localStorage:', e);
+        }
+      }, 300);
     });
 
     effect(() => {
@@ -52,18 +56,32 @@ export class TacticalMapService {
     });
 
     effect(() => {
-      this.selectedPlacedSymbol();
       this.selectedPlacedSymbols();
-      this.placedSymbols();
-      this.updateTacticalSymbolsSource();
-      this.updateLinearVerticesSource();
       this.updateHighlightLayers();
+    });
+
+    effect(() => {
+      const sel = this.selectedPlacedSymbol();
+      if (sel && sel.properties?.['isLinear']) {
+        this.updateLinearVerticesSource();
+      } else {
+        const source = this.mapInstance?.getSource('linear-vertices') as maplibregl.GeoJSONSource;
+        if (source) {
+          source.setData({ type: 'FeatureCollection', features: [] });
+        }
+      }
+    });
+
+    effect(() => {
+      this.selectedPlacedSymbol();
+      this.syncTextBoxMarkers();
     });
 
     effect(() => {
       const mode = this.interactionMode();
       untracked(() => {
         this.isSelectionModeActive.set(mode === 'select');
+        this.syncTextBoxMarkers();
       });
     });
 
@@ -435,6 +453,24 @@ export class TacticalMapService {
       }, 'tactical_polygons_outline_layer');
     }
 
+    if (!map.getLayer('tactical_lines_casing_layer')) {
+      map.addLayer({
+        id: 'tactical_lines_casing_layer',
+        type: 'line',
+        source: 'tactical-symbols',
+        filter: ['==', '$type', 'LineString'],
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': ['+', ['coalesce', ['get', 'lineWidth'], 3.5], 2.5],
+          'line-opacity': 0.85
+        }
+      });
+    }
+
     if (!map.getLayer('tactical_lines_layer')) {
       map.addLayer({
         id: 'tactical_lines_layer',
@@ -476,30 +512,42 @@ export class TacticalMapService {
         id: 'tactical_symbols_layer',
         type: 'symbol',
         source: 'tactical-symbols',
-        filter: ['==', '$type', 'Point'],
+        filter: ['all', ['==', '$type', 'Point'], ['!=', 'isLinear', true], ['!=', 'symbol', 'text_box'], ['!=', 'isText', true]],
         layout: {
-          'icon-image': ['coalesce', ['get', 'iconId'], ['get', 'symbol']],
+          'icon-image': ['coalesce', ['get', 'iconId'], ['get', 'symbol'], ''],
           'icon-size': ['coalesce', ['get', 'size'], 0.08],
           'icon-rotate': ['coalesce', ['get', 'angle'], 0],
           'icon-allow-overlap': true,
           'icon-ignore-placement': true,
-          'text-field': ['get', 'name'],
-          'text-size': 11,
-          'text-offset': [0, 1.8],
-          'text-anchor': 'top',
+          'text-field': ['coalesce', ['get', 'name'], ''],
+          'text-size': ['coalesce', ['get', 'textSize'], 11],
+          'text-rotate': ['coalesce', ['get', 'textRotate'], 0],
+          'text-offset': ['coalesce', ['get', 'textOffset'], ['literal', [0, 1.8]]],
+          'text-anchor': ['coalesce', ['get', 'textAnchor'], 'top'],
           'text-allow-overlap': true,
           'text-ignore-placement': true
         },
         paint: {
-          'text-color': '#222222',
-          'text-halo-color': '#ffffff',
-          'text-halo-width': 1.5,
+          'text-color': ['coalesce', ['get', 'textColor'], '#222222'],
+          'text-halo-color': ['coalesce', ['get', 'textHaloColor'], '#ffffff'],
+          'text-halo-width': ['coalesce', ['get', 'textHaloWidth'], 1.5],
           'icon-opacity': 1,
           'icon-opacity-transition': { duration: 0 },
           'text-opacity': 1,
           'text-opacity-transition': { duration: 0 }
         }
       });
+    } else {
+      map.setFilter('tactical_symbols_layer', ['all', ['==', '$type', 'Point'], ['!=', 'isLinear', true], ['!=', 'symbol', 'text_box'], ['!=', 'isText', true]]);
+      map.setLayoutProperty('tactical_symbols_layer', 'icon-image', ['coalesce', ['get', 'iconId'], ['get', 'symbol'], '']);
+      map.setLayoutProperty('tactical_symbols_layer', 'icon-size', ['coalesce', ['get', 'size'], 0.08]);
+      map.setLayoutProperty('tactical_symbols_layer', 'text-size', ['coalesce', ['get', 'textSize'], 11]);
+      map.setLayoutProperty('tactical_symbols_layer', 'text-rotate', ['coalesce', ['get', 'textRotate'], 0]);
+      map.setLayoutProperty('tactical_symbols_layer', 'text-offset', ['coalesce', ['get', 'textOffset'], ['literal', [0, 1.8]]]);
+      map.setLayoutProperty('tactical_symbols_layer', 'text-anchor', ['coalesce', ['get', 'textAnchor'], 'top']);
+      map.setPaintProperty('tactical_symbols_layer', 'text-color', ['coalesce', ['get', 'textColor'], '#222222']);
+      map.setPaintProperty('tactical_symbols_layer', 'text-halo-color', ['coalesce', ['get', 'textHaloColor'], '#ffffff']);
+      map.setPaintProperty('tactical_symbols_layer', 'text-halo-width', ['coalesce', ['get', 'textHaloWidth'], 1.5]);
     }
 
     if (!map.getLayer('tactical_symbols_highlight_layer')) {
@@ -660,6 +708,7 @@ export class TacticalMapService {
         this.ensureSymbolImageLoadedForId(symbolId, iconId, () => this.updateTacticalSymbolsSource());
       }
     });
+    this.syncTextBoxMarkers();
   }
 
   init(map: maplibregl.Map | null) {
@@ -752,7 +801,8 @@ export class TacticalMapService {
 
       if (features.length > 0) {
         const feat = features[0];
-        const found = this.placedSymbols().find(s => s.properties['id'] === feat.properties?.['id']);
+        const targetId = feat.properties?.['parentId'] || feat.properties?.['id'];
+        const found = this.placedSymbols().find(s => s.properties['id'] === targetId || String(s.properties['id']) === String(targetId));
         if (found) {
           if (found.properties?.['lineType'] === 'march_route') {
             return;
@@ -1009,57 +1059,106 @@ export class TacticalMapService {
   updatePlacedSymbolAngle(angle: number) {
     const selected = this.selectedPlacedSymbol();
     if (selected) {
+      const id = selected.properties['id'];
+      const isText = selected.properties['isText'] || selected.properties['symbol'] === 'text_box';
       this.placedSymbols.update(prev => 
-        prev.map(s => s.properties['id'] === selected.properties['id'] ? {
+        prev.map(s => s.properties['id'] === id ? {
           ...s,
           properties: { ...s.properties, angle }
         } : s)
       );
       this.syncSelectedPlacedSymbol();
-      this.updateTacticalSymbolsSource();
+      if (!isText) {
+        this.updateTacticalSymbolsSource();
+      }
+      this.syncTextBoxMarkers();
     }
   }
 
   updatePlacedSymbolProperty(key: string, value: any) {
     const selected = this.selectedPlacedSymbol();
     if (selected) {
+      const id = selected.properties['id'];
+      const isText = selected.properties['isText'] || selected.properties['symbol'] === 'text_box';
       this.placedSymbols.update(prev => 
-        prev.map(s => s.properties['id'] === selected.properties['id'] ? {
+        prev.map(s => s.properties['id'] === id ? {
           ...s,
           properties: { ...s.properties, [key]: value }
         } : s)
       );
       this.syncSelectedPlacedSymbol();
-      this.updateTacticalSymbolsSource();
+      if (!isText) {
+        this.updateTacticalSymbolsSource();
+      }
+      this.syncTextBoxMarkers();
+    }
+  }
+
+  updatePlacedSymbolProperties(props: Record<string, any>) {
+    const selected = this.selectedPlacedSymbol();
+    if (selected) {
+      const id = selected.properties['id'];
+      const isText = selected.properties['isText'] || selected.properties['symbol'] === 'text_box';
+      this.placedSymbols.update(prev => 
+        prev.map(s => s.properties['id'] === id ? {
+          ...s,
+          properties: { ...s.properties, ...props }
+        } : s)
+      );
+      this.syncSelectedPlacedSymbol();
+      if (!isText) {
+        this.updateTacticalSymbolsSource();
+      }
+      this.syncTextBoxMarkers();
     }
   }
 
   updatePlacedSymbolName(name: string) {
     const selected = this.selectedPlacedSymbol();
     if (selected) {
+      const id = selected.properties['id'];
+      const isText = selected.properties['isText'] || selected.properties['symbol'] === 'text_box';
       this.placedSymbols.update(prev => 
-        prev.map(s => s.properties['id'] === selected.properties['id'] ? {
+        prev.map(s => s.properties['id'] === id ? {
           ...s,
           properties: { ...s.properties, name }
         } : s)
       );
       this.syncSelectedPlacedSymbol();
-      this.updateTacticalSymbolsSource();
+      if (!isText) {
+        this.updateTacticalSymbolsSource();
+      }
+      this.syncTextBoxMarkers();
     }
   }
 
   updatePlacedSymbolColor(color: string) {
     const selected = this.selectedPlacedSymbol();
     if (selected) {
+      const id = selected.properties['id'];
+      const isText = selected.properties['isText'] || selected.properties['symbol'] === 'text_box';
+      if (isText) {
+        this.placedSymbols.update(prev => 
+          prev.map(s => s.properties['id'] === id ? {
+            ...s,
+            properties: { ...s.properties, color, textColor: color }
+          } : s)
+        );
+        this.syncSelectedPlacedSymbol();
+        this.syncTextBoxMarkers();
+        return;
+      }
+
       if (selected.properties?.['isLinear']) {
         this.placedSymbols.update(prev => 
-          prev.map(s => s.properties['id'] === selected.properties['id'] ? {
+          prev.map(s => s.properties['id'] === id ? {
             ...s,
             properties: { ...s.properties, color }
           } : s)
         );
         this.syncSelectedPlacedSymbol();
         this.updateTacticalSymbolsSource();
+        this.syncTextBoxMarkers();
         return;
       }
 
@@ -1068,13 +1167,14 @@ export class TacticalMapService {
 
       const applyUpdate = () => {
         this.placedSymbols.update(prev => 
-          prev.map(s => s.properties['id'] === selected.properties['id'] ? {
+          prev.map(s => s.properties['id'] === id ? {
             ...s,
             properties: { ...s.properties, color, iconId }
           } : s)
         );
         this.syncSelectedPlacedSymbol();
         this.updateTacticalSymbolsSource();
+        this.syncTextBoxMarkers();
       };
 
       if (color) {
@@ -1092,10 +1192,40 @@ export class TacticalMapService {
   deleteSelectedPlacedSymbol() {
     const selected = this.selectedPlacedSymbol();
     if (selected) {
-      this.placedSymbols.update(prev => prev.filter(s => s.properties['id'] !== selected.properties['id']));
+      const id = selected.properties['id'];
+      const marker = this.textBoxMarkers.get(id);
+      if (marker) {
+        marker.remove();
+        this.textBoxMarkers.delete(id);
+      }
+      this.placedSymbols.update(prev => prev.filter(s => s.properties['id'] !== id));
+      this.selectedPlacedSymbol.set(null);
+      this.selectedPlacedSymbols.update(prev => prev.filter(s => s.properties['id'] !== id));
+      this.updateTacticalSymbolsSource();
+      this.updateLinearVerticesSource();
+      this.syncTextBoxMarkers();
+    }
+  }
+
+  deleteSelectedPlacedSymbols() {
+    const selected = this.selectedPlacedSymbols();
+    if (selected && selected.length > 0) {
+      const ids = new Set(selected.map(s => s.properties['id']));
+      for (const id of ids) {
+        const marker = this.textBoxMarkers.get(id);
+        if (marker) {
+          marker.remove();
+          this.textBoxMarkers.delete(id);
+        }
+      }
+      this.placedSymbols.update(prev => prev.filter(s => !ids.has(s.properties['id'])));
+      this.selectedPlacedSymbols.set([]);
       this.selectedPlacedSymbol.set(null);
       this.updateTacticalSymbolsSource();
       this.updateLinearVerticesSource();
+      this.syncTextBoxMarkers();
+    } else {
+      this.deleteSelectedPlacedSymbol();
     }
   }
 
@@ -1151,6 +1281,7 @@ export class TacticalMapService {
   placeLinearSymbol(coords: [number, number][], lineType: 'simple_line' | 'line' | 'trench' | 'comm_open' | 'comm_covered' | 'wire' | 'area_polygon' | string, name: string, flipSide: boolean = false, isSmooth: boolean = false, isDashed: boolean = false, customLineStyle?: string) {
     if (!coords || coords.length < 2) return;
     const geom = this.trenchGeometryService.generateLinearGeometry(coords, lineType, flipSide, isSmooth);
+    const lenInfo = this.trenchGeometryService.calculateLineLengthKm(coords);
     
     let color = this.templateCustomColor();
     if (!color) {
@@ -1182,6 +1313,8 @@ export class TacticalMapService {
         isLinear: true,
         lineType: lineType,
         origCoords: coords,
+        lineLengthKm: lenInfo.lengthKm,
+        fortLength: Math.round(lenInfo.lengthM * 10) / 10,
         flipSide: flipSide,
         isSmooth: isSmooth,
         isDashed: isDashed,
@@ -1203,8 +1336,12 @@ export class TacticalMapService {
       properties: {
         id: Date.now(),
         name: text,
-        color: '#222222',
+        color: '#1e293b',
+        textColor: '#1e293b',
         size: 14,
+        textSize: 14,
+        fontFamily: 'Times New Roman',
+        symbol: 'text_box',
         isText: true
       },
       geometry: {
@@ -1214,6 +1351,7 @@ export class TacticalMapService {
     };
     this.placedSymbols.update(prev => [...prev, newFeature]);
     this.updateTacticalSymbolsSource();
+    this.syncTextBoxMarkers();
     this.selectPlacedSymbol(newFeature);
   }
 
@@ -1227,11 +1365,17 @@ export class TacticalMapService {
     const isSmooth = !!symbol.properties['isSmooth'];
     const lineWidth = symbol.properties['lineWidth'] || 3;
     const geom = this.trenchGeometryService.generateLinearGeometry(newCoords, lineType, flipSide, isSmooth, lineWidth);
+    const lenInfo = this.trenchGeometryService.calculateLineLengthKm(newCoords);
 
     this.placedSymbols.update(prev =>
       prev.map(s => s.properties['id'] === id ? {
         ...s,
-        properties: { ...s.properties, origCoords: newCoords },
+        properties: {
+          ...s.properties,
+          origCoords: newCoords,
+          lineLengthKm: lenInfo.lengthKm,
+          fortLength: Math.round(lenInfo.lengthM * 10) / 10
+        },
         geometry: geom
       } : s)
     );
@@ -1514,17 +1658,69 @@ export class TacticalMapService {
     });
   }
 
+  public getAllFeaturesWithPatrol(symbols?: any[]): any[] {
+    const list = symbols || this.placedSymbols().filter(s => !s.properties?.hidden);
+    const features: any[] = [...list];
+
+    list.forEach(s => {
+      if (s.geometry?.type === 'Point' && s.properties?.hasPatrol) {
+        const coords = s.geometry.coordinates as [number, number];
+        if (coords && coords.length >= 2) {
+          const patrolAngle = s.properties.patrolAngle ?? s.properties.angle ?? 0;
+          const patrolLength = s.properties.patrolLength || 400;
+          const patrolRadius = s.properties.patrolRadius || 25;
+          const isDashed = s.properties.patrolStyle === 'dashed';
+          const geomCoords = this.trenchGeometryService.generatePatrolGeometry(
+            coords,
+            patrolAngle,
+            patrolLength,
+            patrolRadius,
+            isDashed
+          );
+          if (geomCoords && geomCoords.length > 0) {
+            const isEnemy = s.properties.symbol?.includes('enemy') || s.properties.symbol?.startsWith('opp_');
+            const defaultColor = isEnemy ? '#dc2626' : '#2563eb';
+            const patrolColor = s.properties.color || defaultColor;
+            features.push({
+              type: 'Feature',
+              id: `patrol_${s.properties.id}`,
+              properties: {
+                id: `patrol_${s.properties.id}`,
+                parentId: s.properties.id,
+                isPatrolLine: true,
+                color: patrolColor,
+                lineWidth: 2.5
+              },
+              geometry: {
+                type: 'MultiLineString',
+                coordinates: geomCoords
+              }
+            });
+          }
+        }
+      }
+    });
+
+    return features;
+  }
+
+  private updateSourceRafId: number | null = null;
+
   public updateTacticalSymbolsSource() {
     if (!this.mapInstance || !this.mapInstance.getStyle()) return;
-    try {
-      const source = this.mapInstance.getSource('tactical-symbols') as maplibregl.GeoJSONSource;
-      if (source) {
-        source.setData({
-          type: 'FeatureCollection',
-          features: this.placedSymbols().filter(s => !s.properties?.hidden)
-        });
-      }
-    } catch {}
+    if (this.updateSourceRafId !== null) return;
+    this.updateSourceRafId = requestAnimationFrame(() => {
+      this.updateSourceRafId = null;
+      try {
+        const source = this.mapInstance?.getSource('tactical-symbols') as maplibregl.GeoJSONSource;
+        if (source) {
+          source.setData({
+            type: 'FeatureCollection',
+            features: this.getAllFeaturesWithPatrol()
+          });
+        }
+      } catch {}
+    });
   }
 
   private setupBoxSelection(map: maplibregl.Map) {
@@ -1788,14 +1984,156 @@ export class TacticalMapService {
     });
 
     this.updateTacticalSymbolsSource();
+    this.syncTextBoxMarkers();
   }
 
   public clearAllTacticalFeatures() {
+    for (const marker of this.textBoxMarkers.values()) {
+      marker.remove();
+    }
+    this.textBoxMarkers.clear();
     this.placedSymbols.set([]);
     this.objectGroups.set([]);
     this.selectedPlacedSymbol.set(null);
     this.selectedPlacedSymbols.set([]);
     this.activeCalculationGroupId.set('all');
     this.updateTacticalSymbolsSource();
+  }
+
+  private textBoxMarkers = new Map<number, maplibregl.Marker>();
+  private syncTextBoxRafId: number | null = null;
+
+  public syncTextBoxMarkers() {
+    if (!this.mapInstance) return;
+    if (this.syncTextBoxRafId !== null) return;
+    this.syncTextBoxRafId = requestAnimationFrame(() => {
+      this.syncTextBoxRafId = null;
+      this.performSyncTextBoxMarkers();
+    });
+  }
+
+  private performSyncTextBoxMarkers() {
+    if (!this.mapInstance) return;
+
+    const currentTextSymbols = this.placedSymbols().filter(
+      s => (s.properties?.['isText'] || s.properties?.['symbol'] === 'text_box') && !s.properties?.['hidden']
+    );
+    const activeIds = new Set<number>();
+
+    for (const s of currentTextSymbols) {
+      const id = s.properties['id'];
+      activeIds.add(id);
+
+      let marker = this.textBoxMarkers.get(id);
+      const coords = s.geometry?.coordinates;
+      if (!coords || coords.length < 2) continue;
+
+      const textVal = s.properties['name'] || '';
+      const fontSize = s.properties['textSize'] || s.properties['size'] || 14;
+      const fontFamily = s.properties['fontFamily'] || 'Times New Roman';
+      const textColor = s.properties['textColor'] || s.properties['color'] || '#1e293b';
+      const haloColor = s.properties['textHaloColor'] || '#ffffff';
+      const haloWidth = s.properties['textHaloWidth'] !== undefined ? s.properties['textHaloWidth'] : 1.5;
+      const angle = s.properties['angle'] || 0;
+      const isSelected = this.selectedPlacedSymbol()?.properties?.['id'] === id;
+
+      if (!marker) {
+        const el = document.createElement('div');
+        el.className = 'topos-map-text-box';
+        el.style.position = 'relative';
+        el.style.whiteSpace = 'pre-wrap';
+        el.style.cursor = 'pointer';
+        el.style.userSelect = 'none';
+        el.style.textAlign = 'center';
+        el.style.lineHeight = '1.2';
+        el.style.fontWeight = '700';
+        el.style.padding = '2px 4px';
+        el.style.transition = 'outline 0.15s ease';
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const found = this.placedSymbols().find(item => item.properties['id'] === id);
+          if (found) {
+            this.selectPlacedSymbol(found);
+          }
+        });
+
+        marker = new maplibregl.Marker({
+          element: el,
+          draggable: this.interactionMode() === 'edit'
+        })
+        .setLngLat(coords)
+        .addTo(this.mapInstance);
+
+        marker.on('drag', () => {
+          const lngLat = marker!.getLngLat();
+          const target = this.placedSymbols().find(item => item.properties['id'] === id);
+          if (target && target.geometry) {
+            target.geometry.coordinates = [lngLat.lng, lngLat.lat];
+          }
+        });
+
+        marker.on('dragend', () => {
+          const lngLat = marker!.getLngLat();
+          this.placedSymbols.update(prev =>
+            prev.map(item => item.properties['id'] === id ? {
+              ...item,
+              geometry: { ...item.geometry, coordinates: [lngLat.lng, lngLat.lat] }
+            } : item)
+          );
+          this.syncSelectedPlacedSymbol();
+        });
+
+        this.textBoxMarkers.set(id, marker);
+      }
+
+      const el = marker.getElement();
+      if (el.textContent !== textVal) {
+        el.textContent = textVal;
+      }
+      const expectedFont = `"${fontFamily}", "Segoe UI", Arial, sans-serif`;
+      if (el.style.fontFamily !== expectedFont) {
+        el.style.fontFamily = expectedFont;
+      }
+      const expectedSize = `${fontSize}px`;
+      if (el.style.fontSize !== expectedSize) {
+        el.style.fontSize = expectedSize;
+      }
+      if (el.style.color !== textColor) {
+        el.style.color = textColor;
+      }
+      const expectedShadow = haloWidth > 0 
+        ? `-${haloWidth}px -${haloWidth}px 0 ${haloColor}, ${haloWidth}px -${haloWidth}px 0 ${haloColor}, -${haloWidth}px ${haloWidth}px 0 ${haloColor}, ${haloWidth}px ${haloWidth}px 0 ${haloColor}, 0 -${haloWidth}px 0 ${haloColor}, 0 ${haloWidth}px 0 ${haloColor}, -${haloWidth}px 0 0 ${haloColor}, ${haloWidth}px 0 0 ${haloColor}`
+        : 'none';
+      if (el.style.textShadow !== expectedShadow) {
+        el.style.textShadow = expectedShadow;
+      }
+      const expectedTransform = angle ? `rotate(${angle}deg)` : 'none';
+      if (el.style.transform !== expectedTransform) {
+        el.style.transform = expectedTransform;
+      }
+      if (isSelected) {
+        el.style.outline = '1.5px dashed #466bf7';
+        el.style.outlineOffset = '3px';
+        el.style.borderRadius = '2px';
+      } else {
+        if (el.style.outline !== 'none') {
+          el.style.outline = 'none';
+        }
+      }
+
+      const curPos = marker.getLngLat();
+      if (Math.abs(curPos.lng - coords[0]) > 0.000001 || Math.abs(curPos.lat - coords[1]) > 0.000001) {
+        marker.setLngLat(coords);
+      }
+      marker.setDraggable(this.interactionMode() === 'edit');
+    }
+
+    for (const [id, marker] of this.textBoxMarkers.entries()) {
+      if (!activeIds.has(id)) {
+        marker.remove();
+        this.textBoxMarkers.delete(id);
+      }
+    }
   }
 }

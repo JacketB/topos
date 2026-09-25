@@ -18,6 +18,22 @@ export interface ElevationProfileResult {
   maxSlopePercent: number;
 }
 
+export interface TerrainMeshResult {
+  vertices: number[];
+  normals: number[];
+  uvs: number[];
+  indices: number[];
+  minElevation: number;
+  maxElevation: number;
+  avgElevation: number;
+  widthM: number;
+  heightM: number;
+  centerLng: number;
+  centerLat: number;
+  gridCols: number;
+  gridRows: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -110,6 +126,82 @@ export class TerrainService {
       elevationGainM: 0,
       elevationLossM: 0,
       maxSlopePercent: 0
+    };
+  }
+
+  async generateTerrainMesh(
+    bbox: [number, number, number, number],
+    resolution: number = 64
+  ): Promise<TerrainMeshResult> {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      return await invoke<TerrainMeshResult>('generate_terrain_mesh', {
+        bbox,
+        resolution
+      });
+    } catch {
+      return this.generateFallbackMesh(bbox, resolution);
+    }
+  }
+
+  private generateFallbackMesh(
+    bbox: [number, number, number, number],
+    resolution: number
+  ): TerrainMeshResult {
+    const minLng = Math.min(bbox[0], bbox[2]);
+    const maxLng = Math.max(bbox[0], bbox[2]);
+    const minLat = Math.min(bbox[1], bbox[3]);
+    const maxLat = Math.max(bbox[1], bbox[3]);
+    const cols = Math.max(16, Math.min(128, resolution));
+    const rows = cols;
+    const centerLng = (minLng + maxLng) * 0.5;
+    const centerLat = (minLat + maxLat) * 0.5;
+    const widthM = (maxLng - minLng) * 111320 * Math.cos((centerLat * Math.PI) / 180);
+    const heightM = (maxLat - minLat) * 111132;
+
+    const vertices: number[] = [];
+    const normals: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
+
+    for (let r = 0; r < rows; r++) {
+      const vFrac = r / (rows - 1);
+      const z = -((vFrac - 0.5) * heightM);
+      for (let c = 0; c < cols; c++) {
+        const uFrac = c / (cols - 1);
+        const x = (uFrac - 0.5) * widthM;
+        const y = 150;
+        vertices.push(x, y, z);
+        normals.push(0, 1, 0);
+        uvs.push(uFrac, vFrac);
+      }
+    }
+
+    for (let r = 0; r < rows - 1; r++) {
+      for (let c = 0; c < cols - 1; c++) {
+        const i0 = r * cols + c;
+        const i1 = r * cols + c + 1;
+        const i2 = (r + 1) * cols + c;
+        const i3 = (r + 1) * cols + c + 1;
+        indices.push(i0, i1, i2);
+        indices.push(i1, i3, i2);
+      }
+    }
+
+    return {
+      vertices,
+      normals,
+      uvs,
+      indices,
+      minElevation: 150,
+      maxElevation: 150,
+      avgElevation: 150,
+      widthM,
+      heightM,
+      centerLng,
+      centerLat,
+      gridCols: cols,
+      gridRows: rows
     };
   }
 }

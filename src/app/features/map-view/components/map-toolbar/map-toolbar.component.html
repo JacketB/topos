@@ -439,7 +439,7 @@
                             <circle cx="18" cy="15" r="1"></circle>
                           </svg>
                         }
-                        @case ('fortification_ussr') {
+                        @case ('fortification') {
                           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M2 18V9a5 5 0 0 1 5-5h10a5 5 0 0 1 5 5v9H2z"></path>
                             <rect x="7" y="9" width="10" height="3" rx="1" fill="currentColor"></rect>
@@ -596,6 +596,20 @@
           <path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M8 18h.01M12 18h.01"></path>
         </svg>
         <kbd class="key-hint">E</kbd>
+      </button>
+
+      <!-- 3D-модель рельефа (Rust DEM Engine) -->
+      <button 
+        class="tool-btn" 
+        [class.active]="vm.isTerrain3dModalOpen()" 
+        (click)="vm.toggleTerrain3dModal()" 
+        title="3D-модель рельефа местности (Rust DEM Engine)"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+          <path d="M2 17l10 5 10-5" />
+          <path d="M2 12l10 5 10-5" />
+        </svg>
       </button>
 
       <!-- Наложение изображений (Фото) -->

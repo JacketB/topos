@@ -188,7 +188,27 @@ export class MarchOrderModalComponent {
         9: 15,
         10: 14,
         11: 18
-      }
+      },
+      calculationSteps: [
+        {
+          parameter: '1. Глубина элемента походного порядка (L_эл)',
+          formula: 'L_эл = (N_маш * l_маш) + ((N_маш - 1) * d_дист)',
+          calculation: 'Расчет по каждому подразделению приведен в ведомости выше',
+          description: 'N_маш — количество машин в элементе, l_маш — длина машины, d_дист — дистанция между машинами'
+        },
+        {
+          parameter: '2. Общая глубина походной колонны (L_общ)',
+          formula: 'L_общ = sum(L_эл) + sum(D_дист_между_эл)',
+          calculation: `${(res.totalDepthKm).toFixed(2)} км (${res.totalDepthM} м)`,
+          description: 'Суммарная глубина колонны с учетом дистанций между походными заставами и главными силами'
+        },
+        {
+          parameter: '3. Удаление Исходного Рубежа (D_ир)',
+          formula: 'D_ир = ceil(L_общ * 10) / 10',
+          calculation: `${res.irDistanceKm} км`,
+          description: 'Удаление ИР назначается не менее полной глубины походной колонны главных сил'
+        }
+      ]
     });
 
     const wsSummary = ExcelStylerUtils.buildKeyValueSheet({
@@ -227,6 +247,38 @@ export class MarchOrderModalComponent {
             { label: 'Общее количество техники в колонне', value: res.totalVehicles, unit: 'ед.', note: 'Все типы колесных и гусеничных машин' },
             { label: 'Общая глубина походной колонны', value: `${(res.totalDepthKm).toFixed(2)} км (${res.totalDepthM} м)`, unit: 'км (м)', note: 'С учетом дистанций между частями' }
           ]
+        }
+      ],
+      calculationSteps: [
+        {
+          parameter: '1. Время выдвижения головы колонны к ИР (T_вых)',
+          formula: 'T_вых = (D_ир / V_вых) * 60',
+          calculation: `(${res.irDistanceKm} / ${this.speedToIrKmh()}) * 60 = ${res.timeToIrMin.toFixed(1)} мин.`,
+          description: `D_ир = ${res.irDistanceKm} км, V_вых = ${this.speedToIrKmh()} км/ч (скорость выхода из исходного района)`
+        },
+        {
+          parameter: '2. Время вытягивания колонны через рубеж (T_вытяг)',
+          formula: 'T_вытяг = (L_общ / V_марш) * 60',
+          calculation: `(${res.totalDepthKm.toFixed(2)} / ${this.marchSpeedKmh()}) * 60 = ${res.timeStretchMin.toFixed(1)} мин.`,
+          description: `Время прохождения замыкающей машины колонны через створ рубежа на скорости ${this.marchSpeedKmh()} км/ч`
+        },
+        {
+          parameter: '3. Чистое время движения по маршруту (T_трасса)',
+          formula: 'T_трасса = (S_маршрута / V_марш) * 60',
+          calculation: `(${this.routeLengthKm()} / ${this.marchSpeedKmh()}) * 60 = ${res.pureTravelTimeMin.toFixed(1)} мин.`,
+          description: `S_маршрута = ${this.routeLengthKm()} км (протяженность между ИР и РВ), без задержек и привалов`
+        },
+        {
+          parameter: '4. Суммарная задержка на барьерных рубежах (T_барьер)',
+          formula: 'T_барьер = ((L_общ / V_барьер) * 60 - T_вытяг) * N_барьеров',
+          calculation: `${res.barrierDelayFormatted}`,
+          description: `N_барьеров = ${this.barrierCount()} шт., сниженная скорость преодоления V_барьер = ${this.barrierSpeedKmh()} км/ч`
+        },
+        {
+          parameter: '5. ПОЛНОЕ ВРЕМЯ СОВЕРШЕНИЯ МАРША (T_марш)',
+          formula: 'T_марш = T_трасса + T_привалы + T_барьер + T_вытяг',
+          calculation: `${res.totalMarchTimeFormatted}`,
+          description: `Время привалов = ${this.restTimeMin()} мин. Полный интервал от прохода головы через ИР до прибытия замыкания на РВ`
         }
       ]
     });

@@ -255,7 +255,8 @@ pub fn run() {
             get_slope_bearing,
             get_elevation_profile,
             calculate_viewshed,
-            get_march_overlays
+            get_march_overlays,
+            generate_terrain_mesh
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -1224,6 +1225,181 @@ fn calculate_viewshed(
     }))
 }
 
+#[derive(serde::Serialize)]
+pub struct TerrainMeshResult {
+    pub vertices: Vec<f32>,
+    pub normals: Vec<f32>,
+    pub uvs: Vec<f32>,
+    pub indices: Vec<u32>,
+    #[serde(rename = "minElevation")]
+    pub min_elevation: f32,
+    #[serde(rename = "maxElevation")]
+    pub max_elevation: f32,
+    #[serde(rename = "avgElevation")]
+    pub avg_elevation: f32,
+    #[serde(rename = "widthM")]
+    pub width_m: f64,
+    #[serde(rename = "heightM")]
+    pub height_m: f64,
+    #[serde(rename = "centerLng")]
+    pub center_lng: f64,
+    #[serde(rename = "centerLat")]
+    pub center_lat: f64,
+    #[serde(rename = "gridCols")]
+    pub grid_cols: usize,
+    #[serde(rename = "gridRows")]
+    pub grid_rows: usize,
+}
+
+#[tauri::command]
+fn generate_terrain_mesh(
+    app: tauri::AppHandle,
+    bbox: [f64; 4],
+    resolution: Option<usize>,
+) -> Result<TerrainMeshResult, String> {
+    let dem = get_cached_dem(&app)?;
+
+    let min_lng = bbox[0].min(bbox[2]);
+    let max_lng = bbox[0].max(bbox[2]);
+    let min_lat = bbox[1].min(bbox[3]);
+    let max_lat = bbox[1].max(bbox[3]);
+
+    if (max_lng - min_lng).abs() < 0.0001 || (max_lat - min_lat).abs() < 0.0001 {
+        return Err("Bounding box is too small".to_string());
+    }
+
+    let res = resolution.unwrap_or(64).clamp(16, 256);
+    let cols = res;
+    let rows = res;
+
+    let center_lng = (min_lng + max_lng) * 0.5;
+    let center_lat = (min_lat + max_lat) * 0.5;
+
+    let center_lat_rad = center_lat.to_radians();
+    let width_m = (max_lng - min_lng) * 111320.0 * center_lat_rad.cos();
+    let height_m = (max_lat - min_lat) * 111132.0;
+
+    let mut elevations = Vec::with_capacity(rows * cols);
+    let mut min_elevation = f32::MAX;
+    let mut max_elevation = f32::MIN;
+    let mut sum_elevation: f64 = 0.0;
+
+    for r in 0..rows {
+        let v_frac = r as f64 / (rows - 1) as f64;
+        let lat = min_lat + v_frac * (max_lat - min_lat);
+        for c in 0..cols {
+            let u_frac = c as f64 / (cols - 1) as f64;
+            let lng = min_lng + u_frac * (max_lng - min_lng);
+            let elev = dem.get_elevation(lng, lat) as f32;
+            elevations.push(elev);
+            if elev < min_elevation {
+                min_elevation = elev;
+            }
+            if elev > max_elevation {
+                max_elevation = elev;
+            }
+            sum_elevation += elev as f64;
+        }
+    }
+
+    let avg_elevation = (sum_elevation / (rows * cols) as f64) as f32;
+    let mut vertices = Vec::with_capacity(rows * cols * 3);
+    let mut normals = Vec::with_capacity(rows * cols * 3);
+    let mut uvs = Vec::with_capacity(rows * cols * 2);
+
+    let step_x = (width_m / (cols - 1) as f64) as f32;
+    let step_z = (height_m / (rows - 1) as f64) as f32;
+
+    let y_south = (std::f64::consts::PI / 4.0 + (min_lat.to_radians() / 2.0)).tan().ln();
+    let y_north = (std::f64::consts::PI / 4.0 + (max_lat.to_radians() / 2.0)).tan().ln();
+    let y_span = y_north - y_south;
+
+    for r in 0..rows {
+        let lat_frac = r as f64 / (rows - 1) as f64;
+        let lat = min_lat + lat_frac * (max_lat - min_lat);
+        let y_merc = (std::f64::consts::PI / 4.0 + (lat.to_radians() / 2.0)).tan().ln();
+        let v_mercator = if y_span.abs() > 1e-9 {
+            (y_merc - y_south) / y_span
+        } else {
+            lat_frac
+        };
+        let z = -((lat_frac - 0.5) * height_m) as f32;
+
+        for c in 0..cols {
+            let u_frac = c as f64 / (cols - 1) as f64;
+            let x = ((u_frac - 0.5) * width_m) as f32;
+            let y = elevations[r * cols + c];
+
+            vertices.push(x);
+            vertices.push(y);
+            vertices.push(z);
+
+            uvs.push(u_frac as f32);
+            uvs.push(v_mercator as f32);
+
+            let c_prev = if c > 0 { c - 1 } else { c };
+            let c_next = if c + 1 < cols { c + 1 } else { c };
+            let r_prev = if r > 0 { r - 1 } else { r };
+            let r_next = if r + 1 < rows { r + 1 } else { r };
+
+            let h_left = elevations[r * cols + c_prev];
+            let h_right = elevations[r * cols + c_next];
+            let h_down = elevations[r_prev * cols + c];
+            let h_up = elevations[r_next * cols + c];
+
+            let span_x = if c_next != c_prev { (c_next - c_prev) as f32 * step_x } else { step_x };
+            let span_z = if r_next != r_prev { (r_next - r_prev) as f32 * step_z } else { step_z };
+
+            let dz_dx = (h_right - h_left) / span_x;
+            let dz_dy = (h_up - h_down) / span_z;
+
+            let nx = -dz_dx;
+            let ny = 1.0f32;
+            let nz = dz_dy;
+            let len = (nx * nx + ny * ny + nz * nz).sqrt();
+            let inv_len = if len > 1e-6 { 1.0 / len } else { 1.0 };
+
+            normals.push(nx * inv_len);
+            normals.push(ny * inv_len);
+            normals.push(nz * inv_len);
+        }
+    }
+
+    let mut indices = Vec::with_capacity((rows - 1) * (cols - 1) * 6);
+    for r in 0..(rows - 1) {
+        for c in 0..(cols - 1) {
+            let i0 = (r * cols + c) as u32;
+            let i1 = (r * cols + c + 1) as u32;
+            let i2 = ((r + 1) * cols + c) as u32;
+            let i3 = ((r + 1) * cols + c + 1) as u32;
+
+            indices.push(i0);
+            indices.push(i1);
+            indices.push(i2);
+
+            indices.push(i1);
+            indices.push(i3);
+            indices.push(i2);
+        }
+    }
+
+    Ok(TerrainMeshResult {
+        vertices,
+        normals,
+        uvs,
+        indices,
+        min_elevation,
+        max_elevation,
+        avg_elevation,
+        width_m,
+        height_m,
+        center_lng,
+        center_lat,
+        grid_cols: cols,
+        grid_rows: rows,
+    })
+}
+
 #[derive(Clone, Debug)]
 pub struct PlaceSpatialItem {
     pub place: PlaceInfo,
@@ -1803,6 +1979,7 @@ async fn export_map_native(
     let normalized_bearing = ((params.bearing % 360.0) + 360.0) % 360.0;
     let clamped_pitch = params.pitch.clamp(0.0, 60.0);
 
+    let dpi_ratio = (params.dpi as f64 / 96.0).max(1.0);
     let mut config = serde_json::json!({
         "zoom": params.zoom,
         "width": params.logical_width,
@@ -1812,6 +1989,8 @@ async fn export_map_native(
         "pitch": clamped_pitch,
         "style": style,
         "ratio": params.ratio,
+        "dpi": params.dpi,
+        "dpiRatio": dpi_ratio,
         "outputPath": output_path.to_string_lossy().to_string(),
         "belarusPmtilesPath": belarus_pmtiles_path.to_string_lossy().to_string(),
         "topomapPmtilesPath": topomap_pmtiles_path.to_string_lossy().to_string(),
@@ -1848,9 +2027,35 @@ fn run_node_renderer(
     let script_dir = script_path.parent().ok_or_else(|| "Failed to get script parent directory".to_string())?;
 
     #[cfg(target_os = "windows")]
+    let node_bin = {
+        let candidate_bin = clean_unc_path(&script_dir.join("bin").join("node.exe"));
+        let candidate_root = clean_unc_path(&script_dir.join("node.exe"));
+        if candidate_bin.exists() {
+            candidate_bin
+        } else if candidate_root.exists() {
+            candidate_root
+        } else {
+            std::path::PathBuf::from("node")
+        }
+    };
+
+    #[cfg(not(target_os = "windows"))]
+    let node_bin = {
+        let candidate_bin = script_dir.join("bin").join("node");
+        let candidate_root = script_dir.join("node");
+        if candidate_bin.exists() {
+            candidate_bin
+        } else if candidate_root.exists() {
+            candidate_root
+        } else {
+            std::path::PathBuf::from("node")
+        }
+    };
+
+    #[cfg(target_os = "windows")]
     let mut command = {
         use std::os::windows::process::CommandExt;
-        let mut cmd = Command::new("node");
+        let mut cmd = Command::new(&node_bin);
         cmd.creation_flags(0x08000000);
         cmd.current_dir(script_dir);
         cmd
@@ -1858,7 +2063,7 @@ fn run_node_renderer(
 
     #[cfg(not(target_os = "windows"))]
     let mut command = {
-        let mut cmd = Command::new("node");
+        let mut cmd = Command::new(&node_bin);
         cmd.current_dir(script_dir);
         cmd
     };
@@ -2088,5 +2293,38 @@ mod tests {
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].place.name, "Minsk");
     }
+
+    #[test]
+    fn test_terrain_mesh_geometry() {
+        let res = 16;
+        let cols = res;
+        let rows = res;
+        let num_verts = cols * rows;
+        let num_tri_indices = (rows - 1) * (cols - 1) * 6;
+
+        let mut indices = Vec::with_capacity(num_tri_indices);
+        for r in 0..(rows - 1) {
+            for c in 0..(cols - 1) {
+                let i0 = (r * cols + c) as u32;
+                let i1 = (r * cols + c + 1) as u32;
+                let i2 = ((r + 1) * cols + c) as u32;
+                let i3 = ((r + 1) * cols + c + 1) as u32;
+
+                indices.push(i0);
+                indices.push(i1);
+                indices.push(i2);
+
+                indices.push(i1);
+                indices.push(i3);
+                indices.push(i2);
+            }
+        }
+
+        assert_eq!(indices.len(), num_tri_indices);
+        for idx in &indices {
+            assert!((*idx as usize) < num_verts);
+        }
+    }
 }
+
 

@@ -33,3 +33,13 @@ description = "Allows frontend to calculate parallel raycasting viewshed"
 allow = [
   "calculate_viewshed"
 ]
+
+[[permission]]
+identifier = "allow-generate-terrain-mesh"
+description = "Allows frontend to generate 3D terrain mesh for bounding box"
+
+[permission.commands]
+allow = [
+  "generate_terrain_mesh"
+]
+

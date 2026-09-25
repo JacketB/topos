@@ -76,14 +76,14 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "zapravka",
-        name: "Заправка (ГСМ)",
+        name: "Заправка ГСМ",
         symbol: "zapravka",
         size: 0.08
       }
     ]
   },
   {
-    id: "fortification_ussr",
+    id: "fortification",
     name: "Инженерная фортификация",
     symbols: [
       {
@@ -118,13 +118,13 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "fort_dot",
-        name: "ДОТ (усиленный)",
+        name: "ДОТ усиленный",
         symbol: "fort_dot",
         size: 0.08
       },
       {
         id: "dot_tipovoy1",
-        name: "ДОТ (типовой)",
+        name: "ДОТ типовой",
         symbol: "dot_tipovoy1",
         size: 0.08
       },
@@ -142,7 +142,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "blindazh",
-        name: "Блиндаж (общ.)",
+        name: "Блиндаж общий",
         symbol: "blindazh",
         size: 0.08
       },
@@ -328,7 +328,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "zu_pr",
-        name: "Зенит. установка (пр.)",
+        name: "Зенитная установка противника",
         symbol: "zu_pr",
         size: 0.08
       },
@@ -406,7 +406,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "aviaudar_pr",
-        name: "Авиаудар (пр.)",
+        name: "Авиаудар противника",
         symbol: "aviaudar_pr",
         size: 0.08
       },
@@ -478,7 +478,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "anp",
-        name: "АНП (прибор)",
+        name: "АНП",
         symbol: "anp",
         size: 0.08
       }
@@ -536,7 +536,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "knp_prot",
-        name: "КНП (пр.)",
+        name: "КНП противника",
         symbol: "knp_prot",
         size: 0.08
       },
@@ -644,13 +644,13 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "zvuk_np_pr",
-        name: "Звуковой НП (пр.)",
+        name: "Звуковой НП противника",
         symbol: "zvuk_np_pr",
         size: 0.08
       },
       {
         id: "zvuk_pr",
-        name: "Звукоразведка (пр.)",
+        name: "Звукоразведка противника",
         symbol: "zvuk_pr",
         size: 0.08
       },
@@ -662,7 +662,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "tap",
-        name: "Тлф аппарат (ТАП)",
+        name: "Телефонный аппарат ТАП",
         symbol: "tap",
         size: 0.08
       },
@@ -1040,7 +1040,7 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "derevo",
-        name: "Дерево (ориентир)",
+        name: "Дерево-ориентир",
         symbol: "derevo",
         size: 0.08
       },
@@ -1070,13 +1070,13 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "tochka",
-        name: "Точка (ориентир)",
+        name: "Точка-ориентир",
         symbol: "tochka",
         size: 0.08
       },
       {
         id: "treugolnik",
-        name: "Треугольник (пункт)",
+        name: "Геодезический пункт",
         symbol: "treugolnik",
         size: 0.08
       },
@@ -1112,19 +1112,19 @@ export const TACTICAL_SYMBOLS: SymbolCategory[] = [
       },
       {
         id: "kazarma",
-        name: "kazarma",
+        name: "Казарма",
         symbol: "kazarma",
         size: 0.08
       },
       {
         id: "pt1",
-        name: "pt1",
+        name: "Пункт управления",
         symbol: "pt1",
         size: 0.08
       },
       {
         id: "ur_pr1",
-        name: "ur_pr1",
+        name: "Укреп. район противника",
         symbol: "ur_pr1",
         size: 0.08
       }

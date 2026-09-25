@@ -347,6 +347,16 @@ export class MapExportComponent implements OnDestroy {
         } catch (e) {}
       }
 
+      for (const s of this.vm.placedSymbols()) {
+        const symbolId = s.properties?.['symbol'];
+        if (symbolId) {
+          const iconId = s.properties?.['iconId'] || symbolId;
+          if (!images[iconId]) {
+            images[iconId] = { symbolId, color: s.properties?.['color'] };
+          }
+        }
+      }
+
       const exportImages: { [key: string]: { url: string; pixelRatio: number; sdf: boolean } } = {};
       const addPromises: Promise<void>[] = [];
 
@@ -354,68 +364,123 @@ export class MapExportComponent implements OnDestroy {
         const img = images[key];
         const isSdf = img?.sdf || false;
 
-        const promise = new Promise<void>((res) => {
-          const svgEl = document.querySelector(`svg[data-icon-id="${key}"]`) as SVGElement;
+        const promise = new Promise<void>(async (res) => {
+          let symbolId = img?.symbolId || key;
+          let customColor = img?.color || '';
 
-          if (svgEl) {
-            const clonedSvg = svgEl.cloneNode(true) as SVGElement;
-            const sizeMultiplier = effectiveRatio;
-            const origW = parseFloat(svgEl.getAttribute('width') || '24');
-            const origH = parseFloat(svgEl.getAttribute('height') || '24');
+          if (key.includes('_c_')) {
+            const parts = key.split('_c_');
+            symbolId = parts[0];
+            customColor = '#' + parts[1];
+          }
 
-            let targetWidth = origW * sizeMultiplier;
-            let targetHeight = origH * sizeMultiplier;
+          let svgText = '';
+          try {
+            const r = await fetch(`symbols/${symbolId}.svg`);
+            if (r.ok) {
+              svgText = await r.text();
+            }
+          } catch {}
 
-            if (targetWidth > 1024 || targetHeight > 1024) {
-              const scale = Math.min(1024 / targetWidth, 1024 / targetHeight);
-              targetWidth = Math.floor(targetWidth * scale);
-              targetHeight = Math.floor(targetHeight * scale);
+          if (svgText) {
+            try {
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(svgText, 'image/svg+xml');
+              if (customColor) {
+                const elements = doc.querySelectorAll('path, polygon, circle, rect, line, polyline, ellipse');
+                elements.forEach(el => {
+                  const stroke = el.getAttribute('stroke');
+                  if (stroke && stroke !== 'none' && stroke !== 'transparent') {
+                    el.setAttribute('stroke', customColor);
+                  }
+                  const fill = el.getAttribute('fill');
+                  if (fill && fill !== 'none' && fill !== 'transparent') {
+                    el.setAttribute('fill', customColor);
+                  }
+                  if (!stroke && !fill && el.tagName.toLowerCase() === 'path') {
+                    el.setAttribute('fill', customColor);
+                  }
+                });
+              }
+
+              const svgDoc = doc.querySelector('svg');
+              if (svgDoc) {
+                svgDoc.setAttribute('width', '512');
+                svgDoc.setAttribute('height', '512');
+              }
+
+              const modifiedSvg = new XMLSerializer().serializeToString(doc);
+              const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(modifiedSvg)}`;
+
+              const image = new Image();
+              image.crossOrigin = 'anonymous';
+              image.src = dataUrl;
+              image.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.drawImage(image, 0, 0, 512, 512);
+                  try {
+                    exportImages[key] = {
+                      url: canvas.toDataURL('image/png'),
+                      pixelRatio: 1.0,
+                      sdf: isSdf
+                    };
+                  } catch {}
+                }
+                res();
+              };
+              image.onerror = () => {
+                fallbackRasterize();
+              };
+              return;
+            } catch {
+              fallbackRasterize();
+              return;
+            }
+          }
+
+          fallbackRasterize();
+
+          function fallbackRasterize() {
+            const svgEl = document.querySelector(`svg[data-icon-id="${key}"]`) as SVGElement;
+            if (svgEl) {
+              const clonedSvg = svgEl.cloneNode(true) as SVGElement;
+              clonedSvg.setAttribute('width', '512');
+              clonedSvg.setAttribute('height', '512');
+              const svgString = new XMLSerializer().serializeToString(clonedSvg);
+              const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+              const image = new Image();
+              image.src = dataUrl;
+              image.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.drawImage(image, 0, 0, 512, 512);
+                  try {
+                    exportImages[key] = {
+                      url: canvas.toDataURL('image/png'),
+                      pixelRatio: 1.0,
+                      sdf: isSdf
+                    };
+                  } catch {}
+                }
+                res();
+              };
+              image.onerror = () => res();
+              return;
             }
 
-            clonedSvg.setAttribute('width', targetWidth.toString());
-            clonedSvg.setAttribute('height', targetHeight.toString());
-
-            const svgString = new XMLSerializer().serializeToString(clonedSvg);
-            const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-            const url = URL.createObjectURL(svgBlob);
-
-            const image = new Image();
-            image.src = url;
-            image.onload = () => {
-              const canvas = document.createElement('canvas');
-              canvas.width = targetWidth;
-              canvas.height = targetHeight;
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(image, 0, 0);
-                try {
-                  const base64Data = canvas.toDataURL('image/png');
-                  exportImages[key] = {
-                    url: base64Data,
-                    pixelRatio: 1.0, // Для ratio=1 иконка рисуется в ее крупном физическом размере targetWidth
-                    sdf: isSdf
-                  };
-                } catch (e) {
-                  console.error('Ошибка экспорта изображения:', e);
-                }
-              }
-              URL.revokeObjectURL(url);
-              res();
-            };
-            image.onerror = () => {
-              URL.revokeObjectURL(url);
-              res();
-            };
-          } else {
             const extracted = MapExportSanitizerUtils.getStyleImageDataUrl(img);
             if (extracted) {
               const origW = extracted.width;
               const origH = extracted.height;
-
-              const sizeMultiplier = effectiveRatio;
-              let targetWidth = origW * sizeMultiplier;
-              let targetHeight = origH * sizeMultiplier;
-
+              let targetWidth = Math.max(512, origW * effectiveRatio);
+              let targetHeight = Math.max(512, origH * effectiveRatio);
               if (targetWidth > 1024 || targetHeight > 1024) {
                 const scale = Math.min(1024 / targetWidth, 1024 / targetHeight);
                 targetWidth = Math.floor(targetWidth * scale);
@@ -429,21 +494,17 @@ export class MapExportComponent implements OnDestroy {
                 resCanvas.width = targetWidth;
                 resCanvas.height = targetHeight;
                 const resCtx = resCanvas.getContext('2d');
-
                 if (resCtx) {
                   resCtx.imageSmoothingEnabled = true;
                   resCtx.imageSmoothingQuality = 'high';
                   resCtx.drawImage(imgObj, 0, 0, origW, origH, 0, 0, targetWidth, targetHeight);
                   try {
-                    const base64Data = resCanvas.toDataURL('image/png');
                     exportImages[key] = {
-                      url: base64Data,
+                      url: resCanvas.toDataURL('image/png'),
                       pixelRatio: 1.0,
                       sdf: isSdf
                     };
-                  } catch (e) {
-                    console.error('Ошибка экспорта изображения:', e);
-                  }
+                  } catch {}
                 }
                 res();
               };
@@ -461,7 +522,7 @@ export class MapExportComponent implements OnDestroy {
 
       this.generationProgress.set('Выполнение рендеринга на бэкенде...');
 
-      const placedSymbols = this.vm.placedSymbols();
+      const placedSymbols = this.vm.tacticalMapService.getAllFeaturesWithPatrol(this.vm.placedSymbols());
       const enrichedPlacedSymbols = MapExportSanitizerUtils.enrichFeaturesArrayForNative(placedSymbols, effectiveRatio);
 
       const marchPlacesList = this.vm.marchPlacesAlongRoute();

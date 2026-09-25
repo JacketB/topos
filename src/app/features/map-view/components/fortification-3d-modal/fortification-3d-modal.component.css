@@ -1,0 +1,439 @@
+.fort3d-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.fort3d-modal-window {
+  width: 96vw;
+  max-width: 1360px;
+  height: 90vh;
+  max-height: 900px;
+  background: var(--color-bg-panel, #ffffff);
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fort3d-header {
+  height: 60px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-bg-app, #f8fafc);
+  flex-shrink: 0;
+}
+
+.fort3d-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fort3d-icon {
+  color: var(--color-primary, #466bf7);
+  flex-shrink: 0;
+}
+
+.fort3d-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.fort3d-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-main, #0f172a);
+}
+
+.fort3d-subtitle {
+  font-size: 12px;
+  color: var(--color-text-muted, #64748b);
+}
+
+.fort3d-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.fort3d-profile-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fort3d-select-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748b);
+}
+
+.fort3d-select {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #cbd5e1);
+  background: #ffffff;
+  color: var(--color-text-main, #0f172a);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  max-width: 340px;
+}
+
+.fort3d-select:focus {
+  border-color: var(--color-primary, #466bf7);
+}
+
+.fort3d-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fort3d-tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #cbd5e1);
+  background: #ffffff;
+  color: var(--color-text-main, #334155);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fort3d-tool-btn:hover {
+  background: #f1f5f9;
+  color: var(--color-primary, #466bf7);
+  border-color: var(--color-primary, #466bf7);
+}
+
+.fort3d-btn-snapshot {
+  background: #eff6ff;
+  color: var(--color-primary, #466bf7);
+  border-color: #bfdbfe;
+}
+
+.fort3d-btn-snapshot:hover {
+  background: var(--color-primary, #466bf7);
+  color: #ffffff;
+}
+
+.fort3d-close-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted, #64748b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fort3d-close-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.fort3d-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  background: #f8fafc;
+}
+
+.fort3d-sidebar {
+  width: 320px;
+  background: #ffffff;
+  border-right: 1px solid var(--color-border, #e2e8f0);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.fort3d-sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fort3d-profile-passport {
+  background: var(--color-bg-app, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fort3d-badge-row {
+  display: flex;
+  align-items: center;
+}
+
+.fort3d-category-badge {
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.fort3d-profile-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-main, #0f172a);
+  line-height: 1.3;
+}
+
+.fort3d-profile-desc {
+  margin: 0;
+  font-size: 11px;
+  color: var(--color-text-muted, #64748b);
+  line-height: 1.4;
+}
+
+.fort3d-dims-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--color-border, #cbd5e1);
+}
+
+.fort3d-dim-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.dim-name {
+  color: var(--color-text-muted, #64748b);
+}
+
+.dim-val {
+  font-weight: 600;
+  color: var(--color-text-main, #1e293b);
+}
+
+.fort3d-protection-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.protect-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #166534;
+  text-transform: uppercase;
+}
+
+.protect-desc {
+  font-size: 11px;
+  color: #15803d;
+  font-weight: 500;
+}
+
+.fort3d-section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted, #64748b);
+}
+
+.fort3d-layers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fort3d-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-main, #1e293b);
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid var(--color-border, #e2e8f0);
+  transition: all 0.12s ease;
+  user-select: none;
+}
+
+.fort3d-checkbox-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.fort3d-checkbox-item.layer-disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.layer-na-tag {
+  font-size: 10px;
+  color: var(--color-text-muted, #94a3b8);
+  margin-left: auto;
+  font-style: italic;
+}
+
+.fort3d-checkbox-item input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--color-primary, #466bf7);
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.fort3d-layer-color-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.soil-indicator { background: #6d4c41; }
+.wood-indicator { background: #92400e; }
+.waterproof-indicator { background: #0f172a; }
+.protect-indicator { background: #8d6e63; }
+.camo-indicator { background: #16a34a; }
+.drain-indicator { background: #475569; }
+
+.fort3d-slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fort3d-range {
+  width: 100%;
+  accent-color: var(--color-primary, #466bf7);
+  cursor: pointer;
+}
+
+.fort3d-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--color-text-muted, #64748b);
+}
+
+.fort3d-hints-section {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border, #f1f5f9);
+}
+
+.fort3d-hints-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 11px;
+  color: var(--color-text-muted, #64748b);
+  line-height: 1.4;
+}
+
+.fort3d-canvas-area {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.fort3d-footer {
+  padding: 10px 16px;
+  background: #ffffff;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.fort3d-kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.fort3d-kpi-card {
+  background: var(--color-bg-app, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fort3d-kpi-card.highlight-kpi {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.kpi-label {
+  font-size: 11px;
+  color: var(--color-text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kpi-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-main, #0f172a);
+}
+
+.kpi-value small {
+  font-size: 11px;
+  font-weight: normal;
+  color: var(--color-text-muted, #64748b);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}

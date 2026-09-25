@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Полное руководство пользователя — ГИС Topos v1.1</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --color-primary: #1e3a8a;
+      --color-primary-light: #3b82f6;
+      --color-primary-bg: #eff6ff;
+      --color-accent: #0284c7;
+      --color-success: #059669;
+      --color-success-bg: #ecfdf5;
+      --color-warning: #d97706;
+      --color-warning-bg: #fffbeb;
+      --color-danger: #dc2626;
+      --color-danger-bg: #fef2f2;
+      --color-bg-app: #f8fafc;
+      --color-bg-card: #ffffff;
+      --color-border: #e2e8f0;
+      --color-border-subtle: #f1f5f9;
+      --color-text-main: #0f172a;
+      --color-text-muted: #475569;
+      --color-text-light: #94a3b8;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--color-bg-app);
+      color: var(--color-text-main);
+      line-height: 1.6;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 320px;
+      background: var(--color-bg-card);
+      border-right: 1px solid var(--color-border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 24px 16px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .brand-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(30, 58, 138, 0.25);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--color-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 9px 12px 9px 36px;
+      font-size: 13px;
+      font-family: var(--font-main);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-bg-app);
+      color: var(--color-text-main);
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--color-primary-light);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-light);
+      pointer-events: none;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      overflow-y: auto;
+    }
+
+    .nav-item a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      text-decoration: none;
+      border-radius: var(--radius-sm);
+      transition: all 0.15s;
+    }
+
+    .nav-item a:hover {
+      background: var(--color-primary-bg);
+      color: var(--color-primary);
+    }
+
+    .nav-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-light);
+      padding: 12px 10px 4px 10px;
+    }
+
+    .content-area {
+      flex: 1;
+      max-width: 1120px;
+      padding: 36px 48px;
+      overflow-y: auto;
+    }
+
+    .header-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font-main);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+      background: #ffffff;
+      color: var(--color-text-main);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: var(--color-bg-app);
+      border-color: var(--color-text-light);
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: #ffffff;
+      border-color: var(--color-primary);
+    }
+
+    .btn-primary:hover {
+      background: #1e40af;
+      border-color: #1e40af;
+    }
+
+    .doc-hero {
+      background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      border-radius: var(--radius-lg);
+      padding: 36px 40px;
+      color: #ffffff;
+      margin-bottom: 36px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .doc-hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .doc-hero h1 {
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .doc-hero p {
+      font-size: 15px;
+      color: #cbd5e1;
+      max-width: 820px;
+      line-height: 1.6;
+    }
+
+    .section {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-title {
+      font-size: 21px;
+      font-weight: 700;
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--color-border-subtle);
+    }
+
+    .section-title svg {
+      color: var(--color-primary-light);
+      flex-shrink: 0;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-text-main);
+      margin: 24px 0 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    p {
+      margin-bottom: 14px;
+      color: var(--color-text-muted);
+    }
+
+    .ui-overview-diagram {
+      background: #f1f5f9;
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin: 20px 0;
+      position: relative;
+    }
+
+    .ui-mockup {
+      width: 100%;
+      height: 280px;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      position: relative;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .mockup-toolbar {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+      z-index: 10;
+    }
+
+    .mockup-callout {
+      position: absolute;
+      background: #1e3a8a;
+      color: #ffffff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .tool-card {
+      background: var(--color-bg-app);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      transition: all 0.2s;
+    }
+
+    .tool-card:hover {
+      border-color: var(--color-primary-light);
+      background: #ffffff;
+      box-shadow: var(--shadow-md);
+    }
+
+    .tool-button-preview {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-sm);
+      background: #ffffff;
+      border: 2px solid var(--color-primary-light);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-primary);
+      flex-shrink: 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      position: relative;
+    }
+
+    .tool-button-preview .key-badge {
+      position: absolute;
+      bottom: -6px;
+      right: -6px;
+      background: #1e293b;
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+    }
+
+    .tool-info {
+      flex: 1;
+    }
+
+    .tool-header-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .tool-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-text-main);
+    }
+
+    .tool-location-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      color: #334155;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tool-description {
+      font-size: 13.5px;
+      color: var(--color-text-muted);
+      margin-bottom: 8px;
+    }
+
+    .tool-steps {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 12.5px;
+      color: #1e293b;
+    }
+
+    .tool-steps ol {
+      padding-left: 18px;
+    }
+
+    .tool-steps li {
+      margin-bottom: 4px;
+    }
+
+    .tool-steps li:last-child {
+      margin-bottom: 0;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin: 20px 0;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--color-bg-app);
+      padding: 10px 14px;
+      font-weight: 700;
+      color: var(--color-text-main);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #fafafa; }
+
+    .callout {
+      border-left: 4px solid var(--color-primary);
+      background: var(--color-primary-bg);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 14px 18px;
+      margin: 18px 0;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .callout.tip {
+      border-left-color: var(--color-success);
+      background: var(--color-success-bg);
+    }
+
+    .callout.warning {
+      border-left-color: var(--color-warning);
+      background: var(--color-warning-bg);
+    }
+
+    .callout-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .callout.tip .callout-icon { color: var(--color-success); }
+    .callout.warning .callout-icon { color: var(--color-warning); }
+
+    .callout-content {
+      font-size: 13px;
+      color: var(--color-text-main);
+    }
+
+    .callout-content strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 14px;
+    }
+
+    kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-text-main);
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    }
+
+    .inline-btn-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #0f172a;
+      vertical-align: middle;
+    }
+
+    .inline-btn-pill svg {
+      color: #1e3a8a;
+    }
+
+    @media print {
+      body { background: #ffffff; font-size: 12pt; }
+      .sidebar, .header-actions { display: none !important; }
+      .content-area { max-width: 100% !important; padding: 0 !important; }
+      .section { border: none !important; box-shadow: none !important; padding: 10px 0 !important; page-break-inside: avoid; }
+      .doc-hero { background: #1e3a8a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-layout">
+    
+    <!-- Сайдбар навигации -->
+    <aside class="sidebar">
+      <div class="brand-box">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">Topos GIS</div>
+          <div class="brand-subtitle">Документация с картой иконок</div>
+        </div>
+      </div>
+
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Поиск инструмента или иконки..." onkeyup="filterManual()">
+      </div>
+
+      <ul class="nav-list" id="navList">
+        <li class="nav-section-title">Ориентирование в интерфейсе</li>
+        <li class="nav-item"><a href="#section-screen-map">Карта расположения панелей</a></li>
+        <li class="nav-item"><a href="#section-toolbar-all">Полный атлас иконок тулбара</a></li>
+
+        <li class="nav-section-title">Инструменты тактической графики</li>
+        <li class="nav-item"><a href="#section-tool-symbols">Библиотека тактических знаков [L]</a></li>
+        <li class="nav-item"><a href="#section-tool-lines">Тактические и инженерные линии [N, T, O, C, W]</a></li>
+        <li class="nav-item"><a href="#section-tool-arrows">Тактические стрелки атак [A]</a></li>
+        <li class="nav-item"><a href="#section-tool-districts">Районы и группировка объектов</a></li>
+
+        <li class="nav-section-title">Специальные штабные модули</li>
+        <li class="nav-item"><a href="#section-tool-march">Планировщик марша [R, M]</a></li>
+        <li class="nav-item"><a href="#section-tool-fortification">Калькулятор фортификации [G, V, E]</a></li>
+        <li class="nav-item"><a href="#section-tool-elevation">Профиль высот и видимость (Viewshed)</a></li>
+        <li class="nav-item"><a href="#section-tool-overlay">Геопривязка фотосхем и БПЛА</a></li>
+
+        <li class="nav-section-title">3D-модель и экспорт</li>
+        <li class="nav-item"><a href="#section-tool-3d">Изолированный 3D-вьюер Three.js</a></li>
+        <li class="nav-item"><a href="#section-tool-print">Штабной экспорт карты (600 DPI)</a></li>
+        <li class="nav-item"><a href="#section-shortcuts">Таблица горячих клавиш</a></li>
+      </ul>
+    </aside>
+
+    <!-- Основной контент -->
+    <main class="content-area">
+      
+      <div class="header-actions">
+        <button class="btn" onclick="exportToWordDoc()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          Сохранить в Word (.doc)
+        </button>
+        <button class="btn btn-primary" onclick="window.print()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+          Печать / Сохранить в PDF
+        </button>
+      </div>
+
+      <!-- Hero Header -->
+      <div class="doc-hero">
+        <div class="doc-hero-badge">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Визуальный атлас инструментов
+        </div>
+        <h1>Руководство пользователя Topos GIS</h1>
+        <p>Подробный иллюстрированный справочник: точное расположение каждой кнопки на экране, внешний вид иконок, назначение горячих клавиш и пошаговые алгоритмы работы.</p>
+      </div>
+
+      <!-- РАЗДЕЛ 1: СХЕМА РАСПОЛОЖЕНИЯ ЭЛЕМЕНТОВ НА ЭКРАНЕ -->
+      <section id="section-screen-map" class="section">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          1. Карта расположения панелей и кнопок на экране
+        </h2>
+        <p>Интерфейс Topos GIS разделен на 5 ключевых зон. Ниже приведена схема с точными ориентирами:</p>
+
+        <div class="ui-overview-diagram">
+          <div class="ui-mockup">
+            <!-- Верхний тулбар -->
+            <div class="mockup-toolbar">
+              <span class="inline-btn-pill"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Проекты</span>
+              <span class="inline-btn-pill"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4" /></svg> Линии</span>
+              <span class="inline-btn-pill"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg> Знаки</span>
+              <span class="inline-btn-pill"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19c2-3 5-3 8-1c3 2 6 2 8-2" /></svg> Марш</span>
+              <span class="inline-btn-pill"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z" /></svg> 3D</span>
+            </div>
+
+            <!-- Метки зон -->
+            <div class="mockup-callout" style="top: 8px; left: 16px;">[1] Верхний тулбар управления</div>
+            <div class="mockup-callout" style="bottom: 16px; left: 16px;">[2] Выбор подложки (Вектор / 200К / Спутник)</div>
+            <div class="mockup-callout" style="bottom: 48px; right: 16px;">[3] Быстрое меню слоев (Ромб)</div>
+            <div class="mockup-callout" style="bottom: 16px; right: 16px;">[4] Кнопка отдельной 3D-модели (3D)</div>
+            <div class="mockup-callout" style="bottom: 16px; left: 50%; transform: translateX(-50%);">[5] Масштаб и координаты СК-42</div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 10%;">Зона</th>
+                <th style="width: 30%;">Где находится на экране</th>
+                <th style="width: 60%;">Что там расположено</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>[1]</strong></td>
+                <td><strong>Вверху по центру</strong> (плавающая горизонтальная панель)</td>
+                <td>Все главные рабочие инструменты: Проекты, Линии, Стрелки, Полигоны, Текст, Селектор 1/2/3, Аналитика, Марш, Поиск, Библиотека знаков, Фортификация, 3D, Наложение снимков, Печать.</td>
+              </tr>
+              <tr>
+                <td><strong>[2]</strong></td>
+                <td><strong>В левом нижнем углу</strong></td>
+                <td>Переключатель карт: <em>«Topos Вектор»</em>, <em>«Генштаб 200К»</em> (топографическая растровая), <em>«Спутник»</em>.</td>
+              </tr>
+              <tr>
+                <td><strong>[3]</strong></td>
+                <td><strong>В правом нижнем углу</strong> (над линейкой)</td>
+                <td>Кнопка с иконкой трех наложенных ромбов — открывает всплывающее меню 9 слоев (Рельеф, Военные, Знаки, Водоемы, Леса, Дороги, Застройка, Подписи, Сетка СК-42).</td>
+              </tr>
+              <tr>
+                <td><strong>[4]</strong></td>
+                <td><strong>В правом нижнем углу</strong> (круглая кнопка)</td>
+                <td>Кнопка <strong>«3D»</strong> — открывает отдельное полноэкранное окно 3D-рельефа Three.js для текущего участка местности.</td>
+              </tr>
+              <tr>
+                <td><strong>[5]</strong></td>
+                <td><strong>Внизу по центру</strong></td>
+                <td>Динамическая масштабная линейка (км/м), шкала масштаба (1:50 000 / 1:100 000 / 1:200 000) и геодезические координаты курсора в СК-42 (X, Y в метрах) и WGS-84 (градусы, минуты, секунды).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- РАЗДЕЛ 2: АТЛАС ИКОНОК ТУЛБАРА -->
+      <section id="section-toolbar-all" class="section">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          2. Полный атлас кнопок верхнего тулбара
+        </h2>
+        <p>Ниже детально разобрана каждая кнопка верхнего тулбара с точным изображением её иконки, подсказкой и действием:</p>
+
+        <!-- Tool: Проекты -->
+        <div class="tool-card">
+          <div class="tool-button-preview">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">Кнопка «Проекты»</div>
+              <div class="tool-location-badge">Верхний тулбар: Самая левая кнопка</div>
+            </div>
+            <div class="tool-description">Открывает стартовое меню управления оперативно-тактическими сценариями.</div>
+            <div class="tool-steps">
+              <ol>
+                <li>Кликните по кнопке <strong>«Проекты»</strong>.</li>
+                <li>В открывшемся окне можно: создать новый сценарий, открыть ранее сохраненный проект `.topos`, выбрать проект из списка «Недавние» или экспортировать весь пакет обстановки.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: Тактическая линия -->
+        <div class="tool-card">
+          <div class="tool-button-preview">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="4" y1="20" x2="20" y2="4" />
+            </svg>
+            <span class="key-badge">N</span>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">Тактическая линия (Ломаная)</div>
+              <div class="tool-location-badge">Верхний тулбар: 2-я кнопка слева | Клавиша [N]</div>
+            </div>
+            <div class="tool-description">Рисование прямолинейных и ломаных тактических линий, рубежей и маршрутов.</div>
+            <div class="tool-steps">
+              <ol>
+                <li>Нажмите кнопку или клавишу <kbd>N</kbd>. Курсор примет форму прицела.</li>
+                <li>Кликайте левой кнопкой мыши в точках излома. Завершение — двойной клик или <kbd>Enter</kbd>.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: Инженерные линии -->
+        <div class="tool-card">
+          <div class="tool-button-preview">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 17l4-8 4 8 4-8 4 8 2-4" />
+            </svg>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">Инженерные линии и заграждения ▼</div>
+              <div class="tool-location-badge">Верхний тулбар: 3-я кнопка (с выпадающей стрелкой ▼)</div>
+            </div>
+            <div class="tool-description">Меню выбора типов окопов, траншей и заграждений:</div>
+            <div class="tool-steps">
+              <ol>
+                <li>Кликните по маленькой стрелке ▼ рядом с иконкой траншеи.</li>
+                <li>Выберите нужный тип: <strong>Траншея с бруствером</strong> <kbd>T</kbd>, <strong>Открытый ход сообщения</strong> <kbd>O</kbd>, <strong>Крытый ход сообщения</strong> <kbd>C</kbd>, <strong>Проволока (МЗП)</strong> <kbd>W</kbd>, <strong>Противотанковый ров</strong>, <strong>Эскарп</strong>, <strong>Завал</strong>, <strong>Точка-ориентир</strong> <kbd>P</kbd>.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: Стрелки -->
+        <div class="tool-card">
+          <div class="tool-button-preview">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 20s6-12 14-12" />
+              <polyline points="11 3 16 8 11 13" />
+              <line x1="2" y1="20" x2="6" y2="16" />
+            </svg>
+            <span class="key-badge">A</span>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">Тактические стрелки атак ▼</div>
+              <div class="tool-location-badge">Верхний тулбар: 4-я кнопка | Клавиша [A]</div>
+            </div>
+            <div class="tool-description">Нанесение направлений ударов и маневров войск.</div>
+            <div class="tool-steps">
+              <ol>
+                <li>Нажмите кнопку для нанесения стрелки <strong>«Главный удар (ласточкин хвост)»</strong>.</li>
+                <li>Либо откройте меню ▼ и выберите <strong>«Вспомогательный удар»</strong> или <strong>«Отход / маневр (пунктир)»</strong>.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: Район -->
+        <div class="tool-card">
+          <div class="tool-button-preview">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 22 8.5 18 21 6 21 2 8.5" fill="currentColor" fill-opacity="0.15" />
+            </svg>
+            <span class="key-badge">X</span>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">Район / Зона (Полигон)</div>
+              <div class="tool-location-badge">Верхний тулбар: 5-я кнопка | Клавиша [X]</div>
+            </div>
+            <div class="tool-description">Нанесение районов сосредоточения, исходных районов, позиций батальонов/рот.</div>
+            <div class="tool-steps">
+              <ol>
+                <li>Нажмите кнопку или клавишу <kbd>X</kbd>.</li>
+                <li>Последовательно ставьте точки углов полигона на карте. Двойной клик замыкает контур.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: Селектор 1-2-3 -->
+        <div class="tool-card">
+          <div class="tool-button-preview" style="border-color: #0284c7;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 9l-2 3 2 3M9 5l3-2 3 2M15 19l-3 2-3-2M19 9l2 3-2 3M2 12h20M12 2v20" />
+            </svg>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">Селектор режимов: Движение [1] | Правка [2] | Рамка [3]</div>
+              <div class="tool-location-badge">Верхний тулбар: Центральный блок переключателей</div>
+            </div>
+            <div class="tool-description">Управляет поведением мыши на карте:</div>
+            <div class="tool-steps">
+              <ol>
+                <li><strong>«Движение» (клавиша 1):</strong> Свободное перетаскивание карты без риска сдвинуть знаки.</li>
+                <li><strong>«Правка» (клавиша 2):</strong> Выделение одиночного знака кликом, перемещение знака мышью, открытие панели свойств.</li>
+                <li><strong>«Рамка» (клавиша 3 или Shift+Drag):</strong> Выделение группы знаков прямоугольной рамкой для пакетного добавления в район.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: Библиотека знаков -->
+        <div class="tool-card" id="section-tool-symbols">
+          <div class="tool-button-preview" style="background: #eff6ff; border-color: #1e3a8a;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+            <span class="key-badge">L</span>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">Библиотека тактических знаков (Сетка из 4 квадратов)</div>
+              <div class="tool-location-badge">Верхний тулбар: Правая группа | Клавиша [L]</div>
+            </div>
+            <div class="tool-description"><strong>Где искать:</strong> Найдите на верхнем тулбаре синюю квадратную иконку с 4 маленькими квадратиками (кнопка с подсказкой «Библиотека тактических знаков [L]»).</div>
+            <div class="tool-steps">
+              <ol>
+                <li>Нажмите на кнопку с 4 квадратиками или нажмите клавишу <kbd>L</kbd> на клавиатуре.</li>
+                <li>Откроется всплывающее меню библиотеки:
+                  <ul>
+                    <li><strong>Поиск вверху:</strong> Введите название (например, <em>«Танк»</em>, <em>«Гаубица»</em>, <em>«БМП»</em>, <em>«СПГ»</em>, <em>«Окоп»</em>).</li>
+                    <li><strong>Левая колонка:</strong> Вкладки родов войск: <em>«Бронетехника»</em> (иконка танка), <em>«Артиллерия»</em> (иконка пушки), <em>«Мотострелки»</em>, <em>«ПВО и Дроны»</em>, <em>«Фортификация СССР/РБ»</em>, <em>«Связь и КП»</em>.</li>
+                    <li><strong>Правая сетка:</strong> Нажмите на нужный тактический знак (он выделится синей рамкой).</li>
+                  </ul>
+                </li>
+                <li>Кликните левой кнопкой мыши на карте в месте, где должно стоять подразделение. Знак появится на карте.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: Планировщик марша -->
+        <div class="tool-card" id="section-tool-march">
+          <div class="tool-button-preview">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19c2-3 5-3 8-1c3 2 6 2 8-2" />
+              <circle cx="4" cy="19" r="2" fill="currentColor" />
+              <circle cx="20" cy="16" r="2" fill="currentColor" />
+            </svg>
+            <span class="key-badge">R</span>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">Планировщик марша (Маршрут по дорогам)</div>
+              <div class="tool-location-badge">Верхний тулбар: Иконка кривой с точками | Клавиша [R]</div>
+            </div>
+            <div class="tool-description">Автоматический расчет маршрута колонн, скорости, графика привалов и выгрузки боевого распоряжения в Excel.</div>
+            <div class="tool-steps">
+              <ol>
+                <li>Нажмите кнопку или клавишу <kbd>R</kbd>. В левой части экрана откроется панель <strong>«Маршрут марша»</strong>.</li>
+                <li>Нажмите кнопку <strong>«Задать ИП»</strong> (Исходный пункт) и кликните на карте.</li>
+                <li>Нажмите кнопку <strong>«Задать ПН»</strong> (Пункт назначения) и кликните на карте. Маршрут мгновенно построится по дорогам Беларуси с расчетом километража и времени.</li>
+                <li>Нажмите кнопку <strong>«Выгрузить в Excel»</strong> — откроется диалог сохранения таблицы `.xlsx` на диск.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: Инженерная ведомость и фортификация -->
+        <div class="tool-card" id="section-tool-fortification">
+          <div class="tool-button-preview">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <span class="key-badge">V</span>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">Инженерная сводка и фортификация</div>
+              <div class="tool-location-badge">Верхний тулбар: Иконка документа с красным бейджем | Клавиша [V]</div>
+            </div>
+            <div class="tool-description">Сводная ведомость потребности батальона в технике, материалах и моточасах.</div>
+            <div class="tool-steps">
+              <ol>
+                <li>Нажмите кнопку документа или клавишу <kbd>V</kbd>.</li>
+                <li>В открывшемся модальном окне отображаются сводные данные по всем нанесенным на карту фортификационным сооружениям: суммарный объем грунта (м³), потребность в лесоматериалах (м³), норматив работы землеройных машин (ПЗМ-2, ЭОВ-4421).</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: 3D-модель -->
+        <div class="tool-card" id="section-tool-3d">
+          <div class="tool-button-preview" style="background: #eff6ff; border-color: #0284c7;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">3D-модель участка местности (Three.js Viewer)</div>
+              <div class="tool-location-badge">Верхний тулбар: Иконка 3D-куба ИЛИ Правый нижний угол: Кнопка «3D»</div>
+            </div>
+            <div class="tool-description"><strong>Где искать:</strong> В правом нижнем углу экрана рядом с линейкой масштаба нажмите круглую кнопку <strong>«3D»</strong>.</div>
+            <div class="tool-steps">
+              <ol>
+                <li>Кликните по кнопке <strong>«3D»</strong>.</li>
+                <li>Откроется полноэкранный Three.js вьюер:
+                  <ul>
+                    <li><strong>Режимы рендеринга (сайдбар слева):</strong> <em>«Карта»</em> (натягивает текущую векторную карту Беларуси на рельеф), <em>«Высоты»</em> (цветовая гипсометрия), <em>«Сетка»</em> (полигональная 3D-сетка).</li>
+                    <li><strong>Тумблер «3D-Здания»:</strong> Автоматически поднимает объемные дома и кварталы с этажностью.</li>
+                    <li><strong>Управление солнцем:</strong> Слайдеры азимута и высоты солнца для светотеневого моделирования.</li>
+                    <li><strong>Кнопки «Экспорт OBJ» / «Экспорт STL» / «Снимок»:</strong> Сохраняют 3D-модель или картинку через системный диалог выбора папки.</li>
+                  </ul>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: Наложение фото / БПЛА -->
+        <div class="tool-card" id="section-tool-overlay">
+          <div class="tool-button-preview">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">Наложение фотосхем и снимков БПЛА</div>
+              <div class="tool-location-badge">Верхний тулбар: Иконка картинки/пейзажа</div>
+            </div>
+            <div class="tool-description">Геопривязка разведывательных фотоснимков и боевых схем на местность.</div>
+            <div class="tool-steps">
+              <ol>
+                <li>Нажмите кнопку с иконкой картинки. Откроется окно <strong>«Наложение изображений»</strong>.</li>
+                <li>Загрузите растровый файл (PNG/JPG). На карте появится изображение с 4 угловыми круглыми маркерами.</li>
+                <li>Перетаскивайте угловые маркеры мышью для точной посадки снимка на ориентиры местности (перекрестки дорог, реки).</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: Экспорт карты -->
+        <div class="tool-card" id="section-tool-print">
+          <div class="tool-button-preview">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+          </div>
+          <div class="tool-info">
+            <div class="tool-header-row">
+              <div class="tool-name">Штабной экспорт и печать карты (600 DPI)</div>
+              <div class="tool-location-badge">Верхний тулбар: Иконка дискеты с листом</div>
+            </div>
+            <div class="tool-description">Вывод тактической карты на печать в форматах A4–A0 с рамкой и легендой.</div>
+            <div class="tool-steps">
+              <ol>
+                <li>Нажмите кнопку экспорта карты. Откроется окно предпросмотра печати.</li>
+                <li>Выберите формат (A4, A3, A2, A1, A0), ориентацию (альбомная/книжная) и разрешение (150, 300, 600 DPI).</li>
+                <li>Нажмите <strong>«Экспортировать»</strong> для сохранения полиграфического изображения.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- РАЗДЕЛ 3: ТАБЛИЦА ГОРЯЧИХ КЛАВИШ -->
+      <section id="section-shortcuts" class="section">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+            <line x1="6" y1="8" x2="6" y2="8.01"/>
+            <line x1="10" y1="8" x2="10.01" y2="8"/>
+            <line x1="14" y1="8" x2="14.01" y2="8"/>
+            <line x1="18" y1="8" x2="18.01" y2="8"/>
+          </svg>
+          3. Таблица горячих клавиш клавиатуры
+        </h2>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 20%;">Клавиша</th>
+                <th style="width: 45%;">Вызываемый инструмент / Действие</th>
+                <th style="width: 35%;">Где отображается иконка</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><kbd>L</kbd></td>
+                <td><strong>Библиотека тактических знаков</strong> (открытие поповера выбора подразделений)</td>
+                <td>Верхний тулбар: Иконка 4 квадратиков</td>
+              </tr>
+              <tr>
+                <td><kbd>N</kbd></td>
+                <td><strong>Тактическая линия</strong> (рисование ломаных рубежей)</td>
+                <td>Верхний тулбар: Иконка диагональной линии</td>
+              </tr>
+              <tr>
+                <td><kbd>T</kbd></td>
+                <td><strong>Траншея с бруствером</strong></td>
+                <td>Верхний тулбар: Меню инженерных линий ▼</td>
+              </tr>
+              <tr>
+                <td><kbd>O</kbd></td>
+                <td><strong>Открытый ход сообщения</strong></td>
+                <td>Верхний тулбар: Меню инженерных линий ▼</td>
+              </tr>
+              <tr>
+                <td><kbd>C</kbd></td>
+                <td><strong>Крытый ход сообщения</strong></td>
+                <td>Верхний тулбар: Меню инженерных линий ▼</td>
+              </tr>
+              <tr>
+                <td><kbd>W</kbd></td>
+                <td><strong>Проволочное заграждение (МЗП)</strong></td>
+                <td>Верхний тулбар: Меню инженерных линий ▼</td>
+              </tr>
+              <tr>
+                <td><kbd>A</kbd></td>
+                <td><strong>Тактическая стрелка главного удара</strong></td>
+                <td>Верхний тулбар: Иконка стрелки</td>
+              </tr>
+              <tr>
+                <td><kbd>X</kbd></td>
+                <td><strong>Район / Зона</strong> (полигональный район обороны)</td>
+                <td>Верхний тулбар: Иконка многоугольника</td>
+              </tr>
+              <tr>
+                <td><kbd>R</kbd></td>
+                <td><strong>Планировщик маршрута марша колонн</strong></td>
+                <td>Верхний тулбар: Иконка извилистой дороги</td>
+              </tr>
+              <tr>
+                <td><kbd>V</kbd></td>
+                <td><strong>Инженерная сводка и ведомость</strong></td>
+                <td>Верхний тулбар: Иконка документа с бейджем</td>
+              </tr>
+              <tr>
+                <td><kbd>1</kbd></td>
+                <td><strong>Режим навигации (Движение)</strong> — перемещение карты</td>
+                <td>Верхний тулбар: Переключатель «Движение»</td>
+              </tr>
+              <tr>
+                <td><kbd>2</kbd></td>
+                <td><strong>Режим правки</strong> — выделение и перемещение знаков</td>
+                <td>Верхний тулбар: Переключатель «Правка»</td>
+              </tr>
+              <tr>
+                <td><kbd>3</kbd></td>
+                <td><strong>Режим рамки (Shift+Drag)</strong> — групповое выделение</td>
+                <td>Верхний тулбар: Переключатель «Рамка»</td>
+              </tr>
+              <tr>
+                <td><kbd>Esc</kbd></td>
+                <td><strong>Сброс инструмента / Закрытие окон</strong></td>
+                <td>В любом окне</td>
+              </tr>
+              <tr>
+                <td><kbd>Del</kbd></td>
+                <td><strong>Удаление выделенного тактического знака</strong></td>
+                <td>При выбранном знаке</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    function filterManual() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const sections = document.querySelectorAll('.section');
+      const toolCards = document.querySelectorAll('.tool-card');
+      const navItems = document.querySelectorAll('.nav-item');
+
+      toolCards.forEach(card => {
+        const text = card.innerText.toLowerCase();
+        if (text.includes(query)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      sections.forEach((sec, idx) => {
+        const text = sec.innerText.toLowerCase();
+        if (text.includes(query)) {
+          sec.style.display = 'block';
+          if (navItems[idx]) navItems[idx].style.display = 'block';
+        } else {
+          sec.style.display = 'none';
+          if (navItems[idx]) navItems[idx].style.display = 'none';
+        }
+      });
+    }
+
+    function exportToWordDoc() {
+      const content = document.querySelector('.content-area').cloneNode(true);
+      const headerActions = content.querySelector('.header-actions');
+      if (headerActions) headerActions.remove();
+
+      const htmlContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <meta charset='utf-8'>
+          <title>Руководство пользователя Topos GIS</title>
+          <style>
+            body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; line-height: 1.5; color: #1e293b; }
+            h1 { font-size: 22pt; color: #1e3a8a; font-weight: bold; margin-bottom: 8pt; }
+            h2 { font-size: 16pt; color: #1e3a8a; font-weight: bold; border-bottom: 2pt solid #e2e8f0; padding-bottom: 4pt; margin-top: 16pt; }
+            h3 { font-size: 13pt; color: #0f172a; font-weight: bold; margin-top: 12pt; }
+            table { width: 100%; border-collapse: collapse; margin: 10pt 0; font-size: 10pt; }
+            th { background-color: #f1f5f9; color: #0f172a; font-weight: bold; border: 1pt solid #cbd5e1; padding: 6pt; }
+            td { border: 1pt solid #cbd5e1; padding: 5pt; }
+            .tool-card { border: 1pt solid #cbd5e1; padding: 8pt; margin-bottom: 8pt; background-color: #f8fafc; }
+            .tool-name { font-size: 12pt; font-weight: bold; color: #1e3a8a; }
+            .tool-location-badge { font-size: 9pt; background-color: #e2e8f0; padding: 2pt 4pt; }
+          </style>
+        </head>
+        <body>
+          ${content.innerHTML}
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob(['\ufeff', htmlContent], {
+        type: 'application/msword;charset=utf-8'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Руководство_пользователя_Topos_GIS.doc';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

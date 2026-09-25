@@ -18,6 +18,7 @@
     "allow-get-elevation-at",
     "allow-get-slope-bearing",
     "allow-get-elevation-profile",
-    "allow-calculate-viewshed"
+    "allow-calculate-viewshed",
+    "allow-generate-terrain-mesh"
   ]
 }

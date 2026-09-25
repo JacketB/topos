@@ -132,40 +132,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       }
     });
 
-    effect(() => {
-      const is3D = this.vm.is3D();
-      const exaggeration = this.vm.terrainExaggeration();
-      if (this.map && this.map.getSource('terrain-source')) {
-        if (is3D) {
-          this.map.setTerrain({ source: 'terrain-source', exaggeration });
-        } else {
-          this.map.setTerrain(null as any);
-        }
-      }
-    });
 
-    effect(() => {
-      const isHillshade = this.vm.isHillshadeEnabled();
-      const exaggeration = this.vm.hillshadeExaggerationValue();
-      const sunAngle = this.vm.hillshadeSunAngle();
-      const shadowColor = this.vm.hillshadeShadowColor();
 
-      if (this.map && this.map.getLayer('hillshade_layer')) {
-        this.map.setLayoutProperty('hillshade_layer', 'visibility', isHillshade ? 'visible' : 'none');
-        if (isHillshade) {
-          this.map.setPaintProperty('hillshade_layer', 'hillshade-exaggeration', exaggeration);
-          this.map.setPaintProperty('hillshade_layer', 'hillshade-illumination-direction', sunAngle);
-          this.map.setPaintProperty('hillshade_layer', 'hillshade-shadow-color', shadowColor);
-        }
-      }
-    });
 
-    effect(() => {
-      const is3DBuildings = this.vm.is3DBuildingsEnabled();
-      if (this.map && this.map.getLayer('3d_buildings')) {
-        this.map.setLayoutProperty('3d_buildings', 'visibility', is3DBuildings ? 'visible' : 'none');
-      }
-    });
+
+
   }
 
   ngAfterViewInit() {
@@ -215,36 +186,24 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       this.map = null;
     }
 
-    const terrainPmtilesUrl = 'http://topos.localhost/terrain.pmtiles';
     const protocol = getPmtilesProtocol();
-    try {
-      protocol.add(new PMTiles(terrainPmtilesUrl));
-    } catch {}
 
     const sourcesSpec: any = {
       [MILITARY_SOURCE_ID]: MILITARY_SOURCE_SPEC,
       'contours-source': {
         type: 'geojson',
         data: 'contours.geojson'
-      },
-      'terrain-source': {
-        type: 'raster-dem',
-        tiles: [`pmtiles://${terrainPmtilesUrl}/{z}/{x}/{y}`],
-        tileSize: 256,
-        encoding: 'mapbox',
-        minzoom: 0,
-        maxzoom: 10,
-        bounds: [22.70, 50.95, 33.20, 56.45]
       }
     };
 
     if (type === 'xyz') {
+      const activeMap = this.mapsUrls[this.vm.activeMapId()];
       sourcesSpec['belarus-data'] = {
         type: 'raster',
         tiles: [url],
         tileSize: 256,
         minzoom: 0,
-        maxzoom: 20
+        maxzoom: activeMap?.maxzoom || (url.includes('virtualearth.net') ? 18 : 19)
       };
     } else {
       const pmtiles = new PMTiles(url);
@@ -276,11 +235,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       center: prevCenter,
       zoom: prevZoom,
       bearing: prevBearing,
-      pitch: prevPitch,
+      pitch: 0,
       minZoom: 6.48,
-      maxPitch: 85,
+      maxPitch: 0,
       fadeDuration: 0,
-      preserveDrawingBuffer: false,
+      preserveDrawingBuffer: true,
       maxTileCacheSize: 50,
       collectResourceTiming: false,
     } as any);
@@ -400,10 +359,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         this.vm.mapMeasurementService.initLayers(this.map);
         this.vm.tacticalMapService.initLayers(this.map);
         this.vm.tacticalAnalyticsService.initLayers(this.map);
-
-        if (this.vm.is3D() && this.map.getSource('terrain-source')) {
-          this.map.setTerrain({ source: 'terrain-source', exaggeration: this.vm.terrainExaggeration() });
-        }
 
         this.vm.currentScale.set(this.vm.mapScaleService.getCurrentScale(this.map.getZoom(), this.map.getCenter().lat));
         this.vm.mapScaleService.updateScaleInfo(
@@ -542,23 +497,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
             'raster-resampling': 'nearest'
           }
         },
-        {
-          id: 'hillshade_layer',
-          type: 'hillshade',
-          source: 'terrain-source',
-          layout: {
-            visibility: 'visible'
-          },
-          paint: {
-            'hillshade-exaggeration': 0.65,
-            'hillshade-shadow-color': '#0f172a',
-            'hillshade-highlight-color': '#ffffff',
-            'hillshade-accent-color': '#020617',
-            'hillshade-illumination-direction': 315,
-            'hillshade-illumination-anchor': 'viewport'
-          }
-        },
-        ...mapLayers.filter(l => ['contour_line', 'contour_label', 'mountain_peak_labels'].includes(l.id)),
+        ...mapLayers.filter(l => ['contour_line', 'contour_label'].includes(l.id)),
         ...MILITARY_LAYERS
       ];
     } else {
@@ -611,6 +550,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.vm.tacticalAnalyticsService.destroy();
     if (this.savePosInterval) {
       clearInterval(this.savePosInterval);
       this.savePosInterval = null;

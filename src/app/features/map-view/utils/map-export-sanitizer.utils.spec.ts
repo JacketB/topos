@@ -125,4 +125,56 @@ describe('MapExportSanitizerUtils', () => {
     const placeLayerEmpty = sanitizedEmpty.layers.find((l: any) => l.id === 'place_labels');
     expect(placeLayerEmpty.layout['visibility']).toBeUndefined();
   });
+
+  it('should scale icon-size and clamp raster sources maxzoom', () => {
+    const inputStyle = {
+      version: 8,
+      sources: {
+        'bing-satellite': {
+          type: 'raster',
+          tiles: ['https://ecn.t0.tiles.virtualearth.net/tiles/a{quadkey}.jpeg?g=1'],
+          maxzoom: 20
+        },
+        'google-satellite': {
+          type: 'raster',
+          tiles: ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
+          maxzoom: 22
+        }
+      },
+      layers: [
+        {
+          id: 'tactical_symbols_layer',
+          type: 'symbol',
+          source: 'tactical-symbols',
+          layout: {
+            'icon-size': ['coalesce', ['get', 'size'], 0.08]
+          }
+        }
+      ]
+    };
+
+    const sanitized = MapExportSanitizerUtils.sanitizeStyleForNative(inputStyle, 2.0);
+    expect(sanitized.sources['bing-satellite'].maxzoom).toBe(18);
+    expect(sanitized.sources['google-satellite'].maxzoom).toBe(19);
+    expect(sanitized.layers[0].layout['icon-size']).toEqual(['coalesce', ['get', 'size'], 0.16]);
+  });
+
+  it('should scale point size in enrichGeoJsonForNative and enrichFeaturesArrayForNative', () => {
+    const geojson = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [27.5, 53.9] },
+          properties: { symbol: 'bmp', size: 0.08 }
+        }
+      ]
+    };
+
+    const enriched = MapExportSanitizerUtils.enrichGeoJsonForNative(geojson, 3.0);
+    expect(enriched.features[0].properties.size).toBeCloseTo(0.24);
+
+    const enrichedArray = MapExportSanitizerUtils.enrichFeaturesArrayForNative(geojson.features, 3.0);
+    expect(enrichedArray[0].properties.size).toBeCloseTo(0.24);
+  });
 });

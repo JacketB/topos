@@ -32,7 +32,9 @@
               "src/styles.css"
             ],
             "allowedCommonJsDependencies": [
-              "maplibre-gl"
+              "maplibre-gl",
+              "three",
+              "xlsx-js-style"
             ]
           },
           "configurations": {
@@ -45,8 +47,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "32kB",
-                  "maximumError": "64kB"
+                  "maximumWarning": "48kB",
+                  "maximumError": "96kB"
                 }
               ],
               "outputHashing": "all"

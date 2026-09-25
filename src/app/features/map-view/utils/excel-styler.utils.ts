@@ -17,6 +17,13 @@ export interface ExcelSection {
   items: ExcelKeyValueItem[];
 }
 
+export interface ExcelCalculationStep {
+  parameter: string;
+  formula: string;
+  calculation: string;
+  description: string;
+}
+
 export interface ExcelTableSheetOptions {
   title: string;
   subtitle?: string;
@@ -26,6 +33,8 @@ export interface ExcelTableSheetOptions {
   totals?: (string | number | null | undefined)[];
   customColWidths?: Record<number, number>;
   enableAutofilter?: boolean;
+  methodologyTitle?: string;
+  calculationSteps?: ExcelCalculationStep[];
 }
 
 export interface ExcelKeyValueSheetOptions {
@@ -33,6 +42,8 @@ export interface ExcelKeyValueSheetOptions {
   subtitle?: string;
   sections: ExcelSection[];
   customColWidths?: Record<number, number>;
+  methodologyTitle?: string;
+  calculationSteps?: ExcelCalculationStep[];
 }
 
 export class ExcelStylerUtils {
@@ -184,6 +195,18 @@ export class ExcelStylerUtils {
       rowHeights.push({ hpt: 22 });
     }
 
+    let methodologyMeta: { titleRowIdx: number; headerRowIdx: number; startIdx: number; endIdx: number } | null = null;
+    if (options.calculationSteps && options.calculationSteps.length > 0) {
+      methodologyMeta = this.appendMethodologyBlock(
+        aoa,
+        merges,
+        rowHeights,
+        options.calculationSteps,
+        numCols,
+        options.methodologyTitle
+      );
+    }
+
     const ws = XLSX.utils.aoa_to_sheet(aoa);
 
     ws['!merges'] = merges;
@@ -212,6 +235,10 @@ export class ExcelStylerUtils {
       totalsRowIdx,
       options.headers.length
     );
+
+    if (methodologyMeta) {
+      this.applyMethodologyStyles(ws, methodologyMeta, numCols);
+    }
 
     return ws;
   }
@@ -388,13 +415,28 @@ export class ExcelStylerUtils {
       rowHeights.push({ hpt: 8 });
     }
 
+    let methodologyMeta: { titleRowIdx: number; headerRowIdx: number; startIdx: number; endIdx: number } | null = null;
+    if (options.calculationSteps && options.calculationSteps.length > 0) {
+      methodologyMeta = this.appendMethodologyBlock(
+        aoa,
+        merges,
+        rowHeights,
+        options.calculationSteps,
+        numCols,
+        options.methodologyTitle
+      );
+    }
+
     const ws = XLSX.utils.aoa_to_sheet(aoa);
 
     ws['!merges'] = merges;
     ws['!rows'] = rowHeights;
+    const defaultWidths = options.calculationSteps && options.calculationSteps.length > 0
+      ? { 0: 42, 1: 26, 2: 32, 3: 45 }
+      : { 0: 44, 1: 24, 2: 15, 3: 34 };
     ws['!cols'] = this.autoCalculateColWidths(
       aoa,
-      options.customColWidths || { 0: 44, 1: 24, 2: 15, 3: 34 }
+      options.customColWidths || defaultWidths
     );
 
     for (let c = 0; c < numCols; c++) {
@@ -477,7 +519,108 @@ export class ExcelStylerUtils {
       }
     }
 
+    if (methodologyMeta) {
+      this.applyMethodologyStyles(ws, methodologyMeta, numCols);
+    }
+
     return ws;
+  }
+
+  private static appendMethodologyBlock(
+    aoa: any[][],
+    merges: XLSX.Range[],
+    rowHeights: Array<{ hpt: number }>,
+    steps: ExcelCalculationStep[],
+    numCols: number,
+    blockTitle?: string
+  ): { titleRowIdx: number; headerRowIdx: number; startIdx: number; endIdx: number } {
+    aoa.push([]);
+    rowHeights.push({ hpt: 12 });
+
+    const titleRowIdx = aoa.length;
+    aoa.push([blockTitle || 'ПОРЯДОК И МЕТОДИКА РАСЧЕТА (ФОРМУЛЫ И ДЕЙСТВИЯ)']);
+    merges.push({ s: { r: titleRowIdx, c: 0 }, e: { r: titleRowIdx, c: numCols - 1 } });
+    rowHeights.push({ hpt: 22 });
+
+    const headerRowIdx = aoa.length;
+    aoa.push(['№ / Расчетный показатель', 'Математическая формула', 'Расчетные действия (подстановка)', 'Пояснение и нормативная база']);
+    rowHeights.push({ hpt: 20 });
+
+    const startIdx = aoa.length;
+    for (const step of steps) {
+      const rowIdx = aoa.length;
+      aoa.push([step.parameter, step.formula, step.calculation, step.description]);
+      if (numCols > 4) {
+        merges.push({ s: { r: rowIdx, c: 3 }, e: { r: rowIdx, c: numCols - 1 } });
+      }
+      rowHeights.push({ hpt: 24 });
+    }
+    const endIdx = aoa.length - 1;
+
+    return { titleRowIdx, headerRowIdx, startIdx, endIdx };
+  }
+
+  private static applyMethodologyStyles(
+    ws: XLSX.WorkSheet,
+    meta: { titleRowIdx: number; headerRowIdx: number; startIdx: number; endIdx: number },
+    numCols: number
+  ): void {
+    for (let c = 0; c < numCols; c++) {
+      const titleCellAddr = XLSX.utils.encode_cell({ r: meta.titleRowIdx, c });
+      if (!ws[titleCellAddr]) ws[titleCellAddr] = { t: 's', v: '' };
+      ws[titleCellAddr].s = {
+        fill: { fgColor: { rgb: '1E3A8A' } },
+        font: { name: 'Calibri', sz: 10.5, bold: true, color: { rgb: 'FFFFFF' } },
+        alignment: { horizontal: 'left', vertical: 'center', indent: 1 }
+      };
+
+      const hdrAddr = XLSX.utils.encode_cell({ r: meta.headerRowIdx, c });
+      if (!ws[hdrAddr]) ws[hdrAddr] = { t: 's', v: '' };
+      ws[hdrAddr].s = {
+        fill: { fgColor: { rgb: '3B82F6' } },
+        font: { name: 'Calibri', sz: 9.5, bold: true, color: { rgb: 'FFFFFF' } },
+        alignment: { horizontal: c === 1 ? 'center' : 'left', vertical: 'center' },
+        border: this.BORDER_THIN
+      };
+    }
+
+    for (let r = meta.startIdx; r <= meta.endIdx; r++) {
+      const isOdd = (r - meta.startIdx) % 2 === 1;
+      const bgRgb = isOdd ? 'F8FAFC' : 'FFFFFF';
+
+      for (let c = 0; c < numCols; c++) {
+        const cellAddr = XLSX.utils.encode_cell({ r, c });
+        if (!ws[cellAddr]) ws[cellAddr] = { t: 's', v: '' };
+
+        let fontColor = '0F172A';
+        let bold = false;
+        let align: 'left' | 'center' | 'right' = 'left';
+        let sz = 10;
+        let wrapText = false;
+
+        if (c === 0) {
+          bold = true;
+          fontColor = '1E293B';
+        } else if (c === 1) {
+          bold = true;
+          fontColor = '1E40AF';
+          align = 'center';
+        } else if (c === 2) {
+          fontColor = '0F172A';
+        } else {
+          fontColor = '475569';
+          sz = 9.5;
+          wrapText = true;
+        }
+
+        ws[cellAddr].s = {
+          fill: { fgColor: { rgb: bgRgb } },
+          font: { name: 'Calibri', sz, bold, color: { rgb: fontColor } },
+          alignment: { horizontal: align, vertical: 'center', wrapText },
+          border: this.BORDER_THIN
+        };
+      }
+    }
   }
 
   static async saveWorkbookWithDialog(wb: XLSX.WorkBook, defaultFilename: string): Promise<boolean> {

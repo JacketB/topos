@@ -102,20 +102,44 @@ export class FortificationPlannerComponent {
   }
 
   private loadDevices(): MachDevice[] {
-    try {
-      const val = localStorage.getItem('topos_planner_devices');
-      if (val) return JSON.parse(val);
-    } catch {}
-
-    return [
+    const defaultDevices: MachDevice[] = [
       { id: 'pzm', name: 'ПЗМ-2', type: 'pzm', basePerf: 120, currentPerf: 120, efficiency: 0.90, notes: 'Производительность: 120 м/ч траншей или 90 м³/ч котлованов.' },
       { id: 'eov', name: 'ЭОВ-4421', type: 'eov', basePerf: 60, currentPerf: 60, efficiency: 0.85, notes: 'Емкость ковша 0.65 м³. Отрывка окопов танков/БМП (60-70 м³/ч).' },
+      { id: 'amkodor', name: 'АМКОДОР 325С', type: 'amkodor', basePerf: 45, currentPerf: 45, efficiency: 0.85, notes: 'Универсальный фронтальный погрузчик (ковш 1.9 м³). Земляные и погрузочные работы (40-50 м³/ч).' },
+      { id: 'auto', name: 'Автомобили', type: 'auto', basePerf: 25, currentPerf: 25, efficiency: 0.90, notes: 'Транспортировка грунта, подвоз стройматериалов и конструкций (25-30 м³/ч).' },
       { id: 'mdk', name: 'МДК-3', type: 'mdk', basePerf: 350, currentPerf: 350, efficiency: 0.85, notes: 'Отрывка котлованов под укрытия КВС-У и блиндажи (300-400 м³/ч).' },
       { id: 'btm', name: 'БТМ-3 / ТМК-2', type: 'btm', basePerf: 500, currentPerf: 500, efficiency: 0.90, notes: 'Скоростная отрывка траншей и ходов сообщения (до 500 м/ч).' },
       { id: 'bat', name: 'БАТ-2', type: 'bat', basePerf: 200, currentPerf: 200, efficiency: 0.90, notes: 'Устройство ПТ рвов, эскарпов, засыпка и перемещение грунта (200 м³/ч).' },
       { id: 'bu', name: 'Встроенное БУ танка или САУ', type: 'bu', basePerf: 25, currentPerf: 25, efficiency: 0.80, notes: 'Самоокапывание экипажами с ножевым отвалом (25-30 м³/ч).' },
       { id: 'none', name: 'Вручную', type: 'none', basePerf: 1.5, currentPerf: 1.5, efficiency: 1.00, notes: 'Отрывка малой/большой пехотной лопатой (1.0 - 1.5 м³/ч на человека).' }
     ];
+
+    try {
+      const val = localStorage.getItem('topos_planner_devices');
+      if (val) {
+        const parsed: MachDevice[] = JSON.parse(val);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const list = [...parsed];
+          const hasAmkodor = list.some(d => d.id === 'amkodor' || d.type === 'amkodor');
+          const hasAuto = list.some(d => d.id === 'auto' || d.type === 'auto');
+          if (!hasAmkodor) {
+            const mdkIdx = list.findIndex(d => d.id === 'mdk');
+            const amkodorDev = defaultDevices.find(d => d.id === 'amkodor')!;
+            if (mdkIdx >= 0) list.splice(mdkIdx, 0, amkodorDev);
+            else list.push(amkodorDev);
+          }
+          if (!hasAuto) {
+            const mdkIdx = list.findIndex(d => d.id === 'mdk');
+            const autoDev = defaultDevices.find(d => d.id === 'auto')!;
+            if (mdkIdx >= 0) list.splice(mdkIdx, 0, autoDev);
+            else list.push(autoDev);
+          }
+          return list;
+        }
+      }
+    } catch {}
+
+    return defaultDevices;
   }
 
   readonly manpower = signal<number>(this.loadNumber('topos_planner_manpower', 30));
@@ -235,12 +259,12 @@ export class FortificationPlannerComponent {
     const nextId = 'custom_' + Date.now();
     const newDev: MachDevice = {
       id: nextId,
-      name: 'Новая инженерная машина',
-      type: 'eov',
-      basePerf: 60,
-      currentPerf: 60,
+      name: 'Новая машина (пользовательская)',
+      type: 'custom',
+      basePerf: 50,
+      currentPerf: 50,
       efficiency: 0.90,
-      notes: 'Пользовательская единица инженерной техники.'
+      notes: 'Пользовательская единица техники.'
     };
     this.machDevices.set([...current, newDev]);
   }
@@ -260,9 +284,21 @@ export class FortificationPlannerComponent {
       if (d.id === id) {
         const updated = { ...d, [field]: val };
         if (field === 'type') {
-          const basePerfs: Record<string, number> = { pzm: 120, eov: 60, mdk: 350, btm: 500, bat: 200, bu: 25, none: 1.5 };
-          updated.basePerf = basePerfs[val as string] || 60;
-          updated.currentPerf = updated.basePerf;
+          const basePerfs: Record<string, number> = {
+            pzm: 120,
+            eov: 60,
+            amkodor: 45,
+            auto: 25,
+            mdk: 350,
+            btm: 500,
+            bat: 200,
+            bu: 25,
+            none: 1.5
+          };
+          if (val !== 'custom' && basePerfs[val as string] !== undefined) {
+            updated.basePerf = basePerfs[val as string];
+            updated.currentPerf = updated.basePerf;
+          }
         }
         return updated;
       }
@@ -1024,6 +1060,9 @@ export class FortificationPlannerComponent {
 
     const devices = devicesList.reduce((acc, d) => {
       acc[d.id] = d;
+      if (d.type && !acc[d.type]) {
+        acc[d.type] = d;
+      }
       return acc;
     }, {} as Record<string, MachDevice>);
 
@@ -1056,15 +1095,15 @@ export class FortificationPlannerComponent {
 
           if (activeAllocs.length === 1) {
             const a = activeAllocs[0];
-            const dev = devices[a.machType] || devices['none'] || { id: 'none', basePerf: 1.5, currentPerf: 1.5, efficiency: 1.00 };
-            const perfFactor = dev.currentPerf > 0 ? (dev.basePerf / dev.currentPerf) : 1;
-            machTotal = (task.qty * task.machNorm * perfFactor / dev.efficiency);
+            const dev = devices[a.machType] || devicesList.find(d => d.id === a.machType || d.type === a.machType) || { id: 'none', basePerf: 1.5, currentPerf: 1.5, efficiency: 1.00 };
+            const perfFactor = (dev.currentPerf > 0 && dev.basePerf > 0) ? (dev.basePerf / dev.currentPerf) : 1;
+            machTotal = (task.qty * task.machNorm * perfFactor / (dev.efficiency || 1));
             machDurationWork = machTotal / Math.max(1, a.qty);
           } else {
             machTotal = task.qty * task.machNorm;
             const combinedCap = activeAllocs.reduce((sum, a) => {
-              const dev = devices[a.machType] || devices['none'];
-              const capRatio = (dev.currentPerf / Math.max(1, dev.basePerf)) * dev.efficiency * a.qty;
+              const dev = devices[a.machType] || devicesList.find(d => d.id === a.machType || d.type === a.machType) || { id: 'none', basePerf: 1.5, currentPerf: 1.5, efficiency: 1.00 };
+              const capRatio = (dev.basePerf > 0 ? (dev.currentPerf / dev.basePerf) : 1) * (dev.efficiency || 1) * a.qty;
               return sum + capRatio;
             }, 0);
             machDurationWork = machTotal / Math.max(0.01, combinedCap);
@@ -1406,7 +1445,33 @@ export class FortificationPlannerComponent {
         15: 12,
         16: 14,
         17: 15
-      }
+      },
+      calculationSteps: [
+        {
+          parameter: '1. Суммарный объем земляных работ (V_общ)',
+          formula: 'V_общ = sum(N_i * V_ед_i)',
+          calculation: `${calc.totalEarth.toFixed(1)} м³`,
+          description: 'Суммарный объем механизированной выемки и ручной доотрывки по всем элементам опорного пункта'
+        },
+        {
+          parameter: '2. Суммарная трудоемкость личного состава (T_чел)',
+          formula: 'T_чел = sum(N_i * t_чел_i) * К_обст',
+          calculation: `${calc.totalLaborHrs.toFixed(1)} чел-ч`,
+          description: `Трудозатраты личного состава с учетом коэффициента тактической обстановки К_обст = ${this.tacticalCoeff()}`
+        },
+        {
+          parameter: '3. Потребность в работе землеройной техники (T_маш)',
+          formula: 'T_маш = sum(N_i * t_маш_i) * К_обст',
+          calculation: `${calc.totalMachHours.toFixed(1)} маш-ч`,
+          description: 'Суммарное рабочее время назначенных землеройных машин (ЭОВ-4421, БАТ-2, МДК-3, ПЗМ-2)'
+        },
+        {
+          parameter: '4. Календарная длительность оборудования (T_сут)',
+          formula: 'T_сут = T_общ / (N_смен * t_смены)',
+          calculation: `${(calc.totalDurationCal / (this.workHoursPerDay() || 10)).toFixed(1)} рабочих суток (${calc.totalDurationCal.toFixed(1)} ч)`,
+          description: `Привлечено ${this.manpower()} чел. личного состава, режим: ${this.shifts()} смен/сутки (${this.workHoursPerDay()} рабочих ч/сутки)`
+        }
+      ]
     });
 
     const wsSummary = ExcelStylerUtils.buildKeyValueSheet({
@@ -1448,6 +1513,38 @@ export class FortificationPlannerComponent {
             { label: 'Длительность выполнения работ II очереди', value: `${calc.phase2DurationCal.toFixed(1)} ч`, unit: 'ч', note: 'Блиндажи, укрытия техники, КП' },
             { label: 'ПОЛНОЕ ВРЕМЯ ГОТОВНОСТИ ОПОРНОГО ПУНКТА', value: `${calc.totalDurationCal.toFixed(1)} ч`, unit: 'ч', note: `Всего ${(calc.totalDurationCal / (this.workHoursPerDay() || 10)).toFixed(1)} рабочих суток` }
           ]
+        }
+      ],
+      calculationSteps: [
+        {
+          parameter: '1. Итоговый коэффициент обстановки (К_обст)',
+          formula: 'К_обст = K_грунт * K_огонь * K_зараж * K_время * K_зима',
+          calculation: `${this.tacticalCoeff()}`,
+          description: `Грунт: ${this.soilType()} кат., огневое воздействие: ${this.factorEnemyFire()}, заражение: ${this.factorContamination()}, свет: ${this.factorTimeOfDay()}, зима: ${this.factorWinter() ? '1.50' : '1.00'}`
+        },
+        {
+          parameter: '2. Потребность в круглом лесе (V_лес)',
+          formula: 'V_лес = sum(N_i * v_лес_i)',
+          calculation: `${calc.totalWood.toFixed(1)} м³`,
+          description: 'Диаметр бревен 12-18 см для несущих остовов, вертикальных стоек и сплошного наката перекрытий'
+        },
+        {
+          parameter: '3. Потребность в обрезных досках и пластинах (V_доски)',
+          formula: 'V_доски = sum(N_i * v_доски_i)',
+          calculation: `${calc.totalBoards.toFixed(1)} м³`,
+          description: 'Толщина досок 2.5-5 см для устройства одежды крутостей траншей, щелей и щитов'
+        },
+        {
+          parameter: '4. Потребность в вязальной отожженной проволоке (M_пров)',
+          formula: 'M_пров = sum(N_i * m_пров_i)',
+          calculation: `${calc.totalWireViaz.toFixed(1)} кг`,
+          description: 'Стальная вязальная проволока диаметром 3-4 мм для увязки элементов остовов и анкеровки'
+        },
+        {
+          parameter: '5. Потребность в табельных маскировочных сетях (S_маск)',
+          formula: 'S_маск = sum(N_i * s_маск_i)',
+          calculation: `${calc.totalMasNet} м²`,
+          description: 'Табельные комплекты маскировочного покрытия МКТ-2Л для скрытия сооружений от оптической разведки'
         }
       ]
     });

@@ -63,4 +63,29 @@ describe('ExcelStylerUtils', () => {
     const secTitleCell = ws['A4'];
     expect(secTitleCell.s.fill.fgColor.rgb).toBe('1E40AF');
   });
+
+  it('should render calculation steps with formulas and actions under tables and key-value sheets', () => {
+    const ws = ExcelStylerUtils.buildTableSheet({
+      title: 'ВЕДОМОСТЬ С ФОРМУЛАМИ',
+      headers: ['Показатель', 'Значение'],
+      data: [['Расход мин', '1000 шт.']],
+      calculationSteps: [
+        {
+          parameter: 'Расход мин (N)',
+          formula: 'N = (L / d) * n',
+          calculation: '(1000 / 5.5) * 4 = 728 шт.',
+          description: 'L = 1000 м, d = 5.5 м, n = 4 ряда'
+        }
+      ]
+    });
+
+    expect(ws).toBeDefined();
+    const rows = ws['!rows'] || [];
+    expect(rows.length).toBeGreaterThan(4);
+
+    const stepCell = Object.keys(ws).find(k => ws[k]?.v === 'N = (L / d) * n');
+    expect(stepCell).toBeDefined();
+    expect(ws[stepCell!].s.fill.fgColor.rgb).toBeDefined();
+    expect(ws[stepCell!].s.font.bold).toBe(true);
+  });
 });

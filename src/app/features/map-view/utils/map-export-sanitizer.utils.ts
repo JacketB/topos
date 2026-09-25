@@ -32,12 +32,111 @@ export class MapExportSanitizerUtils {
           }
           return clonedArr;
         }
+        if (val[0] === 'coalesce') {
+          const clonedArr = [...val];
+          for (let i = 1; i < clonedArr.length; i++) {
+            if (typeof clonedArr[i] === 'number') {
+              clonedArr[i] = clonedArr[i] * ratio;
+            } else if (Array.isArray(clonedArr[i])) {
+              clonedArr[i] = scaleNumberOrExpr(clonedArr[i], ratio);
+            }
+          }
+          return clonedArr;
+        }
       }
       return val;
     };
 
+    const isOverlayLayer = (l: any) => {
+      const id = l.id || '';
+      const src = l.source || '';
+      const type = l.type || '';
+      return id.startsWith('tactical_') || 
+             id.startsWith('measurement-') || 
+             id.startsWith('range-rings-') || 
+             id.startsWith('drawing-') || 
+             id.startsWith('viewshed-') || 
+             id.startsWith('layer-img-overlay-') ||
+             id.startsWith('layer-') ||
+             id.startsWith('march_') ||
+             src.startsWith('src-img-overlay-') ||
+             src.startsWith('src-') ||
+             src === 'march-places' ||
+             src === 'march-kilometers' ||
+             src === 'playback-source' ||
+             type === 'raster' ||
+             src === 'tactical-symbols' || 
+             src === 'tactical-lines' || 
+             src === 'tactical-polygons' || 
+             src === 'measurement-data' || 
+             src === 'range-rings-data' || 
+             src === 'drawing-data' || 
+             src === 'viewshed-data' || 
+             src === 'drawing-preview';
+    };
+
     for (const layer of cloned.layers) {
       if (layer.paint) {
+        if (!isOverlayLayer(layer)) {
+          if (layer.type === 'fill') {
+            const id = layer.id || '';
+            const srcLayer = layer['source-layer'] || '';
+            if (id.includes('wood') || id.includes('forest') || srcLayer === 'landcover' || srcLayer === 'landuse') {
+              if (id.includes('wood') || id.includes('forest')) {
+                layer.paint['fill-color'] = '#d8ead2';
+                layer.paint['fill-opacity'] = 0.45;
+              } else if (id.includes('grass') || id.includes('meadow') || id.includes('park')) {
+                layer.paint['fill-color'] = '#eaf2e3';
+                layer.paint['fill-opacity'] = 0.40;
+              } else if (id.includes('residential') || id.includes('industrial') || id.includes('commercial')) {
+                layer.paint['fill-color'] = '#eae8e4';
+                layer.paint['fill-opacity'] = 0.45;
+              }
+            } else if (id === 'water' || srcLayer === 'water' || id.includes('water')) {
+              layer.paint['fill-color'] = '#b8d8f0';
+            }
+          } else if (layer.type === 'background') {
+            layer.paint['background-color'] = '#f8faf6';
+          } else if (layer.type === 'line') {
+            const id = layer.id || '';
+            const srcLayer = layer['source-layer'] || '';
+            if (id === 'waterway' || id.includes('waterway') || srcLayer === 'waterway') {
+              layer.paint['line-color'] = '#9bbcd6';
+              layer.paint['line-opacity'] = 0.70;
+            } else if (id === 'roads_major' || (srcLayer === 'transportation' && id.includes('major') && !id.includes('casing'))) {
+              layer.paint['line-color'] = '#f59e0b';
+              layer.paint['line-opacity'] = 0.95;
+            } else if (id === 'roads_major_casing' || (srcLayer === 'transportation' && id.includes('major_casing'))) {
+              layer.paint['line-color'] = '#b45309';
+              layer.paint['line-opacity'] = 0.90;
+            } else if (id === 'roads_minor' || (srcLayer === 'transportation' && id.includes('minor') && !id.includes('casing'))) {
+              layer.paint['line-color'] = '#f5f5f3';
+              layer.paint['line-opacity'] = 0.85;
+            } else if (id === 'roads_minor_casing' || (srcLayer === 'transportation' && id.includes('minor_casing'))) {
+              layer.paint['line-color'] = '#ded9cf';
+              layer.paint['line-opacity'] = 0.60;
+            } else if (id === 'transportation_rail' || id.includes('rail')) {
+              layer.paint['line-color'] = '#a8a29e';
+              layer.paint['line-opacity'] = 0.60;
+            } else if (id === 'transportation_path' || id.includes('path') || id.includes('track')) {
+              layer.paint['line-color'] = '#d1cbbf';
+              layer.paint['line-opacity'] = 0.50;
+            } else if (id.includes('boundary_country_halo')) {
+              layer.paint['line-color'] = '#e09fab';
+              layer.paint['line-opacity'] = 0.15;
+            } else if (id.includes('boundary_country')) {
+              layer.paint['line-color'] = '#9e5a6d';
+              layer.paint['line-opacity'] = 0.60;
+            } else if (id.includes('boundary_region')) {
+              layer.paint['line-color'] = '#8e9aa8';
+              layer.paint['line-opacity'] = 0.50;
+            } else if (id.includes('contour_line') || id.includes('contour')) {
+              layer.paint['line-color'] = '#c2a893';
+              layer.paint['line-opacity'] = 0.45;
+            }
+          }
+        }
+
         if (layer.paint['line-dasharray'] && Array.isArray(layer.paint['line-dasharray'])) {
           const isDataDriven = JSON.stringify(layer.paint['line-dasharray']).includes('"get"');
           if (isDataDriven) {
@@ -52,7 +151,9 @@ export class MapExportSanitizerUtils {
         }
 
         if (layer.paint['line-width'] !== undefined) {
-          layer.paint['line-width'] = scaleNumberOrExpr(layer.paint['line-width'], dpiRatio);
+          const isOverlay = isOverlayLayer(layer);
+          const widthRatio = isOverlay ? dpiRatio : Math.min(1.25, 1.0 + (dpiRatio - 1.0) * 0.05);
+          layer.paint['line-width'] = scaleNumberOrExpr(layer.paint['line-width'], widthRatio);
         }
         if (layer.paint['circle-radius'] !== undefined) {
           layer.paint['circle-radius'] = scaleNumberOrExpr(layer.paint['circle-radius'], dpiRatio);
@@ -78,6 +179,16 @@ export class MapExportSanitizerUtils {
         }
 
         if (layer.type === 'symbol') {
+          if (!isOverlayLayer(layer)) {
+            if (layer.id === 'waterway_labels' || layer.id === 'water_labels') {
+              if (layer.paint) layer.paint['text-color'] = '#5a8cae';
+            } else if (layer.id === 'transportation_labels') {
+              if (layer.paint) layer.paint['text-color'] = '#78716c';
+            } else if (layer.id === 'contour_label') {
+              if (layer.paint) layer.paint['text-color'] = '#9c7b63';
+            }
+          }
+
           if (!layer.layout['text-font'] || (Array.isArray(layer.layout['text-font']) && layer.layout['text-font'].length > 1)) {
             layer.layout['text-font'] = ['Noto Sans Regular'];
           }
@@ -117,6 +228,26 @@ export class MapExportSanitizerUtils {
             layer.layout['text-field'] = '';
           }
         }
+
+        if (layer.layout['icon-size'] !== undefined) {
+          layer.layout['icon-size'] = scaleNumberOrExpr(layer.layout['icon-size'], dpiRatio);
+        }
+      }
+    }
+
+    if (cloned.sources) {
+      for (const srcKey of Object.keys(cloned.sources)) {
+        const src = cloned.sources[srcKey];
+        if (src && src.type === 'raster') {
+          const tilesStr = Array.isArray(src.tiles) ? src.tiles.join(' ') : (src.url || '');
+          if (tilesStr.includes('virtualearth.net')) {
+            src.maxzoom = Math.min(typeof src.maxzoom === 'number' ? src.maxzoom : 18, 18);
+          } else if (tilesStr.includes('google.com')) {
+            src.maxzoom = Math.min(typeof src.maxzoom === 'number' ? src.maxzoom : 19, 19);
+          } else if (typeof src.maxzoom === 'number' && src.maxzoom > 19) {
+            src.maxzoom = 19;
+          }
+        }
       }
     }
 
@@ -125,35 +256,25 @@ export class MapExportSanitizerUtils {
     const baseLayers: any[] = [];
     const overlayLayers: any[] = [];
 
-    const isOverlayLayer = (l: any) => {
-      const id = l.id || '';
-      const src = l.source || '';
-      const type = l.type || '';
-      return id.startsWith('tactical_') || 
-             id.startsWith('measurement-') || 
-             id.startsWith('range-rings-') || 
-             id.startsWith('drawing-') || 
-             id.startsWith('viewshed-') || 
-             id.startsWith('layer-img-overlay-') ||
-             id.startsWith('layer-') ||
-             id.startsWith('march_') ||
-             src.startsWith('src-img-overlay-') ||
-             src.startsWith('src-') ||
-             src === 'march-places' ||
-             src === 'march-kilometers' ||
-             src === 'playback-source' ||
-             type === 'raster' ||
-             src === 'tactical-symbols' || 
-             src === 'tactical-lines' || 
-             src === 'tactical-polygons' || 
-             src === 'measurement-data' || 
-             src === 'range-rings-data' || 
-             src === 'drawing-data' || 
-             src === 'viewshed-data' || 
-             src === 'drawing-preview';
-    };
-
     for (const layer of cloned.layers) {
+      if (layer.id === 'tactical_lines_layer' && !cloned.layers.some((l: any) => l.id === 'tactical_lines_casing_export')) {
+        overlayLayers.push({
+          id: 'tactical_lines_casing_export',
+          type: 'line',
+          source: 'tactical-symbols',
+          filter: ['==', '$type', 'LineString'],
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': '#ffffff',
+            'line-width': ['+', ['coalesce', ['get', 'lineWidth'], 3.5 * dpiRatio], 3.0 * dpiRatio],
+            'line-opacity': 0.95
+          }
+        });
+      }
+
       if (isOverlayLayer(layer)) {
         overlayLayers.push(layer);
       } else {
@@ -176,7 +297,8 @@ export class MapExportSanitizerUtils {
         const props = feature.properties;
 
         if (feature.geometry && feature.geometry.type === 'Point') {
-          props.size = 0.07;
+          const baseSize = typeof props.size === 'number' && props.size > 0 ? props.size : 0.08;
+          props.size = props.symbol === 'text_box' ? 0 : baseSize * dpiRatio;
         }
 
         if (props.symbol && !props.iconId) {
@@ -207,7 +329,8 @@ export class MapExportSanitizerUtils {
       const props = feat.properties;
 
       if (feat.geometry && feat.geometry.type === 'Point') {
-        props.size = props.symbol === 'text_box' ? 0 : 0.07;
+        const baseSize = typeof props.size === 'number' && props.size > 0 ? props.size : 0.08;
+        props.size = props.symbol === 'text_box' ? 0 : baseSize * dpiRatio;
       }
 
       if (props.symbol && !props.iconId) {

@@ -22,11 +22,10 @@ export class MapLayersService {
   readonly groups = signal<LayerGroupInfo[]>([
     {
       id: 'elevation',
-      name: 'Рельеф и высоты',
+      name: 'Рельеф и горизонтали',
       visible: true,
       expanded: false,
       layers: [
-        { id: 'hillshade_layer', name: 'Теневая отмывка рельефа (Hillshade)', visible: true },
         { id: 'contour_line', name: 'Горизонтали (Изогипсы)', visible: true },
         { id: 'contour_label', name: 'Отметки высот горизонталей', visible: true },
         { id: 'mountain_peak_labels', name: 'Вершины и командные высоты', visible: true }
@@ -98,7 +97,6 @@ export class MapLayersService {
       visible: true,
       expanded: false,
       layers: [
-        { id: '3d_buildings', name: '3D-здания (Объемная застройка)', visible: true },
         { id: 'buildings', name: '2D-контуры строений', visible: true },
         { id: 'landuse_residential', name: 'Жилые и промышленные кварталы', visible: true },
         { id: 'housenumber_labels', name: 'Номера домов и адреса', visible: true }

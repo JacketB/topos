@@ -40,10 +40,7 @@ describe('TacticalMapService - Export/Import Scenario', () => {
         { provide: ɵEffectScheduler, useValue: mockScheduler },
         {
           provide: TrenchGeometryService,
-          useValue: {
-            buildSmoothedTrench: (c: any) => c,
-            buildObstacleTicks: () => []
-          }
+          useValue: new TrenchGeometryService()
         },
         { provide: TerrainService, useValue: {} },
         {
@@ -161,5 +158,31 @@ describe('TacticalMapService - Export/Import Scenario', () => {
     expect(patrol?.name).toBe('Парный патруль');
     expect(patrol?.symbol).toBe('patrol_pair');
     expect(patrol?.hasPatrol).toBe(true);
+  });
+
+  it('should generate patrol line features for placed symbols with hasPatrol: true', () => {
+    const symbolWithPatrol = {
+      type: 'Feature',
+      properties: {
+        id: 9999,
+        symbol: 'patrol_pair',
+        hasPatrol: true,
+        patrolLength: 400,
+        patrolAngle: 45,
+        patrolStyle: 'solid'
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: [27.5, 53.9]
+      }
+    };
+
+    const features = service.getAllFeaturesWithPatrol([symbolWithPatrol]);
+    expect(features.length).toBe(2);
+    const patrolLine = features.find(f => f.properties.id === 'patrol_9999');
+    expect(patrolLine).toBeDefined();
+    expect(patrolLine?.geometry.type).toBe('MultiLineString');
+    expect(patrolLine?.properties.isPatrolLine).toBe(true);
+    expect(patrolLine?.properties.parentId).toBe(9999);
   });
 });

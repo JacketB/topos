@@ -1,0 +1,253 @@
+@if (isOpen()) {
+  <div class="modal-backdrop" (click)="closeModal()">
+    <div class="modal-window" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-title-group">
+          <div class="header-icon-box">
+            <svg class="h-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <div class="header-text">
+            <h2 class="modal-title">3D-Модель Рельефа Местности</h2>
+            <p class="modal-subtitle">Локальная триангуляционная модель поверхности (Rust DEM Engine)</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button type="button" class="btn-icon-close" (click)="closeModal()" title="Закрыть окно">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="viewer-main">
+          <div #canvasContainer class="canvas-container">
+            @if (loading()) {
+              <div class="loading-overlay">
+                <div class="spinner"></div>
+                <span>Генерация 3D-сетки на бэкенде Rust...</span>
+              </div>
+            }
+
+            <div class="viewport-hud">
+              @if (stats(); as s) {
+                <div class="hud-card">
+                  <div class="hud-item">
+                    <span class="hud-label">Размер:</span>
+                    <span class="hud-val">{{ s.widthKm }} × {{ s.heightKm }} км ({{ s.areaSqKm }} км²)</span>
+                  </div>
+                  <div class="hud-item">
+                    <span class="hud-label">Высоты:</span>
+                    <span class="hud-val">{{ s.minElev }} ... {{ s.maxElev }} м (Δh: {{ s.deltaH }} м)</span>
+                  </div>
+                  <div class="hud-item">
+                    <span class="hud-label">Полигоны:</span>
+                    <span class="hud-val">{{ s.polyCount }} треуг.</span>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div class="camera-presets">
+              <button type="button" class="btn-preset" (click)="setCameraView('top')" title="Вид сверху">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                План
+              </button>
+              <button type="button" class="btn-preset" (click)="setCameraView('iso')" title="Изометрия 45°">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
+                45°
+              </button>
+              <button type="button" class="btn-preset" (click)="setCameraView('profile')" title="Профиль рельефа">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+                Профиль
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="viewer-sidebar">
+          <div class="sidebar-section">
+            <h3 class="section-heading">Режим отображения</h3>
+            <div class="mode-buttons">
+              <button
+                type="button"
+                class="btn-mode"
+                [class.active]="renderMode() === 'hypsometric'"
+                (click)="renderMode.set('hypsometric')"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                  <line x1="4" y1="22" x2="4" y2="15" />
+                </svg>
+                Высоты
+              </button>
+
+              <button
+                type="button"
+                class="btn-mode"
+                [class.active]="renderMode() === 'texture'"
+                (click)="renderMode.set('texture')"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                Карта
+              </button>
+
+              <button
+                type="button"
+                class="btn-mode"
+                [class.active]="renderMode() === 'wireframe'"
+                (click)="renderMode.set('wireframe')"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 2 22 22 22" />
+                  <line x1="12" y1="2" x2="12" y2="22" />
+                  <line x1="7" y1="12" x2="17" y2="12" />
+                </svg>
+                Сетка
+              </button>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="slider-header">
+              <span class="slider-label">Преувеличение высот:</span>
+              <span class="slider-val">{{ exaggeration() }}x</span>
+            </div>
+            <input
+              type="range"
+              class="range-slider"
+              min="1.0"
+              max="8.0"
+              step="0.5"
+              [value]="exaggeration()"
+              (input)="exaggeration.set(+$any($event.target).value)"
+            />
+            <div class="chips-row">
+              <button type="button" class="chip-btn" (click)="exaggeration.set(1.0)">1x</button>
+              <button type="button" class="chip-btn" (click)="exaggeration.set(2.0)">2x</button>
+              <button type="button" class="chip-btn" (click)="exaggeration.set(3.5)">3.5x</button>
+              <button type="button" class="chip-btn" (click)="exaggeration.set(5.0)">5x</button>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="slider-header">
+              <span class="slider-label">Азимут солнца:</span>
+              <span class="slider-val">{{ sunAzimuth() }}°</span>
+            </div>
+            <input
+              type="range"
+              class="range-slider"
+              min="0"
+              max="360"
+              step="15"
+              [value]="sunAzimuth()"
+              (input)="sunAzimuth.set(+$any($event.target).value)"
+            />
+          </div>
+
+          <div class="sidebar-section">
+            <div class="buildings-toggle-row">
+              <div class="toggle-label-group">
+                <span class="slider-label">3D-Здания и застройка</span>
+                @if (buildingCount() > 0) {
+                  <span class="building-count-badge">{{ buildingCount() }} об.</span>
+                }
+              </div>
+              <button 
+                type="button" 
+                class="switch-btn" 
+                [class.active]="showBuildings()" 
+                (click)="toggleBuildings()"
+                title="Включить/выключить объемные 3D-строения"
+              >
+                <span class="switch-handle"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <h3 class="section-heading">Детализация сетки (DEM)</h3>
+            <div class="resolution-buttons">
+              <button
+                type="button"
+                class="btn-res"
+                [class.active]="resolution() === 32"
+                (click)="changeResolution(32)"
+              >
+                32×32 (Быстро)
+              </button>
+              <button
+                type="button"
+                class="btn-res"
+                [class.active]="resolution() === 64"
+                (click)="changeResolution(64)"
+              >
+                64×64 (Стандарт)
+              </button>
+              <button
+                type="button"
+                class="btn-res"
+                [class.active]="resolution() === 128"
+                (click)="changeResolution(128)"
+              >
+                128×128 (HD)
+              </button>
+            </div>
+          </div>
+
+          <div class="sidebar-section export-section">
+            <h3 class="section-heading">Экспорт 3D-модели</h3>
+            <div class="export-actions">
+              <button type="button" class="btn-export" (click)="exportObj()" title="Экспорт в Wavefront OBJ">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Сохранить .OBJ
+              </button>
+
+              <button type="button" class="btn-export" (click)="exportStl()" title="Экспорт в STL для 3D-печати">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Сохранить .STL
+              </button>
+
+              <button type="button" class="btn-export-secondary" (click)="takeSnapshot()" title="Сделать снимок PNG">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+                Снимок PNG
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
