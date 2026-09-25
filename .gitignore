@@ -54,6 +54,7 @@ Thumbs.db
 /topos_portable_x86
 /dist_release
 *.rar
+__rar_*
 *.zip
 *.tar
 *.gz
