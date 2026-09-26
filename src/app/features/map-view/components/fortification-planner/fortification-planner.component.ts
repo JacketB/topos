@@ -1416,7 +1416,7 @@ export class FortificationPlannerComponent {
 
     const wsTasks = ExcelStylerUtils.buildTableSheet({
       title: 'ТОПОС ГИС | ВЕДОМОСТЬ ФОРТИФИКАЦИОННЫХ РАБОТ И КАЛЕНДАРНЫЙ ПЛАН',
-      subtitle: `Район / Объект: ${this.getActiveGroupName()} | Личный состав: ${this.manpower()} чел. | Смен: ${this.shifts()} | Кобст: ${this.tacticalCoeff()} | Нормативы: МОРБ-2006`,
+      subtitle: `Район / Объект: ${this.getActiveGroupName()} | Личный состав: ${this.manpower()} чел. | Смен: ${this.shifts()} | Кобст: ${this.tacticalCoeff()} | Нормативы: Инженерные нормы`,
       kpiCards: [
         { label: 'Полное время готовности', value: `${calc.totalDurationCal.toFixed(1)} ч (${(calc.totalDurationCal / (this.workHoursPerDay() || 10)).toFixed(1)} сут)` },
         { label: 'Сроки по очередям', value: `I оч.: ${calc.phase1DurationCal.toFixed(1)} ч | II оч.: ${calc.phase2DurationCal.toFixed(1)} ч` },
@@ -1479,7 +1479,7 @@ export class FortificationPlannerComponent {
       subtitle: `Сводные показатели инженерного оборудования опорного пункта (района) на ${new Date().toLocaleDateString('ru-RU')}`,
       sections: [
         {
-          sectionTitle: '1. УСЛОВИЯ ОБСТАНОВКИ И ТАКТИЧЕСКИЕ КОЭФФИЦИЕНТЫ (МОРБ-2006)',
+          sectionTitle: '1. УСЛОВИЯ ОБСТАНОВКИ И ТАКТИЧЕСКИЕ КОЭФФИЦИЕНТЫ',
           items: [
             { label: 'Расчетный район / тактическая группа', value: this.getActiveGroupName(), unit: '', note: 'Позиция на карте' },
             { label: 'Численность привлекаемого личного состава', value: this.manpower(), unit: 'чел.', note: 'Рабочая сила подразделения' },

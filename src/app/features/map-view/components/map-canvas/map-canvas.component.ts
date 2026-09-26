@@ -326,6 +326,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         return;
       }
 
+      if (this.vm.pickingDispatchTarget() !== null) {
+        this.vm.handlePickedDispatchCoord([e.lngLat.lng, e.lngLat.lat]);
+        return;
+      }
+
       if (this.vm.activeLineMode() !== 'none') {
         this.vm.addDrawingPoint([e.lngLat.lng, e.lngLat.lat]);
         return;
@@ -359,6 +364,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         this.vm.mapMeasurementService.initLayers(this.map);
         this.vm.tacticalMapService.initLayers(this.map);
         this.vm.tacticalAnalyticsService.initLayers(this.map);
+        this.vm.dispatchRoutesService.initLayers(this.map);
 
         this.vm.currentScale.set(this.vm.mapScaleService.getCurrentScale(this.map.getZoom(), this.map.getCenter().lat));
         this.vm.mapScaleService.updateScaleInfo(

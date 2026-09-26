@@ -1,0 +1,802 @@
+@if (pickingTarget()) {
+  <div class="dispatch-picking-hud">
+    <div class="picking-hud-content">
+      <div class="picking-hud-icon-wrap">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--color-primary, #466bf7)" stroke-width="2.2">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="3" fill="var(--color-primary, #466bf7)" />
+          <line x1="12" y1="2" x2="12" y2="6" />
+          <line x1="12" y1="18" x2="12" y2="22" />
+          <line x1="2" y1="12" x2="6" y2="12" />
+          <line x1="18" y1="12" x2="22" y2="12" />
+        </svg>
+      </div>
+      <div class="picking-hud-details">
+        <div class="picking-hud-label-row">
+          <span class="picking-hud-title">Указание точки на карте</span>
+          @if (pickingTarget() === 'start') {
+            <span class="picking-badge badge-primary">Стартовая точка</span>
+          } @else {
+            <span class="picking-badge badge-address">{{ getTargetAddressName() }}</span>
+          }
+        </div>
+        <span class="picking-instruction">Кликните по карте в нужном месте для фиксации координат</span>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="cancelPicking()">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+        <span>Отмена (Esc)</span>
+      </button>
+    </div>
+  </div>
+}
+
+@if (!pickingTarget()) {
+<div class="dispatch-modal-backdrop">
+  <div class="dispatch-modal-container">
+    
+    <header class="dispatch-modal-header">
+      <div class="header-left">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" class="header-title-icon">
+          <circle cx="6" cy="19" r="3" />
+          <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+          <circle cx="18" cy="5" r="3" />
+        </svg>
+        <span class="header-title">Маршруты оповещения (VRP-кластеризация)</span>
+      </div>
+
+      <div class="header-tabs">
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="activeTab() === 'addresses'" 
+          (click)="activeTab.set('addresses')"
+        >
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+          </svg>
+          <span>Адреса</span>
+          <span class="badge">{{ addresses().length }}</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="activeTab() === 'params'" 
+          (click)="activeTab.set('params')"
+        >
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          <span>Параметры</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="tab-btn" 
+          [class.active]="activeTab() === 'results'" 
+          (click)="activeTab.set('results')"
+        >
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span>Маршруты</span>
+          @if (routes().length > 0) {
+            <span class="badge badge-success">{{ routes().length }}</span>
+          }
+        </button>
+      </div>
+
+      <button type="button" class="close-btn" (click)="closeModal()" title="Закрыть">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </header>
+
+    @if (errorMessage()) {
+      <div class="dispatch-error-banner">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>{{ errorMessage() }}</span>
+        <button type="button" class="btn-close-error" (click)="errorMessage.set(null)">✕</button>
+      </div>
+    }
+
+    @if (saveStatusMessage()) {
+      <div class="dispatch-success-banner">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+        <span>{{ saveStatusMessage() }}</span>
+        <button type="button" class="btn-close-error" (click)="saveStatusMessage.set(null)">✕</button>
+      </div>
+    }
+
+    <main class="dispatch-modal-body">
+
+      @if (activeTab() === 'addresses') {
+        <div class="tab-pane addresses-pane">
+          
+          <div class="actions-toolbar">
+            <label class="btn btn-primary file-upload-label">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span>Загрузить Excel / CSV</span>
+              <input type="file" accept=".xlsx,.xls,.csv" (change)="onFileSelected($event)" style="display: none;" />
+            </label>
+
+            <button type="button" class="btn btn-secondary" (click)="downloadTemplate()" title="Скачать образец таблицы с колонками">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Скачать шаблон Excel</span>
+            </button>
+
+            <button type="button" class="btn btn-secondary" (click)="addManualAddress()">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>Добавить адрес</span>
+            </button>
+
+            @if (addresses().length > 0) {
+              <button type="button" class="btn btn-danger-outline" (click)="clearAllAddresses()">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                <span>Очистить</span>
+              </button>
+            }
+
+            <div class="stats-pills">
+              <span class="pill pill-success" title="Адреса с найденными координатами">
+                <span class="dot"></span>
+                <span>На карте: {{ geocodedCount() }}</span>
+              </span>
+              @if (pendingCount() > 0) {
+                <span class="pill pill-warning" title="Адреса, требующие указания на карте">
+                  <span class="dot"></span>
+                  <span>Требуют привязки: {{ pendingCount() }}</span>
+                </span>
+              }
+            </div>
+          </div>
+
+          <div class="search-bar">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input 
+              type="text" 
+              class="search-input" 
+              placeholder="Поиск по ФИО, улице, городу или примечанию..." 
+              [ngModel]="searchQuery()" 
+              (ngModelChange)="searchQuery.set($event)"
+            />
+            @if (searchQuery()) {
+              <button type="button" class="btn-clear-search" (click)="searchQuery.set('')">✕</button>
+            }
+          </div>
+
+          @if (addresses().length === 0) {
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="12" y1="18" x2="12" y2="12" />
+                <line x1="9" y1="15" x2="15" y2="15" />
+              </svg>
+              <h3>Список адресов пуст</h3>
+              <p>Загрузите файл Excel (.xlsx) с адресами оповещения или добавьте адреса вручную</p>
+              <div class="empty-actions">
+                <label class="btn btn-primary file-upload-label">
+                  <span>Выбрать файл Excel</span>
+                  <input type="file" accept=".xlsx,.xls,.csv" (change)="onFileSelected($event)" style="display: none;" />
+                </label>
+                <button type="button" class="btn btn-secondary" (click)="downloadTemplate()">
+                  <span>Скачать шаблон</span>
+                </button>
+              </div>
+            </div>
+          } @else {
+            <div class="table-wrapper">
+              <table class="dispatch-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">№</th>
+                    <th>ФИО получателя</th>
+                    <th>Населенный пункт</th>
+                    <th>Улица</th>
+                    <th style="width: 80px;">Дом</th>
+                    <th style="width: 80px;">Кв.</th>
+                    <th>Примечание</th>
+                    <th style="width: 140px;">Координаты</th>
+                    <th style="width: 130px; text-align: center;">Действия</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (addr of filteredAddresses(); track addr.id) {
+                    <tr [class.row-unresolved]="!addr.coords">
+                      <td class="cell-index">{{ addr.index }}</td>
+                      <td>
+                        <input type="text" class="cell-input" [(ngModel)]="addr.recipientName" />
+                      </td>
+                      <td>
+                        <input type="text" class="cell-input" [(ngModel)]="addr.city" />
+                      </td>
+                      <td>
+                        <input type="text" class="cell-input" [(ngModel)]="addr.street" />
+                      </td>
+                      <td>
+                        <input type="text" class="cell-input" [(ngModel)]="addr.house" />
+                      </td>
+                      <td>
+                        <input type="text" class="cell-input" [(ngModel)]="addr.apartment" />
+                      </td>
+                      <td>
+                        <input type="text" class="cell-input" [(ngModel)]="addr.note" />
+                      </td>
+                      <td class="cell-coords">
+                        @if (addr.coords) {
+                          <span class="coord-badge" (click)="focusAddress(addr)" title="Центрировать карту на адресе">
+                            <span class="status-indicator status-green"></span>
+                            <span>{{ addr.coords[1] | number:'1.4-4' }}, {{ addr.coords[0] | number:'1.4-4' }}</span>
+                            @if (addr.geocodeSource === 'cache') {
+                              <span class="source-tag tag-cache" title="Найдено в локальной адресной базе">база</span>
+                            } @else if (addr.geocodeSource === 'settlement') {
+                              <span class="source-tag tag-settlement" title="Центр населенного пункта">НП</span>
+                            } @else if (addr.geocodeSource === 'manual') {
+                              <span class="source-tag tag-manual" title="Указано на карте вручную">карта</span>
+                            }
+                          </span>
+                        } @else {
+                          <span class="coord-badge badge-warning" (click)="pickAddressOnMap(addr.id)" title="Кликните для выбора на карте">
+                            <span class="status-indicator status-orange"></span>
+                            <span>Не указано</span>
+                          </span>
+                        }
+                      </td>
+                      <td class="cell-actions">
+                        <button 
+                          type="button" 
+                          class="btn-icon" 
+                          (click)="pickAddressOnMap(addr.id)" 
+                          title="Указать на карте"
+                        >
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                          </svg>
+                        </button>
+                        @if (addr.coords) {
+                          <button 
+                            type="button" 
+                            class="btn-icon" 
+                            (click)="focusAddress(addr)" 
+                            title="Показать на карте"
+                          >
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                              <circle cx="11" cy="11" r="8" />
+                              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                          </button>
+                        }
+                        <button 
+                          type="button" 
+                          class="btn-icon btn-icon-delete" 
+                          (click)="removeAddress(addr.id)" 
+                          title="Удалить"
+                        >
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+        </div>
+      }
+
+      @if (activeTab() === 'params') {
+        <div class="tab-pane params-pane">
+          
+          <div class="params-grid">
+            <div class="param-card">
+              <div class="card-header">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                <h3>Стартовая точка</h3>
+              </div>
+              <div class="card-body">
+                <p class="param-desc">Точка отправления и возврата маршрутов.</p>
+                <div class="start-point-box">
+                  @if (config().startPoint) {
+                    <div class="start-coords-info">
+                      <span class="point-name">{{ config().startPointName }}</span>
+                      <span class="point-coords">
+                        Ш: {{ config().startPoint![1] | number:'1.4-4' }}°, Д: {{ config().startPoint![0] | number:'1.4-4' }}°
+                      </span>
+                    </div>
+                  } @else {
+                    <div class="start-coords-info warning">
+                      <span>Стартовая точка не выбрана</span>
+                    </div>
+                  }
+                  <button type="button" class="btn btn-secondary" (click)="pickStartPointOnMap()">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                    <span>Указать на карте</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="param-card">
+              <div class="card-header">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <h3>Количество маршрутов / посыльных групп</h3>
+              </div>
+              <div class="card-body">
+                <p class="param-desc">Число непересекающихся секторов для распределения адресов.</p>
+                <div class="slider-row">
+                  <input 
+                    type="range" 
+                    min="1" 
+                    max="10" 
+                    step="1" 
+                    class="range-slider" 
+                    [ngModel]="config().routeCount" 
+                    (ngModelChange)="config.update(c => ({ ...c, routeCount: +$event }))" 
+                  />
+                  <span class="slider-val-badge">{{ config().routeCount }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="param-card">
+              <div class="card-header">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="5" r="2" />
+                  <path d="M10 22l2-7 2 3v4" />
+                  <path d="M7 13l3-3 4 1 3 4" />
+                </svg>
+                <h3>Способ передвижения</h3>
+              </div>
+              <div class="card-body">
+                <p class="param-desc">Выбор типа графа дорожной сети и профиля скорости.</p>
+                <div class="transport-modes-row">
+                  <button 
+                    type="button" 
+                    class="mode-selector-btn" 
+                    [class.active]="config().transportMode === 'foot'"
+                    (click)="setTransportMode('foot')"
+                  >
+                    <div class="mode-icon-box">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="4" r="2" />
+                        <path d="M10 22v-5l-2-3 3-4 2 2 3-1" />
+                        <path d="M14 17l2 5" />
+                      </svg>
+                    </div>
+                    <div class="mode-text-box">
+                      <span class="mode-title">Пеший (посыльный)</span>
+                      <span class="mode-desc">Тротуары, жилые улицы, тропы и переулки</span>
+                    </div>
+                  </button>
+
+                  <button 
+                    type="button" 
+                    class="mode-selector-btn" 
+                    [class.active]="config().transportMode === 'car'"
+                    (click)="setTransportMode('car')"
+                  >
+                    <div class="mode-icon-box">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 17h14M5 17a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h8l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2M5 17a2 2 0 1 0 4 0M15 17a2 2 0 1 0 4 0" />
+                      </svg>
+                    </div>
+                    <div class="mode-text-box">
+                      <span class="mode-title">Автомобильный (транспорт)</span>
+                      <span class="mode-desc">Автодороги с учетом одностороннего движения</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="param-card">
+              <div class="card-header">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                <h3>Нормативы времени и скорости</h3>
+              </div>
+              <div class="card-body form-grid">
+                <div class="form-group">
+                  <label>Средняя скорость движения (км/ч):</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="120" 
+                    step="0.5" 
+                    class="form-control" 
+                    [ngModel]="config().speedKmH" 
+                    (ngModelChange)="config.update(c => ({ ...c, speedKmH: +$event }))" 
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Время вручения на адресе (мин):</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="60" 
+                    class="form-control" 
+                    [ngModel]="config().stopDurationMin" 
+                    (ngModelChange)="config.update(c => ({ ...c, stopDurationMin: +$event }))" 
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="param-card">
+              <div class="card-header">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+                <h3>Геометрия маршрута</h3>
+              </div>
+              <div class="card-body">
+                <label class="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    [ngModel]="config().returnToStart" 
+                    (ngModelChange)="config.update(c => ({ ...c, returnToStart: !!$event }))" 
+                  />
+                  <span>Возвращаться в стартовую точку (кольцевой маршрут)</span>
+                </label>
+                <p class="param-hint">Если отключено, маршрут завершается на последнем посещённом адресе сектора.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="calc-footer">
+            <button 
+              type="button" 
+              class="btn btn-primary btn-calc-lg" 
+              [disabled]="isCalculating() || geocodedCount() === 0 || !config().startPoint" 
+              (click)="runCalculation()"
+            >
+              @if (isCalculating()) {
+                <span class="spinner"></span>
+                <span>Выполняется расчет дорожного графа...</span>
+              } @else {
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                <span>Рассчитать непересекающиеся маршруты</span>
+              }
+            </button>
+          </div>
+
+        </div>
+      }
+
+      @if (activeTab() === 'results') {
+        <div class="tab-pane results-pane">
+          
+          @if (routes().length === 0) {
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M16 12l-4-4-4 4M12 8v8" />
+              </svg>
+              <h3>Маршруты еще не построены</h3>
+              <p>Перейдите на вкладку «Параметры» и нажмите «Рассчитать непересекающиеся маршруты»</p>
+            </div>
+          } @else {
+            <div class="results-layout">
+              <div class="kpi-row">
+                <div class="kpi-card">
+                  <span class="kpi-label">Маршрутов</span>
+                  <span class="kpi-val">{{ routes().length }}</span>
+                </div>
+                <div class="kpi-card">
+                  <span class="kpi-label">Всего адресов</span>
+                  <span class="kpi-val">{{ totalStats().totalAddrs }}</span>
+                </div>
+                <div class="kpi-card">
+                  <span class="kpi-label">Суммарный пробег</span>
+                  <span class="kpi-val highlight">{{ totalStats().totalDistKm }} км</span>
+                </div>
+                <div class="kpi-card">
+                  <span class="kpi-label">Расчетное время</span>
+                  <span class="kpi-val">{{ formatDuration(totalStats().totalDurationMin) }}</span>
+                </div>
+              </div>
+
+              <div class="routes-container">
+                <div class="routes-sidebar">
+                  <div class="sidebar-header-row">
+                    <span class="sidebar-title">Сформированные группы</span>
+                    <div class="visibility-all-actions">
+                      <button 
+                        type="button" 
+                        class="btn-vis-all" 
+                        (click)="showAllRoutes()" 
+                        title="Отобразить все маршруты на карте"
+                      >
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <span>Все</span>
+                      </button>
+                      <button 
+                        type="button" 
+                        class="btn-vis-all" 
+                        (click)="hideAllRoutes()" 
+                        title="Скрыть все маршруты на карте"
+                      >
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                        <span>Скрыть</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="routes-list">
+                    @for (route of routes(); track route.id; let i = $index) {
+                      <div 
+                        class="route-item" 
+                        [class.active]="selectedRouteIndex() === i"
+                        [class.route-hidden]="!isRouteVisible(route.id)" 
+                        (click)="selectedRouteIndex.set(i); focusRoute(route)"
+                      >
+                        <div class="route-color-bar" [style.background-color]="route.color"></div>
+                        <div class="route-info">
+                          <span class="route-name">{{ route.name }}</span>
+                          <span class="route-sub">
+                            {{ route.addresses.length }} адр. • {{ route.totalDistanceKm }} км • {{ formatDuration(route.totalDurationMin) }}
+                          </span>
+                        </div>
+                        <div class="route-item-actions">
+                          <button 
+                            type="button" 
+                            class="btn-route-action"
+                            [class.btn-action-active]="isRouteVisible(route.id)"
+                            (click)="toggleRouteVisibility(route.id, $event)" 
+                            [title]="isRouteVisible(route.id) ? 'Скрыть этот маршрут на карте' : 'Показать этот маршрут на карте'"
+                          >
+                            @if (isRouteVisible(route.id)) {
+                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                            } @else {
+                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                <line x1="1" y1="1" x2="23" y2="23" />
+                              </svg>
+                            }
+                          </button>
+                          <button 
+                            type="button" 
+                            class="btn-route-action"
+                            (click)="isolateRoute(route.id, $event)" 
+                            title="Показать только этот маршрут (изолировать)"
+                          >
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                              <circle cx="12" cy="12" r="10" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <div class="route-details-panel">
+                  @if (selectedRouteIndex() !== null && routes()[selectedRouteIndex()!]; as sel) {
+                    <div class="detail-header" [style.border-left-color]="sel.color">
+                      <div>
+                        <h3>{{ sel.name }}</h3>
+                        <span class="detail-stats">
+                          Длина: {{ sel.totalDistanceKm }} км | Время: {{ formatDuration(sel.totalDurationMin) }} | Адресов: {{ sel.addresses.length }}
+                        </span>
+                      </div>
+                      <div class="detail-header-actions">
+                        <button 
+                          type="button" 
+                          class="btn btn-sm" 
+                          [class.btn-secondary]="isRouteVisible(sel.id)"
+                          [class.btn-outline-secondary]="!isRouteVisible(sel.id)"
+                          (click)="toggleRouteVisibility(sel.id)"
+                          [title]="isRouteVisible(sel.id) ? 'Скрыть этот маршрут с карты' : 'Отобразить этот маршрут на карте'"
+                        >
+                          @if (isRouteVisible(sel.id)) {
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            <span>На карте: Вкл</span>
+                          } @else {
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                              <line x1="1" y1="1" x2="23" y2="23" />
+                            </svg>
+                            <span>На карте: Скрыт</span>
+                          }
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" (click)="focusRoute(sel)">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                          </svg>
+                          <span>Приблизить на карте</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="timeline-wrapper">
+                      <div class="timeline-step step-start">
+                        <div class="step-num-badge badge-start">
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
+                        </div>
+                        <div class="step-content">
+                          <span class="step-title">Старт: {{ config().startPointName }}</span>
+                          <span class="step-time">Отправление группы (00:00)</span>
+                        </div>
+                      </div>
+
+                      @for (addr of sel.addresses; track addr.id) {
+                        <div class="timeline-step">
+                          <div class="step-num-badge" [style.background-color]="sel.color">
+                            {{ addr.orderInRoute }}
+                          </div>
+                          <div class="step-content">
+                            <div class="step-top-line">
+                              <span class="step-title">{{ addr.recipientName }}</span>
+                              <span class="step-time">+{{ addr.etaMinutes }} мин</span>
+                            </div>
+                            <div class="step-address">
+                              {{ addr.city ? addr.city + ', ' : '' }}{{ addr.street }} д. {{ addr.house }}{{ addr.apartment ? ', кв. ' + addr.apartment : '' }}
+                            </div>
+                            @if (addr.note) {
+                              <div class="step-note">{{ addr.note }}</div>
+                            }
+                            <div class="step-distance">
+                              +{{ addr.distanceFromPrevKm }} км от предыдущего пункта
+                            </div>
+                          </div>
+                        </div>
+                      }
+
+                      @if (config().returnToStart) {
+                        <div class="timeline-step step-end">
+                          <div class="step-num-badge badge-start">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                          </div>
+                          <div class="step-content">
+                            <span class="step-title">Возврат: {{ config().startPointName }}</span>
+                            <span class="step-time">Итоговое прибытие: +{{ sel.totalDurationMin }} мин</span>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+        </div>
+      }
+
+    </main>
+
+    <footer class="dispatch-modal-footer">
+      <div class="footer-left">
+        @if (routes().length > 0) {
+          <div class="footer-action-group">
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              [disabled]="isExporting()" 
+              (click)="exportExcel()" 
+              title="Открыть системный диалог сохранения ведомости в Excel (.xlsx)"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+              <span>Экспорт ведомости (Excel)</span>
+            </button>
+
+            <button 
+              type="button" 
+              class="btn btn-secondary" 
+              [disabled]="isExportingGeoJson()" 
+              (click)="exportGeoJson()" 
+              title="Открыть системный диалог сохранения трасс в файл GeoJSON"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Экспорт трасс (GeoJSON)</span>
+            </button>
+
+            <button 
+              type="button" 
+              class="btn btn-secondary" 
+              (click)="saveToTacticalMap()" 
+              title="Перенести построенные маршруты и адреса в тактическую обстановку карты"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              <span>Нанести на карту</span>
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="footer-right">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">
+          Закрыть
+        </button>
+      </div>
+    </footer>
+
+  </div>
+</div>
+}

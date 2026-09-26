@@ -256,7 +256,9 @@ pub fn run() {
             get_elevation_profile,
             calculate_viewshed,
             get_march_overlays,
-            generate_terrain_mesh
+            generate_terrain_mesh,
+            search_belarus_addresses,
+            resolve_addresses_batch
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -313,6 +315,8 @@ pub struct GraphEdge {
     pub speedKmh: Option<f64>,
     #[serde(default, rename = "oneWay")]
     pub oneWay: bool,
+    #[serde(default)]
+    pub isReverseOneWay: bool,
     #[serde(default)]
     pub geometry: Option<Vec<[f64; 2]>>,
 }
@@ -384,7 +388,16 @@ fn get_speed_for_type(column_type: &str, road_type: &str, default_speed: f64) ->
             "tertiary" => 18.0,
             _ => 15.0,
         },
-        "foot" => 4.5,
+        "foot" => match road_type {
+            "motorway" | "motorway_link" => 0.5,
+            "trunk" | "trunk_link" => 1.0,
+            "primary" | "primary_link" => 3.5,
+            "path" | "footway" | "pedestrian" => 5.0,
+            "track" | "residential" | "unclassified" => 4.8,
+            "tertiary" | "tertiary_link" => 4.5,
+            "secondary" | "secondary_link" => 4.0,
+            _ => 4.5,
+        },
         _ => default_speed,
     }
 }
@@ -444,6 +457,571 @@ fn search_belarus_places(app: tauri::AppHandle, query: Option<String>) -> Result
     Ok(results)
 }
 
+#[derive(serde::Deserialize, Debug)]
+pub struct AddressBatchQueryItem {
+    pub id: String,
+    pub city: Option<String>,
+    pub street: Option<String>,
+    pub house: Option<String>,
+}
+
+#[derive(serde::Serialize, Debug, Clone)]
+pub struct AddressMatchResult {
+    pub id: String,
+    pub found: bool,
+    #[serde(rename = "matchType")]
+    pub match_type: String,
+    pub lat: f64,
+    pub lon: f64,
+    pub city: String,
+    pub street: String,
+    pub house: String,
+}
+
+fn normalize_address_text(text: &str) -> String {
+    if text.is_empty() {
+        return String::new();
+    }
+    let lower = text
+        .to_lowercase()
+        .replace('ё', "е")
+        .replace('і', "и")
+        .replace('ы', "и")
+        .replace('ў', "в")
+        .replace('э', "е");
+    let mut cleaned = String::with_capacity(lower.len());
+    for ch in lower.chars() {
+        if ch.is_alphanumeric() {
+            cleaned.push(ch);
+        } else {
+            cleaned.push(' ');
+        }
+    }
+    let stop_prefixes = [
+        "г", "город", "д", "деревня", "аг", "агрогородок", "п", "пос", "поселок",
+        "ул", "улица", "вул", "вулица", "пер", "переулок", "завулак", "пр", "проспект",
+        "праспект", "б-р", "бульвар", "тракт", "дом", "корп", "к", "кв", "р-н", "район", "обл", "область"
+    ];
+    let words: Vec<&str> = cleaned
+        .split_whitespace()
+        .filter(|w| !stop_prefixes.contains(w) && w.len() >= 2)
+        .collect();
+    words.join(" ")
+}
+
+fn phonetic_stem(word: &str) -> String {
+    let mut w = word
+        .to_lowercase()
+        .replace('ё', "е")
+        .replace('і', "и")
+        .replace('ы', "и")
+        .replace('ў', "в")
+        .replace('э', "е")
+        .replace('о', "а")
+        .replace("евфр", "ефр")
+        .replace("димитр", "дмитр");
+
+    for ch in ['ч', 'ж', 'ш', 'щ', 'ц'] {
+        let pattern = format!("{}е", ch);
+        let repl = format!("{}а", ch);
+        w = w.replace(&pattern, &repl);
+    }
+
+    if w.starts_with("яр") && w.len() >= 4 {
+        w = format!("ер{}", &w[4..]);
+    }
+
+    for d in ["нн", "сс", "лл", "тт", "пп", "мм", "бб", "дд", "жж", "зз"] {
+        let single = &d[..d.chars().next().unwrap().len_utf8()];
+        w = w.replace(d, single);
+    }
+    w
+}
+
+fn get_street_stems(word: &str) -> Vec<String> {
+    let base = phonetic_stem(word);
+    let mut stems = Vec::new();
+    stems.push(base.clone());
+
+    let synonyms: &[(&str, &str)] = &[
+        ("красноармейск", "чирвонаармейск"),
+        ("красн", "чирвон"),
+        ("чирвон", "красн"),
+        ("первомай", "першамай"),
+        ("першамай", "первомай"),
+        ("колхоз", "калгас"),
+        ("калгас", "колхоз"),
+        ("чернях", "чарнях"),
+        ("черняк", "чарнях"),
+        ("чарняк", "чарнях"),
+        ("чарнях", "чернях"),
+        ("чарнях", "чарняк"),
+        ("ершов", "яршов"),
+        ("яршов", "ершов"),
+        ("советск", "савецк"),
+        ("савецк", "советск"),
+        ("октябр", "кастрычн"),
+        ("кастрычн", "октябр"),
+        ("железнодорожн", "чигуначн"),
+        ("чыгуначн", "железнодорожн"),
+        ("партизан", "партызан"),
+        ("партызан", "партизан"),
+        ("молодежн", "маладзежн"),
+        ("маладзежн", "молодежн"),
+        ("коссов", "косав"),
+        ("косав", "коссов"),
+    ];
+
+    for &(k, v) in synonyms {
+        if word.contains(k) {
+            let alt = word.replace(k, v);
+            let p_alt = phonetic_stem(&alt);
+            if !stems.contains(&p_alt) {
+                stems.push(p_alt);
+            }
+        }
+        if base.contains(k) {
+            let alt = base.replace(k, v);
+            let p_alt = phonetic_stem(&alt);
+            if !stems.contains(&p_alt) {
+                stems.push(p_alt);
+            }
+        }
+    }
+
+    stems
+}
+
+fn get_address_words(text: &str) -> Vec<String> {
+    normalize_address_text(text)
+        .split_whitespace()
+        .map(|s| s.to_string())
+        .collect()
+}
+
+fn normalize_house_number(house: &str) -> String {
+    if house.is_empty() {
+        return String::new();
+    }
+    let mut h = house
+        .to_lowercase()
+        .replace('ё', "е")
+        .replace('і', "и")
+        .replace('ы', "и");
+    h = h.replace(' ', "").replace('/', "").replace('-', "");
+    for p in ["корп", "корпус", "стр", "строение", "дом", "к", "д"] {
+        if h.starts_with(p) {
+            h = h[p.len()..].to_string();
+            break;
+        }
+    }
+    h
+}
+
+#[tauri::command]
+fn resolve_addresses_batch(
+    app: tauri::AppHandle,
+    queries: Vec<AddressBatchQueryItem>,
+) -> Result<Vec<AddressMatchResult>, String> {
+    let db_path = resolve_asset_path(&app, "belarus_addresses.db")?;
+    let conn = rusqlite::Connection::open_with_flags(
+        db_path,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )
+    .map_err(|e| format!("Failed to open address database: {}", e))?;
+
+    let places_tree_opt = get_cached_places_tree(&app).ok();
+
+    let mut stmt_city_house = conn
+        .prepare_cached(
+            "SELECT city, street, street_normalized, house, lat, lon FROM addresses WHERE city_normalized = ?1 AND house_normalized = ?2",
+        )
+        .map_err(|e| format!("Statement error: {}", e))?;
+
+    let mut stmt_nearby_house = conn
+        .prepare_cached(
+            "SELECT city, street, street_normalized, house, lat, lon FROM addresses WHERE house_normalized = ?1 AND lon BETWEEN ?2 AND ?3 AND lat BETWEEN ?4 AND ?5 LIMIT 40",
+        )
+        .map_err(|e| format!("Statement error: {}", e))?;
+
+    let mut stmt_city_or_nearby_street = conn
+        .prepare_cached(
+            "SELECT city, street, house, lat, lon FROM addresses WHERE (city_normalized = ?1 OR (lon BETWEEN ?2 AND ?3 AND lat BETWEEN ?4 AND ?5)) AND street_normalized LIKE ?6 LIMIT 10",
+        )
+        .map_err(|e| format!("Statement error: {}", e))?;
+
+    let mut stmt_global_street_house = conn
+        .prepare_cached(
+            "SELECT city, street, house, lat, lon FROM addresses WHERE street_normalized LIKE ?1 AND house_normalized = ?2 LIMIT 1",
+        )
+        .map_err(|e| format!("Statement error: {}", e))?;
+
+    let mut stmt_global_street_only = conn
+        .prepare_cached(
+            "SELECT city, street, house, lat, lon FROM addresses WHERE street_normalized LIKE ?1 LIMIT 5",
+        )
+        .map_err(|e| format!("Statement error: {}", e))?;
+
+    let mut results = Vec::with_capacity(queries.len());
+
+    for q in queries {
+        let city_raw = q.city.unwrap_or_default();
+        let street_raw = q.street.unwrap_or_default();
+        let house_raw = q.house.unwrap_or_default();
+
+        let city_words = get_address_words(&city_raw);
+        let street_words = get_address_words(&street_raw);
+        let house_norm = normalize_house_number(&house_raw);
+
+        let city_key = city_words.first().cloned().unwrap_or_default();
+
+        let mut city_center: Option<[f64; 2]> = None;
+        if !city_key.is_empty() {
+            if let Some(tree_data) = places_tree_opt {
+                for p in &tree_data.places {
+                    let n_ru = normalize_address_text(&p.name);
+                    if n_ru.contains(&city_key) || city_key.contains(&n_ru) {
+                        city_center = Some(p.coords);
+                        break;
+                    }
+                    if !p.nameBe.is_empty() {
+                        let n_be = normalize_address_text(&p.nameBe);
+                        if n_be.contains(&city_key) || city_key.contains(&n_be) {
+                            city_center = Some(p.coords);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut query_street_stems: Vec<String> = Vec::new();
+        for sw in &street_words {
+            for stem in get_street_stems(sw) {
+                if !query_street_stems.contains(&stem) {
+                    query_street_stems.push(stem);
+                }
+            }
+        }
+
+        let mut matched = false;
+
+        let eval_street_match = |cand_street: &str| -> i32 {
+            if query_street_stems.is_empty() {
+                return 1;
+            }
+            let cand_words = get_address_words(cand_street);
+            let mut score = 0;
+            for sw in &query_street_stems {
+                let sw_prefix: String = sw.chars().take(4).collect();
+                if sw_prefix.chars().count() < 3 {
+                    continue;
+                }
+                for cw in &cand_words {
+                    for cw_stem in get_street_stems(cw) {
+                        let cw_prefix: String = cw_stem.chars().take(4).collect();
+                        if cw_prefix.chars().count() < 3 {
+                            continue;
+                        }
+                        if sw_prefix == cw_prefix {
+                            score += 20;
+                        } else if sw.chars().count() >= 4 && cw_stem.chars().count() >= 4 && (sw.contains(&cw_stem) || cw_stem.contains(sw)) {
+                            score += 10;
+                        }
+                    }
+                }
+            }
+            score
+        };
+
+        if !city_key.is_empty() && !house_norm.is_empty() {
+            if let Ok(mut rows) = stmt_city_house.query(rusqlite::params![&city_key, &house_norm]) {
+                let mut best_match: Option<(String, String, String, f64, f64)> = None;
+                let mut best_score = 0;
+
+                while let Ok(Some(row)) = rows.next() {
+                    let c: String = row.get(0).unwrap_or_default();
+                    let s: String = row.get(1).unwrap_or_default();
+                    let s_norm: String = row.get(2).unwrap_or_default();
+                    let h: String = row.get(3).unwrap_or_default();
+                    let lat: f64 = row.get(4).unwrap_or_default();
+                    let lon: f64 = row.get(5).unwrap_or_default();
+
+                    let score = eval_street_match(&s_norm);
+                    if score > best_score {
+                        best_score = score;
+                        best_match = Some((c, s, h, lat, lon));
+                    }
+                }
+
+                if best_score > 0 {
+                    if let Some((c, s, h, lat, lon)) = best_match {
+                        results.push(AddressMatchResult {
+                            id: q.id.clone(),
+                            found: true,
+                            match_type: "exact".to_string(),
+                            lat,
+                            lon,
+                            city: c,
+                            street: s,
+                            house: h,
+                        });
+                        matched = true;
+                    }
+                }
+            }
+        }
+
+        if !matched && !house_norm.is_empty() {
+            if let Some(center) = city_center {
+                let min_lon = center[0] - 0.22;
+                let max_lon = center[0] + 0.22;
+                let min_lat = center[1] - 0.15;
+                let max_lat = center[1] + 0.15;
+
+                if let Ok(mut rows) = stmt_nearby_house.query(rusqlite::params![&house_norm, min_lon, max_lon, min_lat, max_lat]) {
+                    let mut best_match: Option<(String, String, String, f64, f64)> = None;
+                    let mut best_score = 0;
+
+                    while let Ok(Some(row)) = rows.next() {
+                        let c: String = row.get(0).unwrap_or_default();
+                        let s: String = row.get(1).unwrap_or_default();
+                        let s_norm: String = row.get(2).unwrap_or_default();
+                        let h: String = row.get(3).unwrap_or_default();
+                        let lat: f64 = row.get(4).unwrap_or_default();
+                        let lon: f64 = row.get(5).unwrap_or_default();
+
+                        let score = eval_street_match(&s_norm);
+                        if score > best_score {
+                            best_score = score;
+                            best_match = Some((c, s, h, lat, lon));
+                        }
+                    }
+
+                    if best_score > 0 {
+                        if let Some((c, s, h, lat, lon)) = best_match {
+                            results.push(AddressMatchResult {
+                                id: q.id.clone(),
+                                found: true,
+                                match_type: "exact".to_string(),
+                                lat,
+                                lon,
+                                city: c,
+                                street: s,
+                                house: h,
+                            });
+                            matched = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if !matched && !street_words.is_empty() {
+            if let Some(center) = city_center {
+                let min_lon = center[0] - 0.22;
+                let max_lon = center[0] + 0.22;
+                let min_lat = center[1] - 0.15;
+                let max_lat = center[1] + 0.15;
+
+                for sw in &query_street_stems {
+                    let prefix: String = sw.chars().take(4).collect();
+                    if prefix.chars().count() < 3 {
+                        continue;
+                    }
+                    let pattern = format!("%{}%", prefix);
+                    if let Ok(mut rows) = stmt_city_or_nearby_street.query(rusqlite::params![&city_key, min_lon, max_lon, min_lat, max_lat, &pattern]) {
+                        let mut sum_lat = 0.0;
+                        let mut sum_lon = 0.0;
+                        let mut count = 0;
+                        let mut last_c = String::new();
+                        let mut last_s = String::new();
+                        let mut last_h = String::new();
+
+                        while let Ok(Some(row)) = rows.next() {
+                            last_c = row.get(0).unwrap_or_default();
+                            last_s = row.get(1).unwrap_or_default();
+                            last_h = row.get(2).unwrap_or_default();
+                            let lat: f64 = row.get(3).unwrap_or_default();
+                            let lon: f64 = row.get(4).unwrap_or_default();
+                            sum_lat += lat;
+                            sum_lon += lon;
+                            count += 1;
+                        }
+
+                        if count > 0 {
+                            results.push(AddressMatchResult {
+                                id: q.id.clone(),
+                                found: true,
+                                match_type: "street".to_string(),
+                                lat: sum_lat / (count as f64),
+                                lon: sum_lon / (count as f64),
+                                city: last_c,
+                                street: last_s,
+                                house: last_h,
+                            });
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if !matched && city_key.is_empty() && !house_norm.is_empty() && !street_words.is_empty() {
+            for sw in &query_street_stems {
+                let pattern = format!("%{}%", sw);
+                if let Ok(mut rows) = stmt_global_street_house.query(rusqlite::params![&pattern, &house_norm]) {
+                    if let Ok(Some(row)) = rows.next() {
+                        let c: String = row.get(0).unwrap_or_default();
+                        let s: String = row.get(1).unwrap_or_default();
+                        let h: String = row.get(2).unwrap_or_default();
+                        let lat: f64 = row.get(3).unwrap_or_default();
+                        let lon: f64 = row.get(4).unwrap_or_default();
+                        results.push(AddressMatchResult {
+                            id: q.id.clone(),
+                            found: true,
+                            match_type: "exact".to_string(),
+                            lat,
+                            lon,
+                            city: c,
+                            street: s,
+                            house: h,
+                        });
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if !matched && city_key.is_empty() && !street_words.is_empty() {
+            for sw in &query_street_stems {
+                let pattern = format!("%{}%", sw);
+                if let Ok(mut rows) = stmt_global_street_only.query(rusqlite::params![&pattern]) {
+                    let mut sum_lat = 0.0;
+                    let mut sum_lon = 0.0;
+                    let mut count = 0;
+                    let mut last_c = String::new();
+                    let mut last_s = String::new();
+                    let mut last_h = String::new();
+
+                    while let Ok(Some(row)) = rows.next() {
+                        last_c = row.get(0).unwrap_or_default();
+                        last_s = row.get(1).unwrap_or_default();
+                        last_h = row.get(2).unwrap_or_default();
+                        let lat: f64 = row.get(3).unwrap_or_default();
+                        let lon: f64 = row.get(4).unwrap_or_default();
+                        sum_lat += lat;
+                        sum_lon += lon;
+                        count += 1;
+                    }
+
+                    if count > 0 {
+                        results.push(AddressMatchResult {
+                            id: q.id.clone(),
+                            found: true,
+                            match_type: "street".to_string(),
+                            lat: sum_lat / (count as f64),
+                            lon: sum_lon / (count as f64),
+                            city: last_c,
+                            street: last_s,
+                            house: last_h,
+                        });
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if !matched {
+            if let Some(center) = city_center {
+                results.push(AddressMatchResult {
+                    id: q.id,
+                    found: true,
+                    match_type: "city".to_string(),
+                    lat: center[1],
+                    lon: center[0],
+                    city: city_raw,
+                    street: street_raw,
+                    house: house_raw,
+                });
+            } else {
+                results.push(AddressMatchResult {
+                    id: q.id,
+                    found: false,
+                    match_type: "none".to_string(),
+                    lat: 0.0,
+                    lon: 0.0,
+                    city: city_raw,
+                    street: street_raw,
+                    house: house_raw,
+                });
+            }
+        }
+    }
+
+    Ok(results)
+}
+
+#[tauri::command]
+fn search_belarus_addresses(
+    app: tauri::AppHandle,
+    query: String,
+    limit: Option<usize>,
+) -> Result<Vec<AddressMatchResult>, String> {
+    let db_path = resolve_asset_path(&app, "belarus_addresses.db")?;
+    let conn = rusqlite::Connection::open_with_flags(
+        db_path,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )
+    .map_err(|e| format!("Failed to open address database: {}", e))?;
+
+    let max_limit = limit.unwrap_or(20).clamp(1, 50);
+    let words = get_address_words(&query);
+    if words.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let pattern1 = format!("%{}%", words[0]);
+    let pattern2 = if words.len() > 1 { format!("%{}%", words[1]) } else { pattern1.clone() };
+
+    let mut stmt = conn
+        .prepare_cached(
+            "SELECT id, city, street, house, lat, lon FROM addresses WHERE (street_normalized LIKE ?1 AND city_normalized LIKE ?2) OR (street_normalized LIKE ?2 AND city_normalized LIKE ?1) OR street_normalized LIKE ?1 LIMIT ?3",
+        )
+        .map_err(|e| format!("Statement error: {}", e))?;
+
+    let rows = stmt
+        .query_map(rusqlite::params![&pattern1, &pattern2, max_limit as i64], |row| {
+            let row_id: i64 = row.get(0)?;
+            let city: String = row.get(1)?;
+            let street: String = row.get(2)?;
+            let house: String = row.get(3)?;
+            let lat: f64 = row.get(4)?;
+            let lon: f64 = row.get(5)?;
+            Ok(AddressMatchResult {
+                id: row_id.to_string(),
+                found: true,
+                match_type: "exact".to_string(),
+                lat,
+                lon,
+                city,
+                street,
+                house,
+            })
+        })
+        .map_err(|e| format!("Query error: {}", e))?;
+
+    let mut list = Vec::new();
+    for r in rows.flatten() {
+        list.push(r);
+    }
+    Ok(list)
+}
+
+
 #[derive(Copy, Clone, PartialEq)]
 struct RouteState {
     cost: f64,
@@ -496,23 +1074,39 @@ fn get_cached_graph(app: &tauri::AppHandle) -> Result<&'static CachedGraph, Stri
         edges.reserve(original_edges_count);
         for i in 0..original_edges_count {
             let e = &edges[i];
-            if !e.oneWay && e.from != e.to {
+            if e.from != e.to {
                 let rev_geom = e.geometry.as_ref().map(|g| {
                     let mut rg = g.clone();
                     rg.reverse();
                     rg
                 });
-                edges.push(GraphEdge {
-                    from: e.to,
-                    to: e.from,
-                    fromPlace: e.toPlace.clone(),
-                    toPlace: e.fromPlace.clone(),
-                    distanceKm: e.distanceKm,
-                    roadType: e.roadType.clone(),
-                    speedKmh: e.speedKmh,
-                    oneWay: false,
-                    geometry: rev_geom,
-                });
+                if !e.oneWay {
+                    edges.push(GraphEdge {
+                        from: e.to,
+                        to: e.from,
+                        fromPlace: e.toPlace.clone(),
+                        toPlace: e.fromPlace.clone(),
+                        distanceKm: e.distanceKm,
+                        roadType: e.roadType.clone(),
+                        speedKmh: e.speedKmh,
+                        oneWay: false,
+                        isReverseOneWay: false,
+                        geometry: rev_geom,
+                    });
+                } else {
+                    edges.push(GraphEdge {
+                        from: e.to,
+                        to: e.from,
+                        fromPlace: e.toPlace.clone(),
+                        toPlace: e.fromPlace.clone(),
+                        distanceKm: e.distanceKm,
+                        roadType: e.roadType.clone(),
+                        speedKmh: e.speedKmh,
+                        oneWay: true,
+                        isReverseOneWay: true,
+                        geometry: rev_geom,
+                    });
+                }
             }
         }
 
@@ -629,7 +1223,7 @@ fn calculate_march_route_sync(
     points_to_visit.push(destination);
 
     let max_col_speed = match col_type.as_str() {
-        "foot" => 4.5,
+        "foot" => 5.0,
         "caterpillar" | "mixed" => if is_night_march { 25.0 * 0.7 } else { 25.0 },
         _ => if is_night_march { 40.0 * 0.7 } else { 40.0 },
     };
@@ -670,6 +1264,9 @@ fn calculate_march_route_sync(
 
             for &edge_idx in &adj[node] {
                 let edge = &edges[edge_idx];
+                if edge.isReverseOneWay && col_type != "foot" {
+                    continue;
+                }
                 let next = edge.to;
 
                 if Some(next) == prev_node && adj[node].len() > 1 {
@@ -1876,6 +2473,8 @@ struct MapExportParams {
     logical_height: u32,
     ratio: f64,
     filename: String,
+    #[serde(default)]
+    target_path: Option<String>,
 }
 
 fn clean_unc_path(path: &std::path::Path) -> std::path::PathBuf {
@@ -1971,7 +2570,11 @@ async fn export_map_native(
 
     let download_dir = clean_unc_path(&app.path().download_dir()
         .map_err(|e| format!("Failed to get download dir: {}", e))?);
-    let output_path = clean_unc_path(&download_dir.join(&params.filename));
+    let output_path = if let Some(target) = &params.target_path {
+        clean_unc_path(std::path::Path::new(target))
+    } else {
+        clean_unc_path(&download_dir.join(&params.filename))
+    };
 
     let belarus_pmtiles_path = clean_unc_path(&pmtiles_dir.join("belarus.pmtiles"));
     let topomap_pmtiles_path = clean_unc_path(&pmtiles_dir.join("belarus_topomap_200k.pmtiles"));

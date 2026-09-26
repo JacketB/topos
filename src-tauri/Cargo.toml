@@ -32,3 +32,4 @@ reqwest = { version = "0.11", features = ["json"] }
 rayon = "1.10"
 rstar = "0.12"
 rfd = "0.14"
+rusqlite = { version = "0.31", features = ["bundled"] }

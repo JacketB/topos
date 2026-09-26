@@ -374,6 +374,26 @@
       <kbd class="key-hint">R</kbd>
     </button>
 
+    <button 
+      class="tool-btn" 
+      [class.active]="vm.isDispatchModalOpen()" 
+      (click)="vm.toggleDispatchModal()" 
+      title="Маршруты оповещения (Разбиение адресов по посыльным) [Shift+D]"
+      style="position: relative;"
+    >
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="6" cy="19" r="3" />
+        <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+        <circle cx="18" cy="5" r="3" />
+      </svg>
+      <kbd class="key-hint">⇧D</kbd>
+      @if (vm.dispatchRoutesService.addresses().length > 0) {
+        <span style="position: absolute; top: -5px; right: -5px; background: #2563eb; color: white; border-radius: 50%; width: 13px; height: 13px; font-size: 7px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.25); z-index: 2;">
+          {{ vm.dispatchRoutesService.addresses().length }}
+        </span>
+      }
+    </button>
+
     <div class="toolbar-separator"></div>
 
     <app-place-search (selectPlace)="onPlaceSelected($event)"></app-place-search>

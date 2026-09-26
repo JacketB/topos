@@ -139,6 +139,39 @@ export class MarchRouteService {
     return scored.slice(0, 50).map(s => s.place);
   }
 
+  async searchAddresses(query: string, limit: number = 20): Promise<Array<{
+    id: string;
+    city: string;
+    street: string;
+    house: string;
+    coords: [number, number];
+  }>> {
+    const q = query.trim();
+    if (!q) return [];
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const results = await invoke<Array<{
+        id: string;
+        found: boolean;
+        city: string;
+        street: string;
+        house: string;
+        lat: number;
+        lon: number;
+      }>>('search_belarus_addresses', { query: q, limit });
+      return (results || []).map(r => ({
+        id: r.id,
+        city: r.city,
+        street: r.street,
+        house: r.house,
+        coords: [r.lon, r.lat]
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+
   async getMarchOverlays(
     coordinates: [number, number][],
     corridorKm: number = 4.5,

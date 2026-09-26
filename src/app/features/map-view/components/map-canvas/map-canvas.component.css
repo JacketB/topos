@@ -110,3 +110,8 @@
   right: -5px;
   cursor: nwse-resize;
 }
+
+.map-container.dispatch-picking-mode,
+.map-container.dispatch-picking-mode canvas {
+  cursor: crosshair !important;
+}

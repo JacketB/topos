@@ -392,7 +392,7 @@ export class EngineeringCalculatorModalComponent {
 
     const wsMvz = ExcelStylerUtils.buildKeyValueSheet({
       title: 'ТОПОС ГИС | РАСЧЕТ МИННО-ВЗРЫВНЫХ ЗАГРАЖДЕНИЙ (МВЗ)',
-      subtitle: `Минные поля по нормативам МОРБ на ${new Date().toLocaleDateString('ru-RU')}`,
+      subtitle: `Расчет минных полей на ${new Date().toLocaleDateString('ru-RU')}`,
       sections: [
         {
           sectionTitle: '1. ИСХОДНЫЕ ПАРАМЕТРЫ ЗАГРАЖДЕНИЯ',
@@ -762,7 +762,7 @@ export class EngineeringCalculatorModalComponent {
     XLSX.utils.book_append_sheet(wb, wsCamo, 'Маскировка и ВТО');
     XLSX.utils.book_append_sheet(wb, wsNz, 'НЗ и разрушения');
 
-    const fileName = `Инженерные_расчеты_МОРБ_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const fileName = `Инженерные_расчеты_${new Date().toISOString().slice(0, 10)}.xlsx`;
     await ExcelStylerUtils.saveWorkbookWithDialog(wb, fileName);
   }
 }

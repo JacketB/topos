@@ -624,14 +624,22 @@ export class ExcelStylerUtils {
   }
 
   static async saveWorkbookWithDialog(wb: XLSX.WorkBook, defaultFilename: string): Promise<boolean> {
-    const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
     const safeName = defaultFilename.endsWith('.xlsx') ? defaultFilename : `${defaultFilename}.xlsx`;
 
-    if (isTauri) {
-      try {
-        const { invoke } = await import('@tauri-apps/api/core');
+    try {
+      const { invoke, isTauri } = await import('@tauri-apps/api/core');
+      const inTauri = typeof isTauri === 'function' ? isTauri() : (
+        typeof window !== 'undefined' && (
+          (window as any).__TAURI_INTERNALS__ !== undefined ||
+          (window as any).__TAURI__ !== undefined ||
+          (window as any).isTauri === true
+        )
+      );
+
+      if (inTauri) {
         const chosenPath = await invoke<string | null>('choose_save_path', {
           defaultName: safeName,
+          default_name: safeName,
           extension: 'xlsx',
           title: 'Сохранить расчет Excel как...'
         });
@@ -644,12 +652,13 @@ export class ExcelStylerUtils {
         const bytes = Array.from(new Uint8Array(buf));
         await invoke<string>('save_scenario_to_path', {
           targetPath: chosenPath,
+          target_path: chosenPath,
           content: bytes
         });
         return true;
-      } catch (e) {
-        console.warn('Tauri save dialog fallback to standard download:', e);
       }
+    } catch (e) {
+      console.warn(e);
     }
 
     if (typeof window !== 'undefined' && (window as any).showSaveFilePicker) {
@@ -677,7 +686,23 @@ export class ExcelStylerUtils {
       }
     }
 
-    XLSX.writeFile(wb, safeName);
-    return true;
+    try {
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = safeName;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1000);
+      return true;
+    } catch {
+      XLSX.writeFile(wb, safeName);
+      return true;
+    }
   }
 }

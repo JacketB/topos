@@ -88,3 +88,5 @@ public/assets/belarus_dem.bin
 src-tauri/assets/belarus_dem.bin
 public/assets/terrain.pmtiles
 src-tauri/assets/terrain.pmtiles
+*.db
+src-tauri/assets/belarus_addresses.db

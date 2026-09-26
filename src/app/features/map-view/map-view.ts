@@ -21,6 +21,7 @@ import { RoutePlannerPanelComponent } from './components/route-planner-panel/rou
 import { EngineeringCalculatorModalComponent } from './components/engineering-calculator-modal/engineering-calculator-modal.component';
 import { Terrain3dModalComponent } from './components/terrain-3d-modal/terrain-3d-modal.component';
 import { Fortification3dModalComponent } from './components/fortification-3d-modal/fortification-3d-modal.component';
+import { DispatchRoutesModalComponent } from './components/dispatch-routes-modal/dispatch-routes-modal.component';
 
 @Component({
   selector: 'app-map-view',
@@ -44,7 +45,8 @@ import { Fortification3dModalComponent } from './components/fortification-3d-mod
     RoutePlannerPanelComponent,
     EngineeringCalculatorModalComponent,
     Terrain3dModalComponent,
-    Fortification3dModalComponent
+    Fortification3dModalComponent,
+    DispatchRoutesModalComponent
   ],
   templateUrl: './map-view.html',
   styleUrl: './map-view.css',
@@ -84,14 +86,24 @@ export class MapView {
         }
         return;
       }
+      if (key === 'd' || key === 'в') {
+        event.preventDefault();
+        this.vm.toggleDispatchModal();
+        return;
+      }
     }
 
-    // Отмена / закрытие по Escape
     if (key === 'escape') {
+      if (this.vm.pickingDispatchTarget() !== null) {
+        this.vm.setPickingDispatchTarget(null);
+        return;
+      }
       if (this.vm.activeLineMode()) {
         this.vm.cancelDrawingLine();
       } else if (this.vm.activeCategoryDropdown()) {
         this.vm.toggleCategoryDropdown(null);
+      } else if (this.vm.isDispatchModalOpen()) {
+        this.vm.closeDispatchModal();
       } else if (this.vm.isFortPlannerOpen()) {
         this.vm.toggleFortPlanner();
       } else if (this.vm.isEngineeringCalcOpen()) {

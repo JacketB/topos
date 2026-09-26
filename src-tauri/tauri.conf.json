@@ -42,6 +42,7 @@
       "assets/belarus_graph.json",
       "assets/belarus_places.json",
       "assets/belarus_dem.bin",
+      "assets/belarus_addresses.db",
       "assets/fonts/**/*",
       "sidecar-renderer/**/*"
     ],

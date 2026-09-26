@@ -19,6 +19,7 @@
     "allow-get-slope-bearing",
     "allow-get-elevation-profile",
     "allow-calculate-viewshed",
-    "allow-generate-terrain-mesh"
+    "allow-generate-terrain-mesh",
+    "allow-search-belarus-addresses"
   ]
 }

@@ -24,3 +24,13 @@ description = "Allows frontend to get kilometer marks and corridor places"
 allow = [
   "get_march_overlays"
 ]
+
+[[permission]]
+identifier = "allow-search-belarus-addresses"
+description = "Allows frontend to search addresses in offline Belarus database"
+
+[permission.commands]
+allow = [
+  "search_belarus_addresses",
+  "resolve_addresses_batch"
+]

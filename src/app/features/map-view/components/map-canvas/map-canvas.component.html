@@ -1,6 +1,6 @@
 <div class="map-wrapper">
   
-  <div #mapContainer class="map-container"></div>
+  <div #mapContainer class="map-container" [class.dispatch-picking-mode]="vm.pickingDispatchTarget() !== null"></div>
 
   <!-- Bounding box overlay for transformation -->
   @if (transformBoxStyle()) {

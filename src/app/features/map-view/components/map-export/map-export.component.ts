@@ -647,6 +647,26 @@ export class MapExportComponent implements OnDestroy {
 
       const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
 
+      let targetPath: string | undefined;
+      if (isTauri) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const chosenPath = await invoke<string | null>('choose_save_path', {
+            defaultName: filename,
+            default_name: filename,
+            extension: 'png',
+            title: 'Сохранить экспортируемую карту (PNG)'
+          });
+          if (!chosenPath) {
+            this.isGenerating.set(false);
+            return;
+          }
+          targetPath = chosenPath;
+        } catch {
+          targetPath = undefined;
+        }
+      }
+
       this.exportPercent.set(0);
       let unlisten: (() => void) | null = null;
 
@@ -675,16 +695,44 @@ export class MapExportComponent implements OnDestroy {
           logical_width: targetW,
           logical_height: targetH,
           ratio: 1,
-          filename: filename
+          filename: filename,
+          target_path: targetPath
         }, styleJson, geojsonData, JSON.stringify(exportImages));
 
         if (unlisten) unlisten();
         this.exportPercent.set(100);
 
-        alert(`ГИС-карта высокого разрешения успешно сохранена на бэкенде в папку загрузок:\n${savedPath}`);
+        alert(`ГИС-карта высокого разрешения успешно сохранена:\n${savedPath}`);
       } else {
         const canvas = mainMap.getCanvas();
         const dataUrl = canvas.toDataURL('image/png');
+
+        if (typeof window !== 'undefined' && (window as any).showSaveFilePicker) {
+          try {
+            const handle = await (window as any).showSaveFilePicker({
+              suggestedName: filename,
+              types: [
+                {
+                  description: 'Изображение PNG (*.png)',
+                  accept: { 'image/png': ['.png'] }
+                }
+              ]
+            });
+            const writable = await handle.createWritable();
+            const blob = await (await fetch(dataUrl)).blob();
+            await writable.write(blob);
+            await writable.close();
+            this.exportPercent.set(100);
+            this.close();
+            return;
+          } catch (e: any) {
+            if (e?.name === 'AbortError') {
+              this.isGenerating.set(false);
+              return;
+            }
+          }
+        }
+
         const link = document.createElement('a');
         link.href = dataUrl;
         link.download = filename;

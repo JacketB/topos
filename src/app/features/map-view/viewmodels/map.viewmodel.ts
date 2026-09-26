@@ -14,6 +14,8 @@ import { PlaybackService } from '../services/playback.service';
 import { MarchOrderService, MarchOrderElement } from '../services/march-order.service';
 import { ImageOverlayService, MapImageOverlay } from '../services/image-overlay.service';
 import { TacticalAnalyticsService } from '../services/tactical-analytics.service';
+import { DispatchRoutesService } from '../services/dispatch-routes.service';
+import { LocalAddressCacheService } from '../services/local-address-cache.service';
 import { ProjectManagerService } from '../../../core/services/project-manager.service';
 import { CoordinateConverterService } from '../../../core/services/coordinate-converter.service';
 import { Sk42GridService } from '../../../core/services/sk42-grid.service';
@@ -39,9 +41,13 @@ export class MapViewModel {
   readonly playbackService = inject(PlaybackService);
   readonly marchOrderService = inject(MarchOrderService);
   readonly tacticalAnalyticsService = inject(TacticalAnalyticsService);
+  readonly dispatchRoutesService = inject(DispatchRoutesService);
+  readonly localAddressCacheService = inject(LocalAddressCacheService);
 
   readonly isLeftSidebarOpen = signal<boolean>(true);
   readonly activeSidebarTab = signal<'symbols' | 'properties'>('symbols');
+  readonly isDispatchModalOpen = signal<boolean>(false);
+  readonly pickingDispatchTarget = signal<'start' | string | null>(null);
 
   readonly scalePresets = SCALE_PRESETS;
   readonly isMapExportOpen = signal(false);
@@ -1773,5 +1779,56 @@ export class MapViewModel {
 
   closeHelpModal() {
     this.isHelpModalOpen.set(false);
+  }
+
+  toggleDispatchModal() {
+    this.isDispatchModalOpen.update(v => !v);
+    if (this.isDispatchModalOpen()) {
+      this.dispatchRoutesService.updateMapLayers(this.getMapInstance());
+    }
+  }
+
+  openDispatchModal() {
+    this.isDispatchModalOpen.set(true);
+    this.dispatchRoutesService.updateMapLayers(this.getMapInstance());
+  }
+
+  closeDispatchModal() {
+    this.isDispatchModalOpen.set(false);
+  }
+
+  setPickingDispatchTarget(target: 'start' | string | null) {
+    this.pickingDispatchTarget.set(target);
+  }
+
+  handlePickedDispatchCoord(coords: [number, number]) {
+    const target = this.pickingDispatchTarget();
+    if (target === 'start') {
+      this.dispatchRoutesService.config.update(c => ({
+        ...c,
+        startPoint: coords,
+        startPointName: `Стартовая точка (${coords[1].toFixed(4)}, ${coords[0].toFixed(4)})`
+      }));
+    } else if (typeof target === 'string') {
+      let resolvedCity = '';
+      let resolvedStreet = '';
+      let resolvedHouse = '';
+      this.dispatchRoutesService.addresses.update(list =>
+        list.map(a => {
+          if (a.id === target) {
+            resolvedCity = a.city;
+            resolvedStreet = a.street;
+            resolvedHouse = a.house;
+            return { ...a, coords, geocoded: true, geocodeSource: 'manual' };
+          }
+          return a;
+        })
+      );
+      if (resolvedCity || resolvedStreet) {
+        this.localAddressCacheService.save(resolvedCity, resolvedStreet, resolvedHouse, coords);
+      }
+    }
+    this.pickingDispatchTarget.set(null);
+    this.dispatchRoutesService.updateMapLayers(this.getMapInstance());
   }
 }

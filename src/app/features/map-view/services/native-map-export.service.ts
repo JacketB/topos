@@ -13,6 +13,7 @@ export interface NativeMapExportParams {
   logical_height: number;
   ratio: number;
   filename: string;
+  target_path?: string;
 }
 
 @Injectable({

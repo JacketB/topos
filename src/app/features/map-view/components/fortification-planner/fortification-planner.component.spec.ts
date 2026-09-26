@@ -1,15 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Injector, runInInjectionContext, signal, ɵEffectScheduler, ɵChangeDetectionScheduler } from '@angular/core';
 import { FortificationPlannerComponent, MachDevice } from './fortification-planner.component';
 import { MapViewModel } from '../../viewmodels/map.viewmodel';
 import { FortificationCalculationService } from '../../services/fortification-calculation.service';
 import { TacticalMapService } from '../../services/tactical-map.service';
-import { signal } from '@angular/core';
 
 describe('FortificationPlannerComponent', () => {
   let component: FortificationPlannerComponent;
-  let fixture: ComponentFixture<FortificationPlannerComponent>;
   let mockVm: any;
+  let injector: Injector;
 
   beforeEach(() => {
     localStorage.clear();
@@ -21,17 +20,17 @@ describe('FortificationPlannerComponent', () => {
       activeTab: signal('planner')
     };
 
-    TestBed.configureTestingModule({
-      imports: [FortificationPlannerComponent],
+    injector = Injector.create({
       providers: [
+        { provide: ɵEffectScheduler, useValue: { add: () => {}, schedule: () => {} } },
+        { provide: ɵChangeDetectionScheduler, useValue: { notify: () => {} } },
         { provide: MapViewModel, useValue: mockVm },
         { provide: TacticalMapService, useValue: {} },
         FortificationCalculationService
       ]
     });
 
-    fixture = TestBed.createComponent(FortificationPlannerComponent);
-    component = fixture.componentInstance;
+    component = runInInjectionContext(injector, () => new FortificationPlannerComponent());
   });
 
   it('should initialize with default devices including amkodor and auto', () => {
@@ -51,8 +50,7 @@ describe('FortificationPlannerComponent', () => {
     ];
     localStorage.setItem('topos_planner_devices', JSON.stringify(oldDevices));
 
-    const newFixture = TestBed.createComponent(FortificationPlannerComponent);
-    const newComp = newFixture.componentInstance;
+    const newComp = runInInjectionContext(injector, () => new FortificationPlannerComponent());
     const loaded = newComp.machDevices();
 
     expect(loaded.some(d => d.id === 'amkodor')).toBe(true);
