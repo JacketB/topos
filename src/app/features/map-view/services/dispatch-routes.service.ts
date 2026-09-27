@@ -35,6 +35,7 @@ export interface DispatchRoute {
   totalDistanceKm: number;
   totalDurationMin: number;
   geometry: [number, number][];
+  approaches?: [number, number][][];
 }
 
 export type DispatchTransportMode = 'foot' | 'car';
@@ -556,6 +557,20 @@ export class DispatchRoutesService {
     return ordered;
   }
 
+  cleanConsecutiveDuplicates(coords: [number, number][]): [number, number][] {
+    if (coords.length < 2) return coords;
+    const res: [number, number][] = [coords[0]];
+    for (let i = 1; i < coords.length; i++) {
+      const prev = res[res.length - 1];
+      const curr = coords[i];
+      const d = Math.hypot(curr[0] - prev[0], curr[1] - prev[1]);
+      if (d > 0.00001) {
+        res.push(curr);
+      }
+    }
+    return res;
+  }
+
   smoothRouteSpikes(coords: [number, number][]): [number, number][] {
     if (coords.length < 3) return coords;
     const res: [number, number][] = [coords[0]];
@@ -583,7 +598,7 @@ export class DispatchRoutesService {
     if (i < coords.length) {
       res.push(coords[coords.length - 1]);
     }
-    return res;
+    return this.cleanConsecutiveDuplicates(res);
   }
 
   async buildDispatchRoutes(
@@ -610,7 +625,8 @@ export class DispatchRoutesService {
 
       let totalDistKm = 0;
       let totalDurationMin = 0;
-      let combinedGeometry: [number, number][] = [];
+      const trunkCoords: [number, number][] = [startPoint];
+      const approaches: [number, number][][] = [];
 
       for (let leg = 0; leg < routePoints.length - 1; leg++) {
         const fromPt = routePoints[leg];
@@ -632,10 +648,29 @@ export class DispatchRoutesService {
           }
         } catch {}
 
-        if (leg === 0) {
-          combinedGeometry.push(...legCoords);
+        let roadLeg: [number, number][];
+        let roadStopTo: [number, number];
+
+        if (legCoords.length >= 3) {
+          roadStopTo = legCoords[legCoords.length - 2];
+          roadLeg = legCoords.length >= 4 ? legCoords.slice(1, -1) : [legCoords[1]];
         } else {
-          combinedGeometry.push(...legCoords.slice(1));
+          roadStopTo = toPt;
+          roadLeg = legCoords;
+        }
+
+        if (leg < orderedAddrs.length) {
+          const distToHouse = this.haversineDistanceKm(roadStopTo, toPt);
+          if (distToHouse > 0.003) {
+            approaches.push([roadStopTo, toPt]);
+          }
+        }
+
+        for (const pt of roadLeg) {
+          const last = trunkCoords[trunkCoords.length - 1];
+          if (!last || Math.hypot(pt[0] - last[0], pt[1] - last[1]) > 0.00001) {
+            trunkCoords.push(pt);
+          }
         }
 
         totalDistKm += legDistKm;
@@ -650,7 +685,18 @@ export class DispatchRoutesService {
         }
       }
 
-      const smoothedGeometry = this.smoothRouteSpikes(combinedGeometry);
+      if (config.returnToStart) {
+        const last = trunkCoords[trunkCoords.length - 1];
+        if (!last || Math.hypot(startPoint[0] - last[0], startPoint[1] - last[1]) > 0.00001) {
+          trunkCoords.push(startPoint);
+        }
+      }
+
+      let smoothedGeometry = this.smoothRouteSpikes(trunkCoords);
+      if (smoothedGeometry.length < 2) {
+        smoothedGeometry = [startPoint, routePoints[routePoints.length - 1]];
+      }
+
       const color = ROUTE_PALETTE[c % ROUTE_PALETTE.length];
       const routeName = `Маршрут ${c + 1}`;
 
@@ -664,7 +710,8 @@ export class DispatchRoutesService {
         endCoords: config.returnToStart ? startPoint : routePoints[routePoints.length - 1],
         totalDistanceKm: Math.round(totalDistKm * 10) / 10,
         totalDurationMin: Math.round(totalDurationMin),
-        geometry: smoothedGeometry
+        geometry: smoothedGeometry,
+        approaches: approaches
       });
     }
 
@@ -827,6 +874,24 @@ export class DispatchRoutesService {
           coordinates: r.geometry
         }
       });
+
+      if (r.approaches) {
+        for (let i = 0; i < r.approaches.length; i++) {
+          features.push({
+            type: 'Feature',
+            properties: {
+              id: `${r.id}_appr_${i}`,
+              type: 'approach',
+              color: r.color,
+              name: `Подход к адресу (${r.name})`
+            },
+            geometry: {
+              type: 'LineString',
+              coordinates: r.approaches[i]
+            }
+          });
+        }
+      }
 
       for (const a of r.addresses) {
         features.push({
@@ -1028,6 +1093,13 @@ export class DispatchRoutesService {
         });
       }
 
+      if (!map.getSource('dispatch-routes-approaches-source')) {
+        map.addSource('dispatch-routes-approaches-source', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] }
+        });
+      }
+
       if (!map.getSource('dispatch-routes-points-source')) {
         map.addSource('dispatch-routes-points-source', {
           type: 'geojson',
@@ -1039,6 +1111,24 @@ export class DispatchRoutesService {
         map.addSource('dispatch-routes-start-source', {
           type: 'geojson',
           data: { type: 'FeatureCollection', features: [] }
+        });
+      }
+
+      if (!map.getLayer('dispatch-routes-approaches')) {
+        map.addLayer({
+          id: 'dispatch-routes-approaches',
+          type: 'line',
+          source: 'dispatch-routes-approaches-source',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': ['get', 'color'],
+            'line-width': 2.5,
+            'line-dasharray': [2, 2],
+            'line-opacity': 0.85
+          }
         });
       }
 
@@ -1295,10 +1385,34 @@ export class DispatchRoutesService {
       });
     }
 
+    const approachFeatures: any[] = [];
+    routesList.forEach(r => {
+      if (!hidden.has(r.id) && r.approaches && r.approaches.length > 0) {
+        r.approaches.forEach((appr, idx) => {
+          approachFeatures.push({
+            type: 'Feature',
+            properties: {
+              id: `${r.id}_appr_${idx}`,
+              color: r.color
+            },
+            geometry: {
+              type: 'LineString',
+              coordinates: appr
+            }
+          });
+        });
+      }
+    });
+
     try {
       const lineSrc = map.getSource('dispatch-routes-lines-source') as maplibregl.GeoJSONSource;
       if (lineSrc) {
         lineSrc.setData({ type: 'FeatureCollection', features: lineFeatures });
+      }
+
+      const apprSrc = map.getSource('dispatch-routes-approaches-source') as maplibregl.GeoJSONSource;
+      if (apprSrc) {
+        apprSrc.setData({ type: 'FeatureCollection', features: approachFeatures });
       }
 
       const ptSrc = map.getSource('dispatch-routes-points-source') as maplibregl.GeoJSONSource;
@@ -1319,6 +1433,11 @@ export class DispatchRoutesService {
       const lineSrc = map.getSource('dispatch-routes-lines-source') as maplibregl.GeoJSONSource;
       if (lineSrc) {
         lineSrc.setData({ type: 'FeatureCollection', features: [] });
+      }
+
+      const apprSrc = map.getSource('dispatch-routes-approaches-source') as maplibregl.GeoJSONSource;
+      if (apprSrc) {
+        apprSrc.setData({ type: 'FeatureCollection', features: [] });
       }
 
       const ptSrc = map.getSource('dispatch-routes-points-source') as maplibregl.GeoJSONSource;

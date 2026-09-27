@@ -368,35 +368,52 @@ fn distance_between(p1: [f64; 2], p2: [f64; 2]) -> f64 {
 fn get_speed_for_type(column_type: &str, road_type: &str, default_speed: f64) -> f64 {
     match column_type {
         "wheel" => match road_type {
-            "motorway" => 40.0,
-            "primary" => 35.0,
-            "secondary" => 30.0,
-            "tertiary" => 25.0,
-            _ => default_speed.min(30.0),
+            "motorway" | "motorway_link" => 40.0,
+            "trunk" | "trunk_link" => 38.0,
+            "primary" | "primary_link" => 35.0,
+            "secondary" | "secondary_link" => 30.0,
+            "tertiary" | "tertiary_link" => 25.0,
+            "residential" | "unclassified" => 20.0,
+            "service" | "living_street" => 12.0,
+            "track" => 15.0,
+            "footway" | "path" | "steps" | "pedestrian" => 0.001,
+            _ => default_speed.min(25.0),
         },
         "caterpillar" => match road_type {
-            "motorway" => 25.0,
-            "primary" => 25.0,
-            "secondary" => 20.0,
-            "tertiary" => 18.0,
+            "motorway" | "motorway_link" => 25.0,
+            "trunk" | "trunk_link" => 25.0,
+            "primary" | "primary_link" => 25.0,
+            "secondary" | "secondary_link" => 20.0,
+            "tertiary" | "tertiary_link" => 18.0,
+            "residential" | "unclassified" => 15.0,
+            "service" | "living_street" => 8.0,
+            "track" => 18.0,
+            "footway" | "path" | "steps" | "pedestrian" => 0.001,
             _ => 15.0,
         },
         "mixed" => match road_type {
-            "motorway" => 25.0,
-            "primary" => 25.0,
-            "secondary" => 20.0,
-            "tertiary" => 18.0,
+            "motorway" | "motorway_link" => 25.0,
+            "trunk" | "trunk_link" => 25.0,
+            "primary" | "primary_link" => 25.0,
+            "secondary" | "secondary_link" => 20.0,
+            "tertiary" | "tertiary_link" => 18.0,
+            "residential" | "unclassified" => 15.0,
+            "service" | "living_street" => 8.0,
+            "track" => 16.0,
+            "footway" | "path" | "steps" | "pedestrian" => 0.001,
             _ => 15.0,
         },
         "foot" => match road_type {
-            "motorway" | "motorway_link" => 0.5,
-            "trunk" | "trunk_link" => 1.0,
-            "primary" | "primary_link" => 3.5,
-            "path" | "footway" | "pedestrian" => 5.0,
-            "track" | "residential" | "unclassified" => 4.8,
-            "tertiary" | "tertiary_link" => 4.5,
-            "secondary" | "secondary_link" => 4.0,
-            _ => 4.5,
+            "path" | "footway" | "pedestrian" | "steps" => 6.0,
+            "service" | "living_street" => 5.2,
+            "track" => 4.5,
+            "residential" | "unclassified" => 4.0,
+            "tertiary" | "tertiary_link" => 3.2,
+            "secondary" | "secondary_link" => 2.6,
+            "primary" | "primary_link" => 2.0,
+            "trunk" | "trunk_link" => 0.8,
+            "motorway" | "motorway_link" => 0.2,
+            _ => 3.5,
         },
         _ => default_speed,
     }
@@ -638,15 +655,21 @@ fn resolve_addresses_batch(
         )
         .map_err(|e| format!("Statement error: {}", e))?;
 
-    let mut stmt_nearby_house = conn
+    let mut stmt_nearby_house_with_street = conn
         .prepare_cached(
-            "SELECT city, street, street_normalized, house, lat, lon FROM addresses WHERE house_normalized = ?1 AND lon BETWEEN ?2 AND ?3 AND lat BETWEEN ?4 AND ?5 LIMIT 40",
+            "SELECT city, street, street_normalized, house, lat, lon FROM addresses WHERE house_normalized = ?1 AND lon BETWEEN ?2 AND ?3 AND lat BETWEEN ?4 AND ?5 AND street_normalized LIKE ?6 ORDER BY ((lon - ?7)*(lon - ?7) + (lat - ?8)*(lat - ?8)) ASC LIMIT 10",
+        )
+        .map_err(|e| format!("Statement error: {}", e))?;
+
+    let mut stmt_nearby_house_any = conn
+        .prepare_cached(
+            "SELECT city, street, street_normalized, house, lat, lon FROM addresses WHERE house_normalized = ?1 AND lon BETWEEN ?2 AND ?3 AND lat BETWEEN ?4 AND ?5 ORDER BY ((lon - ?6)*(lon - ?6) + (lat - ?7)*(lat - ?7)) ASC LIMIT 20",
         )
         .map_err(|e| format!("Statement error: {}", e))?;
 
     let mut stmt_city_or_nearby_street = conn
         .prepare_cached(
-            "SELECT city, street, house, lat, lon FROM addresses WHERE (city_normalized = ?1 OR (lon BETWEEN ?2 AND ?3 AND lat BETWEEN ?4 AND ?5)) AND street_normalized LIKE ?6 LIMIT 10",
+            "SELECT city, street, house, lat, lon FROM addresses WHERE (city_normalized = ?1 OR (lon BETWEEN ?2 AND ?3 AND lat BETWEEN ?4 AND ?5)) AND street_normalized LIKE ?6 ORDER BY ((lon - ?7)*(lon - ?7) + (lat - ?8)*(lat - ?8)) ASC LIMIT 10",
         )
         .map_err(|e| format!("Statement error: {}", e))?;
 
@@ -779,39 +802,72 @@ fn resolve_addresses_batch(
                 let min_lat = center[1] - 0.15;
                 let max_lat = center[1] + 0.15;
 
-                if let Ok(mut rows) = stmt_nearby_house.query(rusqlite::params![&house_norm, min_lon, max_lon, min_lat, max_lat]) {
-                    let mut best_match: Option<(String, String, String, f64, f64)> = None;
-                    let mut best_score = 0;
+                let mut best_match: Option<(String, String, String, f64, f64)> = None;
+                let mut best_score = 0;
 
-                    while let Ok(Some(row)) = rows.next() {
-                        let c: String = row.get(0).unwrap_or_default();
-                        let s: String = row.get(1).unwrap_or_default();
-                        let s_norm: String = row.get(2).unwrap_or_default();
-                        let h: String = row.get(3).unwrap_or_default();
-                        let lat: f64 = row.get(4).unwrap_or_default();
-                        let lon: f64 = row.get(5).unwrap_or_default();
+                for sw in &query_street_stems {
+                    let prefix: String = sw.chars().take(4).collect();
+                    if prefix.chars().count() < 3 {
+                        continue;
+                    }
+                    let pattern = format!("%{}%", prefix);
+                    if let Ok(mut rows) = stmt_nearby_house_with_street.query(rusqlite::params![
+                        &house_norm, min_lon, max_lon, min_lat, max_lat, &pattern, center[0], center[1]
+                    ]) {
+                        while let Ok(Some(row)) = rows.next() {
+                            let c: String = row.get(0).unwrap_or_default();
+                            let s: String = row.get(1).unwrap_or_default();
+                            let s_norm: String = row.get(2).unwrap_or_default();
+                            let h: String = row.get(3).unwrap_or_default();
+                            let lat: f64 = row.get(4).unwrap_or_default();
+                            let lon: f64 = row.get(5).unwrap_or_default();
 
-                        let score = eval_street_match(&s_norm);
-                        if score > best_score {
-                            best_score = score;
-                            best_match = Some((c, s, h, lat, lon));
+                            let score = eval_street_match(&s_norm);
+                            if score > best_score {
+                                best_score = score;
+                                best_match = Some((c, s, h, lat, lon));
+                            }
                         }
                     }
-
                     if best_score > 0 {
-                        if let Some((c, s, h, lat, lon)) = best_match {
-                            results.push(AddressMatchResult {
-                                id: q.id.clone(),
-                                found: true,
-                                match_type: "exact".to_string(),
-                                lat,
-                                lon,
-                                city: c,
-                                street: s,
-                                house: h,
-                            });
-                            matched = true;
+                        break;
+                    }
+                }
+
+                if best_score == 0 {
+                    if let Ok(mut rows) = stmt_nearby_house_any.query(rusqlite::params![
+                        &house_norm, min_lon, max_lon, min_lat, max_lat, center[0], center[1]
+                    ]) {
+                        while let Ok(Some(row)) = rows.next() {
+                            let c: String = row.get(0).unwrap_or_default();
+                            let s: String = row.get(1).unwrap_or_default();
+                            let s_norm: String = row.get(2).unwrap_or_default();
+                            let h: String = row.get(3).unwrap_or_default();
+                            let lat: f64 = row.get(4).unwrap_or_default();
+                            let lon: f64 = row.get(5).unwrap_or_default();
+
+                            let score = eval_street_match(&s_norm);
+                            if score > best_score {
+                                best_score = score;
+                                best_match = Some((c, s, h, lat, lon));
+                            }
                         }
+                    }
+                }
+
+                if best_score > 0 {
+                    if let Some((c, s, h, lat, lon)) = best_match {
+                        results.push(AddressMatchResult {
+                            id: q.id.clone(),
+                            found: true,
+                            match_type: "exact".to_string(),
+                            lat,
+                            lon,
+                            city: c,
+                            street: s,
+                            house: h,
+                        });
+                        matched = true;
                     }
                 }
             }
@@ -830,7 +886,9 @@ fn resolve_addresses_batch(
                         continue;
                     }
                     let pattern = format!("%{}%", prefix);
-                    if let Ok(mut rows) = stmt_city_or_nearby_street.query(rusqlite::params![&city_key, min_lon, max_lon, min_lat, max_lat, &pattern]) {
+                    if let Ok(mut rows) = stmt_city_or_nearby_street.query(rusqlite::params![
+                        &city_key, min_lon, max_lon, min_lat, max_lat, &pattern, center[0], center[1]
+                    ]) {
                         let mut sum_lat = 0.0;
                         let mut sum_lon = 0.0;
                         let mut count = 0;
@@ -1176,6 +1234,23 @@ fn calculate_march_route_sync(
     let speed_multiplier = if is_night_march { 0.7 } else { 1.0 };
 
     let cell_size = 0.05;
+    let is_node_valid = |idx: usize| -> bool {
+        if adj[idx].is_empty() {
+            return false;
+        }
+        if col_type == "foot" {
+            return true;
+        }
+        for &e_idx in &adj[idx] {
+            let e = &edges[e_idx];
+            match e.roadType.as_str() {
+                "footway" | "path" | "steps" | "pedestrian" => {}
+                _ => return true,
+            }
+        }
+        false
+    };
+
     let find_nearest = |pt: [f64; 2]| -> usize {
         let cx = (pt[0] / cell_size).floor() as i32;
         let cy = (pt[1] / cell_size).floor() as i32;
@@ -1187,6 +1262,9 @@ fn calculate_march_route_sync(
                 for dy in -radius..=radius {
                     if let Some(list) = spatial_grid.get(&(cx + dx, cy + dy)) {
                         for &idx in list {
+                            if !is_node_valid(idx) {
+                                continue;
+                            }
                             let d = distance_between(pt, nodes[idx]);
                             if d < min_d {
                                 min_d = d;
@@ -1203,6 +1281,9 @@ fn calculate_march_route_sync(
 
         if min_d == f64::MAX {
             for (idx, &n_pt) in nodes.iter().enumerate() {
+                if !is_node_valid(idx) {
+                    continue;
+                }
                 let d = distance_between(pt, n_pt);
                 if d < min_d {
                     min_d = d;
@@ -1266,6 +1347,12 @@ fn calculate_march_route_sync(
                 let edge = &edges[edge_idx];
                 if edge.isReverseOneWay && col_type != "foot" {
                     continue;
+                }
+                if col_type != "foot" {
+                    match edge.roadType.as_str() {
+                        "footway" | "path" | "steps" | "pedestrian" => continue,
+                        _ => {}
+                    }
                 }
                 let next = edge.to;
 

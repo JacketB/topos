@@ -217,4 +217,49 @@ describe('DispatchRoutesService', () => {
     expect(smoothed[1]).toEqual([25.322, 53.081]);
     expect(smoothed[2]).toEqual([25.325, 53.085]);
   });
+
+  it('should extract building approaches when route coordinates include road access segments', async () => {
+    const customMarchRouteService = {
+      getAllPlaces: vi.fn().mockResolvedValue([]),
+      calculateGraphRoute: vi.fn().mockImplementation((origin, destination) => {
+        return Promise.resolve({
+          coordinates: [
+            origin,
+            [25.321, 53.080],
+            [25.323, 53.082],
+            destination
+          ],
+          routeStats: {
+            segments: [],
+            totalDistanceKm: 1.2,
+            totalDurationHrs: 0.1,
+            sharpTurnCount: 0,
+            bridgeCount: 0,
+            totalBarriers: 0
+          }
+        });
+      })
+    };
+
+    const testService = new DispatchRoutesService(customMarchRouteService);
+    const startPoint: [number, number] = [25.320, 53.079];
+    const addresses: DispatchAddress[] = [
+      { id: '1', index: 1, recipientName: 'B1', city: 'Слоним', street: 'Тавлая', house: '34', coords: [25.333, 53.066], geocoded: true }
+    ];
+    const config: DispatchConfig = {
+      startPoint,
+      startPointName: 'Старт',
+      routeCount: 1,
+      returnToStart: false,
+      speedKmH: 4.5,
+      stopDurationMin: 5,
+      transportMode: 'foot'
+    };
+
+    const routes = await testService.buildDispatchRoutes(startPoint, addresses, config);
+    expect(routes.length).toBe(1);
+    expect(routes[0].approaches).toBeDefined();
+    expect(routes[0].approaches!.length).toBeGreaterThan(0);
+    expect(routes[0].approaches![0][1]).toEqual([25.333, 53.066]);
+  });
 });
