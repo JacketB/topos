@@ -1,0 +1,307 @@
+<div class="system-diagnostics-overlay" (click)="onClose()">
+  <div class="system-diagnostics-panel" (click)="$event.stopPropagation()">
+    <header class="diagnostics-header">
+      <div class="header-brand">
+        <div class="header-icon-box">
+          <svg class="header-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="header-text-group">
+          <h2 class="header-title">Центр диагностики и тестирования системы</h2>
+          <span class="header-subtitle">Автоматизированная проверка базы адресов, графа дорог, PMTiles, рельефа и хранилища</span>
+        </div>
+      </div>
+      <button type="button" class="btn-close" (click)="onClose()" title="Закрыть (Esc)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </header>
+
+    <div class="diagnostics-summary-bar">
+      <div class="summary-card card-total">
+        <span class="summary-label">Всего тестов</span>
+        <span class="summary-val">{{ diagnosticsService.summary().total }}</span>
+      </div>
+      <div class="summary-card card-passed">
+        <span class="summary-label">Успешно</span>
+        <span class="summary-val">{{ diagnosticsService.summary().passed }}</span>
+      </div>
+      <div class="summary-card card-warnings">
+        <span class="summary-label">Предупреждений</span>
+        <span class="summary-val">{{ diagnosticsService.summary().warnings }}</span>
+      </div>
+      <div class="summary-card card-failed">
+        <span class="summary-label">Ошибок</span>
+        <span class="summary-val">{{ diagnosticsService.summary().failed }}</span>
+      </div>
+      <div class="summary-card card-duration">
+        <span class="summary-label">Общее время</span>
+        <span class="summary-val">{{ diagnosticsService.summary().durationTotalMs }} мс</span>
+      </div>
+    </div>
+
+    @if (diagnosticsService.isRunning()) {
+      <div class="diagnostics-progress-wrapper">
+        <div class="progress-info-row">
+          <span class="progress-title">Выполняется диагностика компонентов...</span>
+          <span class="progress-pct">{{ diagnosticsService.progressPercent() }}%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" [style.width.%]="diagnosticsService.progressPercent()"></div>
+        </div>
+      </div>
+    }
+
+    <div class="diagnostics-toolbar">
+      <div class="toolbar-actions">
+        <button
+          type="button"
+          class="btn-action btn-primary"
+          [disabled]="diagnosticsService.isRunning()"
+          (click)="onRunAll()"
+        >
+          <svg class="action-icon" [class.spin]="diagnosticsService.isRunning()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>{{ diagnosticsService.isRunning() ? 'Тестирование...' : 'Запустить полную проверку' }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn-action btn-secondary"
+          (click)="onExportReport()"
+          title="Скачать подробный текстовый отчет"
+        >
+          <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Экспорт отчета</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn-action btn-secondary"
+          (click)="onCopyReport()"
+          title="Скопировать отчет в буфер обмена"
+        >
+          <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span>{{ reportCopied() ? 'Скопировано!' : 'Копировать' }}</span>
+        </button>
+      </div>
+
+      <div class="toolbar-filters">
+        <div class="filter-pill-group">
+          <button
+            type="button"
+            class="pill-btn"
+            [class.active]="filterStatus() === 'all'"
+            (click)="filterStatus.set('all')"
+          >
+            Все ({{ diagnosticsService.summary().total }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn pill-error"
+            [class.active]="filterStatus() === 'error'"
+            (click)="filterStatus.set('error')"
+          >
+            Ошибки ({{ diagnosticsService.summary().failed }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn pill-warning"
+            [class.active]="filterStatus() === 'warning'"
+            (click)="filterStatus.set('warning')"
+          >
+            Предупреждения ({{ diagnosticsService.summary().warnings }})
+          </button>
+          <button
+            type="button"
+            class="pill-btn pill-success"
+            [class.active]="filterStatus() === 'success'"
+            (click)="filterStatus.set('success')"
+          >
+            Успешно ({{ diagnosticsService.summary().passed }})
+          </button>
+        </div>
+
+        <select
+          class="suite-select"
+          [ngModel]="selectedSuite()"
+          (ngModelChange)="selectedSuite.set($event)"
+        >
+          @for (s of suites; track s.id) {
+            <option [value]="s.id">{{ s.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="diagnostics-content-scroll">
+      @if (filteredTests().length === 0) {
+        <div class="empty-state">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <div class="empty-text">Нет тестов, соответствующих выбранному фильтру</div>
+        </div>
+      } @else {
+        <div class="test-list">
+          @for (test of filteredTests(); track test.id) {
+            <div
+              class="test-card"
+              [class.status-success]="test.status === 'success'"
+              [class.status-warning]="test.status === 'warning'"
+              [class.status-error]="test.status === 'error'"
+              [class.status-running]="test.status === 'running'"
+              [class.status-idle]="test.status === 'idle'"
+              (click)="toggleDetails(test.id)"
+            >
+              <div class="test-row-header">
+                <div class="test-status-col">
+                  @if (test.status === 'success') {
+                    <div class="status-icon-box box-success" title="Успешно">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </div>
+                  } @else if (test.status === 'warning') {
+                    <div class="status-icon-box box-warning" title="Предупреждение">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                      </svg>
+                    </div>
+                  } @else if (test.status === 'error') {
+                    <div class="status-icon-box box-error" title="Ошибка">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </div>
+                  } @else if (test.status === 'running') {
+                    <div class="status-icon-box box-running" title="Выполняется">
+                      <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="2" x2="12" y2="6"></line>
+                        <line x1="12" y1="18" x2="12" y2="22"></line>
+                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                        <line x1="2" y1="12" x2="6" y2="12"></line>
+                        <line x1="18" y1="12" x2="22" y2="12"></line>
+                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                      </svg>
+                    </div>
+                  } @else {
+                    <div class="status-icon-box box-idle" title="Ожидание">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="6"></circle>
+                      </svg>
+                    </div>
+                  }
+                </div>
+
+                <div class="test-info-col">
+                  <div class="test-title-line">
+                    <span class="test-title">{{ test.title }}</span>
+                    <span class="suite-tag">{{ test.suiteTitle }}</span>
+                  </div>
+                  <div class="test-desc">{{ test.description }}</div>
+                  @if (test.message) {
+                    <div class="test-msg" [class.msg-error]="test.status === 'error'" [class.msg-warning]="test.status === 'warning'">
+                      {{ test.message }}
+                    </div>
+                  }
+                </div>
+
+                <div class="test-meta-col">
+                  @if (test.durationMs !== undefined) {
+                    <span
+                      class="latency-badge"
+                      [class.fast]="test.durationMs < 40"
+                      [class.medium]="test.durationMs >= 40 && test.durationMs < 120"
+                      [class.slow]="test.durationMs >= 120"
+                    >
+                      {{ test.durationMs }} мс
+                    </span>
+                  }
+
+                  <button
+                    type="button"
+                    class="btn-rerun"
+                    [disabled]="diagnosticsService.isRunning()"
+                    (click)="onRunSingle(test.id, $event)"
+                    title="Перепроверить только этот модуль"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <polyline points="1 20 1 14 7 14"></polyline>
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                  </button>
+
+                  <button type="button" class="btn-expand" title="Подробнее">
+                    <svg
+                      class="expand-icon"
+                      [class.rotated]="isExpanded(test.id)"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              @if (isExpanded(test.id)) {
+                <div class="test-details-block" (click)="$event.stopPropagation()">
+                  @if (getMetricsEntries(test.metrics).length > 0) {
+                    <div class="metrics-grid">
+                      @for (entry of getMetricsEntries(test.metrics); track entry[0]) {
+                        <div class="metric-pill">
+                          <span class="m-key">{{ entry[0] }}:</span>
+                          <span class="m-val">{{ entry[1] }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  @if (test.details) {
+                    <pre class="details-pre">{{ test.details }}</pre>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <footer class="diagnostics-footer">
+      <div class="footer-left-info">
+        <span class="footer-hint">Все проверки производятся локально без сетевых запросов наружу</span>
+      </div>
+      <div class="footer-right-buttons">
+        <button type="button" class="btn-modal-close" (click)="onClose()">
+          Закрыть
+        </button>
+      </div>
+    </footer>
+  </div>
+</div>

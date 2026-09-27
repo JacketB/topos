@@ -3,6 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProjectManagerService, ProjectInfo } from '../../core/services/project-manager.service';
+import { checkIsTauri } from '../../core/utils/tauri.utils';
 
 @Component({
   selector: 'app-projects-view',
@@ -33,7 +34,7 @@ export class ProjectsView {
 
   async onOpenProject(proj: ProjectInfo) {
     this.projectService.setCurrentProject(proj);
-    const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+    const isTauri = await checkIsTauri();
     if (isTauri && proj.filePath) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
@@ -70,7 +71,7 @@ export class ProjectsView {
   }
 
   async onOpenFileClick() {
-    const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+    const isTauri = await checkIsTauri();
     if (isTauri) {
       const result = await this.projectService.openProjectFromDiskWithDialog();
       if (result) {

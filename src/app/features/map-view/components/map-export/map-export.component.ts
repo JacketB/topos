@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MapViewModel } from '../../viewmodels/map.viewmodel';
 import { NativeMapExportService } from '../../services/native-map-export.service';
 import { MapExportSanitizerUtils } from '../../utils/map-export-sanitizer.utils';
+import { checkIsTauri } from '../../../../core/utils/tauri.utils';
 import maplibregl from 'maplibre-gl';
 
 @Component({
@@ -645,7 +646,7 @@ export class MapExportComponent implements OnDestroy {
       const scaleTag = selectedScale > 0 ? `1-${selectedScale}` : 'auto';
       const filename = `map_export_${printMm.width}x${printMm.height}mm_${scaleTag}_${dpiVal}dpi_${new Date().toISOString().slice(0, 10)}.png`;
 
-      const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+      const isTauri = await checkIsTauri();
 
       let targetPath: string | undefined;
       if (isTauri) {

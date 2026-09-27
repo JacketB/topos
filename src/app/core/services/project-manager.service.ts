@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { isTauriApp, checkIsTauri } from '../utils/tauri.utils';
 
 export interface ProjectInfo {
   id: string;
@@ -72,9 +73,24 @@ export class ProjectManagerService {
   public saveRecents(list: ProjectInfo[]) {
     this.recentProjects.set(list);
     try {
-      localStorage.setItem(STORAGE_KEY_RECENT, JSON.stringify(list));
+      const sanitized = list.map((p, idx) => {
+        if (p.filePath || idx > 1) {
+          const { data, ...meta } = p;
+          return meta;
+        }
+        return p;
+      });
+      localStorage.setItem(STORAGE_KEY_RECENT, JSON.stringify(sanitized));
     } catch (e) {
-      console.error(e);
+      try {
+        const minimal = list.map(p => {
+          const { data, ...meta } = p;
+          return meta;
+        });
+        localStorage.setItem(STORAGE_KEY_RECENT, JSON.stringify(minimal));
+      } catch (e2) {
+        console.error(e2);
+      }
     }
   }
 
@@ -169,7 +185,7 @@ export class ProjectManagerService {
     const cur = this.currentProject();
     this.setSaveStatus('saving', 'Сохранение...', 0);
     if (cur.filePath) {
-      const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+      const isTauri = await checkIsTauri();
       if (isTauri) {
         try {
           const { invoke } = await import('@tauri-apps/api/core');
@@ -217,7 +233,7 @@ export class ProjectManagerService {
     const filename = safeName.endsWith('.tps') || safeName.endsWith('.json') ? safeName : `${safeName}.tps`;
     const jsonStr = JSON.stringify(scenarioData, null, 2);
 
-    const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+    const isTauri = await checkIsTauri();
 
     if (isTauri) {
       try {
@@ -272,7 +288,7 @@ export class ProjectManagerService {
   }
 
   async openProjectFromDiskWithDialog(): Promise<{ project: ProjectInfo; data: any } | null> {
-    const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined;
+    const isTauri = await checkIsTauri();
 
     if (isTauri) {
       try {

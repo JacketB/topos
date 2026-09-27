@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, effect } from '@angular/core';
 import maplibregl from 'maplibre-gl';
 import * as XLSX from 'xlsx-js-style';
 import { MarchRouteService } from './march-route.service';
@@ -85,6 +85,8 @@ export class DispatchRoutesService {
     transportMode: 'foot'
   });
 
+  private readonly storageKey = 'topos_dispatch_state';
+
   constructor(
     marchRouteService?: MarchRouteService,
     tacticalMapService?: TacticalMapService,
@@ -117,6 +119,49 @@ export class DispatchRoutesService {
         this.localAddressCache = null;
       }
     }
+
+    this.loadStateFromStorage();
+
+    try {
+      effect(() => {
+        const addresses = this.addresses();
+        const routes = this.routes();
+        const config = this.config();
+        this.saveStateToStorage();
+      });
+    } catch {}
+  }
+
+  private loadStateFromStorage(): void {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return;
+      const raw = window.localStorage.getItem(this.storageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed) {
+        if (Array.isArray(parsed.addresses)) {
+          this.addresses.set(parsed.addresses);
+        }
+        if (Array.isArray(parsed.routes)) {
+          this.routes.set(parsed.routes);
+        }
+        if (parsed.config) {
+          this.config.set({ ...this.config(), ...parsed.config });
+        }
+      }
+    } catch {}
+  }
+
+  public saveStateToStorage(): void {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return;
+      const state = {
+        addresses: this.addresses(),
+        routes: this.routes(),
+        config: this.config()
+      };
+      window.localStorage.setItem(this.storageKey, JSON.stringify(state));
+    } catch {}
   }
 
   isRouteVisible(routeId: string): boolean {

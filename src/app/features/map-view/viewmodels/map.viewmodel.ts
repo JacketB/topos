@@ -52,6 +52,7 @@ export class MapViewModel {
   readonly scalePresets = SCALE_PRESETS;
   readonly isMapExportOpen = signal(false);
   readonly isHelpModalOpen = signal(false);
+  readonly isDiagnosticsModalOpen = signal<boolean>(false);
 
   readonly isAppReady = signal<boolean>(false);
   readonly sidebarWidth = signal<number>(340);
@@ -223,6 +224,29 @@ export class MapViewModel {
   });
 
   constructor() {
+    this.tacticalMapService.dispatchDataProvider = () => ({
+      addresses: this.dispatchRoutesService.addresses(),
+      routes: this.dispatchRoutesService.routes(),
+      config: this.dispatchRoutesService.config()
+    });
+
+    this.tacticalMapService.dispatchDataConsumer = (data: any) => {
+      if (data) {
+        if (Array.isArray(data.addresses)) {
+          this.dispatchRoutesService.addresses.set(data.addresses);
+        }
+        if (Array.isArray(data.routes)) {
+          this.dispatchRoutesService.routes.set(data.routes);
+        }
+        if (data.config) {
+          this.dispatchRoutesService.config.set(data.config);
+        }
+        if (this.mapInstance) {
+          this.dispatchRoutesService.updateMapLayers(this.mapInstance);
+        }
+      }
+    };
+
     // Обновление положения маркера симуляции на карте
     effect(() => {
       const pos = this.playbackPosition();
@@ -1675,6 +1699,18 @@ export class MapViewModel {
     }
   }
 
+  undo() {
+    if (this.activeLineMode() !== 'none' && this.activeLineCoords().length > 0) {
+      this.removeDrawingLastPoint();
+      return;
+    }
+    this.tacticalMapService.undo();
+  }
+
+  redo() {
+    this.tacticalMapService.redo();
+  }
+
   toggleQuickLayer(groupId: string) {
     this.onQuickLayerToggle(groupId);
   }
@@ -1830,5 +1866,17 @@ export class MapViewModel {
     }
     this.pickingDispatchTarget.set(null);
     this.dispatchRoutesService.updateMapLayers(this.getMapInstance());
+  }
+
+  toggleDiagnosticsModal() {
+    this.isDiagnosticsModalOpen.update(v => !v);
+  }
+
+  openDiagnosticsModal() {
+    this.isDiagnosticsModalOpen.set(true);
+  }
+
+  closeDiagnosticsModal() {
+    this.isDiagnosticsModalOpen.set(false);
   }
 }

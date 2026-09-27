@@ -400,6 +400,25 @@
   background-color: #15803d;
 }
 
+.bulk-del-btn {
+  font-size: 9px;
+  font-weight: 700;
+  background-color: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transition: background-color 0.15s;
+}
+
+.bulk-del-btn:hover {
+  background-color: #dc2626;
+}
+
 .zoom-to-element-btn {
   background: none;
   border: none;

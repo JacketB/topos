@@ -21,10 +21,16 @@ export class MapLayersPanelComponent {
   checkedElementIds = signal<Record<number, boolean>>({});
 
   toggleElementCheck(id: number) {
+    const idNum = Number(id);
     this.checkedElementIds.update(prev => ({
       ...prev,
-      [id]: !prev[id]
+      [idNum]: !prev[idNum]
     }));
+    const checked = this.getCheckedIdsList();
+    const checkedSet = new Set(checked.map(String));
+    const selected = this.vm.placedSymbols().filter((s: any) => checkedSet.has(String(s.properties?.id)));
+    this.vm.tacticalMapService.selectedPlacedSymbols.set(selected);
+    this.vm.tacticalMapService.selectedPlacedSymbol.set(selected.length > 0 ? selected[selected.length - 1] : null);
   }
 
   toggleGroupSelectAll(groupId: string, event: Event) {
@@ -36,10 +42,27 @@ export class MapLayersPanelComponent {
     this.checkedElementIds.update(prev => {
       const updated = { ...prev };
       group.elementIds.forEach((id: number) => {
-        updated[id] = newChecked;
+        updated[Number(id)] = newChecked;
       });
       return updated;
     });
+    const checked = this.getCheckedIdsList();
+    const checkedSet = new Set(checked.map(String));
+    const selected = this.vm.placedSymbols().filter((s: any) => checkedSet.has(String(s.properties?.id)));
+    this.vm.tacticalMapService.selectedPlacedSymbols.set(selected);
+    this.vm.tacticalMapService.selectedPlacedSymbol.set(selected.length > 0 ? selected[selected.length - 1] : null);
+  }
+
+  deleteCheckedElements() {
+    const checked = this.getCheckedIdsList();
+    if (checked.length === 0) return;
+    const checkedSet = new Set(checked.map(String));
+    const toDelete = this.vm.placedSymbols().filter((s: any) => checkedSet.has(String(s.properties?.id)));
+    if (toDelete.length > 0) {
+      this.vm.tacticalMapService.selectedPlacedSymbols.set(toDelete);
+      this.vm.deletePlacedSymbol();
+      this.checkedElementIds.set({});
+    }
   }
 
   isGroupAllSelected(groupId: string): boolean {
@@ -126,8 +149,12 @@ export class MapLayersPanelComponent {
     this.vm.tacticalMapService.removeElementsFromGroup(groupId, [elementId]);
   }
 
-  selectElement(element: any) {
-    this.vm.tacticalMapService.selectPlacedSymbol(element);
+  selectElement(element: any, event?: MouseEvent) {
+    if (event && (event.shiftKey || event.ctrlKey)) {
+      this.vm.tacticalMapService.toggleSelectPlacedSymbol(element);
+    } else {
+      this.vm.tacticalMapService.selectPlacedSymbol(element);
+    }
     const map = (this.vm as any).mapInstance || (this.vm.tacticalMapService as any).mapInstance;
     if (map && element.geometry) {
       let coords: [number, number] | null = null;

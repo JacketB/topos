@@ -185,4 +185,71 @@ describe('TacticalMapService - Export/Import Scenario', () => {
     expect(patrolLine?.properties.isPatrolLine).toBe(true);
     expect(patrolLine?.properties.parentId).toBe(9999);
   });
+
+  it('should delete all selected symbols when deleteSelectedPlacedSymbols is called', () => {
+    const s1 = { type: 'Feature', properties: { id: 101, name: 'S1' }, geometry: { type: 'Point', coordinates: [27, 53] } };
+    const s2 = { type: 'Feature', properties: { id: 102, name: 'S2' }, geometry: { type: 'Point', coordinates: [28, 54] } };
+    const s3 = { type: 'Feature', properties: { id: 103, name: 'S3' }, geometry: { type: 'Point', coordinates: [29, 55] } };
+    
+    service.placedSymbols.set([s1, s2, s3]);
+    service.selectedPlacedSymbols.set([s1, s2]);
+
+    vi.spyOn(service, 'updateTacticalSymbolsSource').mockImplementation(() => {});
+    vi.spyOn(service, 'updateLinearVerticesSource').mockImplementation(() => {});
+    vi.spyOn(service, 'syncTextBoxMarkers').mockImplementation(() => {});
+
+    service.deleteSelectedPlacedSymbols();
+
+    expect(service.placedSymbols().length).toBe(1);
+    expect(service.placedSymbols()[0].properties.id).toBe(103);
+    expect(service.selectedPlacedSymbols().length).toBe(0);
+  });
+
+  it('should toggle group visibility and update symbol hidden state', () => {
+    const s1 = { type: 'Feature', properties: { id: 201, hidden: false }, geometry: { type: 'Point', coordinates: [27, 53] } };
+    const s2 = { type: 'Feature', properties: { id: 202, hidden: false }, geometry: { type: 'Point', coordinates: [28, 54] } };
+    const group = { id: 'grp_1', name: 'Район 1', elementIds: [201, 202] };
+
+    service.placedSymbols.set([s1, s2]);
+    service.objectGroups.set([group]);
+
+    vi.spyOn(service, 'updateTacticalSymbolsSource').mockImplementation(() => {});
+    vi.spyOn(service, 'updateLinearVerticesSource').mockImplementation(() => {});
+    vi.spyOn(service, 'syncTextBoxMarkers').mockImplementation(() => {});
+
+    expect(service.isGroupHidden('grp_1')).toBe(false);
+
+    service.toggleGroupVisibility('grp_1');
+    expect(service.isGroupHidden('grp_1')).toBe(true);
+    expect(service.placedSymbols().every(s => s.properties.hidden)).toBe(true);
+
+    service.toggleGroupVisibility('grp_1');
+    expect(service.isGroupHidden('grp_1')).toBe(false);
+    expect(service.placedSymbols().every(s => !s.properties.hidden)).toBe(true);
+  });
+
+  it('should undo and redo tactical map state changes with undo/redo methods', () => {
+    const s1 = { type: 'Feature', properties: { id: 301, name: 'Symbol 1' }, geometry: { type: 'Point', coordinates: [27, 53] } };
+    const s2 = { type: 'Feature', properties: { id: 302, name: 'Symbol 2' }, geometry: { type: 'Point', coordinates: [28, 54] } };
+
+    service.placedSymbols.set([s1]);
+
+    vi.spyOn(service, 'updateTacticalSymbolsSource').mockImplementation(() => {});
+    vi.spyOn(service, 'updateLinearVerticesSource').mockImplementation(() => {});
+    vi.spyOn(service, 'syncTextBoxMarkers').mockImplementation(() => {});
+
+    service.pushHistoryState();
+    service.placedSymbols.set([s1, s2]);
+
+    expect(service.placedSymbols().length).toBe(2);
+
+    const undone = service.undo();
+    expect(undone).toBe(true);
+    expect(service.placedSymbols().length).toBe(1);
+    expect(service.placedSymbols()[0].properties.id).toBe(301);
+
+    const redone = service.redo();
+    expect(redone).toBe(true);
+    expect(service.placedSymbols().length).toBe(2);
+  });
 });

@@ -68,8 +68,38 @@
 
     <!-- Дерево районов и объектов -->
     <div class="tree-container">
+      @if (getCheckedIdsList().length > 0) {
+        <div class="bulk-add-bar" style="margin-bottom: 8px;">
+          <span>Отмечено: <strong>{{ getCheckedIdsList().length }} шт.</strong></span>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <button 
+              class="bulk-del-btn" 
+              (click)="deleteCheckedElements()" 
+              title="Удалить отмеченные элементы с карты [Delete]"
+            >
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Удалить
+            </button>
+            <select #bulkGlobalSelect class="bulk-select-input" style="font-size: 10px; padding: 2px;">
+              <option value="">В район...</option>
+              @for (group of vm.objectGroups(); track group.id) {
+                <option [value]="group.id">{{ group.name }}</option>
+              }
+            </select>
+            <button 
+              class="bulk-add-btn"
+              [disabled]="!bulkGlobalSelect.value"
+              (click)="addCheckedToGroup(bulkGlobalSelect.value)"
+            >
+              Перенести
+            </button>
+          </div>
+        </div>
+      }
       
-      <!-- Список сгруппированных районов -->
       @for (group of vm.objectGroups(); track group.id) {
         <details class="tree-details group-details">
           <summary class="tree-summary group-summary">
@@ -109,10 +139,12 @@
                   </svg>
                 }
               </button>
-              <button class="icon-action-btn" (click)="zoomToGroup(group.id, $event)" title="Показать район на карте">
-                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
+              <button class="icon-action-btn" (click)="zoomToGroup(group.id, $event)" title="Приблизить к району">
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+                  <line x1="11" y1="8" x2="11" y2="14"></line>
+                  <line x1="8" y1="11" x2="14" y2="11"></line>
                 </svg>
               </button>
               <button class="icon-action-btn" (click)="onRenameGroup(group.id, $event)" title="Переименовать">
@@ -138,7 +170,7 @@
                   <div 
                     class="tree-element-item" 
                     [class.active]="vm.selectedPlacedSymbol()?.properties?.id === id"
-                    (click)="selectElement(item)"
+                    (click)="selectElement(item, $event)"
                   >
                     <span class="element-info">
                       <input 
@@ -184,11 +216,13 @@
                       <button 
                         class="zoom-to-element-btn" 
                         (click)="zoomToElement(item, $event)"
-                        title="Показать на карте"
+                        title="Приблизить к объекту"
                       >
-                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                          <circle cx="12" cy="12" r="3"></circle>
+                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="11" cy="11" r="7"></circle>
+                          <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+                          <line x1="11" y1="8" x2="11" y2="14"></line>
+                          <line x1="8" y1="11" x2="14" y2="11"></line>
                         </svg>
                       </button>
                       <button 
@@ -252,7 +286,7 @@
               <div 
                 class="tree-element-item" 
                 [class.active]="vm.selectedPlacedSymbol()?.properties?.id === item.properties.id"
-                (click)="selectElement(item)"
+                (click)="selectElement(item, $event)"
               >
                 <span class="element-info">
                   <input 
@@ -276,16 +310,38 @@
                   </span>
                   <span class="element-name">{{ getSymbolName(item) }}</span>
                 </span>
-                <button 
-                  class="zoom-to-element-btn" 
-                  (click)="zoomToElement(item, $event)"
-                  title="Показать на карте"
-                >
-                  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                </button>
+                <div style="display: flex; gap: 2px; align-items: center;" (click)="$event.stopPropagation()">
+                  <button 
+                    class="icon-action-btn" 
+                    [class.hidden-active]="item.properties?.hidden"
+                    (click)="toggleElementVisibility(item.properties?.id, $event)"
+                    [title]="item.properties?.hidden ? 'Показать объект на карте' : 'Скрыть объект на карте'"
+                  >
+                    @if (item.properties?.hidden) {
+                      <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    } @else {
+                      <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    }
+                  </button>
+                  <button 
+                    class="zoom-to-element-btn" 
+                    (click)="zoomToElement(item, $event)"
+                    title="Приблизить к объекту"
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="7"></circle>
+                      <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+                      <line x1="11" y1="8" x2="11" y2="14"></line>
+                      <line x1="8" y1="11" x2="14" y2="11"></line>
+                    </svg>
+                  </button>
+                </div>
               </div>
             }
           }

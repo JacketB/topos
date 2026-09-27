@@ -22,6 +22,7 @@ import { EngineeringCalculatorModalComponent } from './components/engineering-ca
 import { Terrain3dModalComponent } from './components/terrain-3d-modal/terrain-3d-modal.component';
 import { Fortification3dModalComponent } from './components/fortification-3d-modal/fortification-3d-modal.component';
 import { DispatchRoutesModalComponent } from './components/dispatch-routes-modal/dispatch-routes-modal.component';
+import { SystemDiagnosticsModalComponent } from './components/system-diagnostics-modal/system-diagnostics-modal.component';
 
 @Component({
   selector: 'app-map-view',
@@ -46,7 +47,8 @@ import { DispatchRoutesModalComponent } from './components/dispatch-routes-modal
     EngineeringCalculatorModalComponent,
     Terrain3dModalComponent,
     Fortification3dModalComponent,
-    DispatchRoutesModalComponent
+    DispatchRoutesModalComponent,
+    SystemDiagnosticsModalComponent
   ],
   templateUrl: './map-view.html',
   styleUrl: './map-view.css',
@@ -71,7 +73,31 @@ export class MapView {
 
     const key = event.key.toLowerCase();
 
-    // Экспорт / Импорт по Shift+S / Shift+O
+    if (event.ctrlKey || event.metaKey) {
+      if (key === 'z' || key === 'я') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          this.vm.redo();
+        } else {
+          this.vm.undo();
+        }
+        return;
+      }
+      if (key === 'y' || key === 'н') {
+        event.preventDefault();
+        this.vm.redo();
+        return;
+      }
+    }
+
+    if (key === 'delete' || key === 'backspace' || event.key === 'Del') {
+      if (this.vm.selectedPlacedSymbol() || this.vm.selectedPlacedSymbols().length > 0) {
+        event.preventDefault();
+        this.vm.deletePlacedSymbol();
+        return;
+      }
+    }
+
     if (event.shiftKey) {
       if (key === 's' || key === 'ы') {
         event.preventDefault();
@@ -91,11 +117,20 @@ export class MapView {
         this.vm.toggleDispatchModal();
         return;
       }
+      if (key === 't' || key === 'е') {
+        event.preventDefault();
+        this.vm.toggleDiagnosticsModal();
+        return;
+      }
     }
 
     if (key === 'escape') {
       if (this.vm.pickingDispatchTarget() !== null) {
         this.vm.setPickingDispatchTarget(null);
+        return;
+      }
+      if (this.vm.isDiagnosticsModalOpen()) {
+        this.vm.closeDiagnosticsModal();
         return;
       }
       if (this.vm.activeLineMode()) {

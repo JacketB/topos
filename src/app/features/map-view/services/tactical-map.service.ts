@@ -21,6 +21,8 @@ export class TacticalMapService {
   public drawingService = inject(TacticalDrawingService);
   public symbolsManager = inject(TacticalSymbolsManagerService);
   public imageOverlayService = inject(ImageOverlayService);
+  public dispatchDataProvider: (() => any) | null = null;
+  public dispatchDataConsumer: ((data: any) => void) | null = null;
 
   private saveStorageTimeout: any = null;
   readonly placedSymbols = signal<any[]>(this.loadFromStorage());
@@ -120,20 +122,95 @@ export class TacticalMapService {
   readonly interactionMode = signal<MapInteractionMode>('edit');
   private justSelectedBox = false;
 
+  private undoStack: { symbols: any[]; groups: ObjectGroup[] }[] = [];
+  private redoStack: { symbols: any[]; groups: ObjectGroup[] }[] = [];
+  private readonly maxHistoryDepth = 50;
+
+  pushHistoryState() {
+    try {
+      const symbolsSnapshot = JSON.parse(JSON.stringify(this.placedSymbols()));
+      const groupsSnapshot = JSON.parse(JSON.stringify(this.objectGroups()));
+      this.undoStack.push({ symbols: symbolsSnapshot, groups: groupsSnapshot });
+      if (this.undoStack.length > this.maxHistoryDepth) {
+        this.undoStack.shift();
+      }
+      this.redoStack = [];
+    } catch {}
+  }
+
+  undo(): boolean {
+    if (this.undoStack.length === 0) return false;
+    try {
+      const currentState = {
+        symbols: JSON.parse(JSON.stringify(this.placedSymbols())),
+        groups: JSON.parse(JSON.stringify(this.objectGroups()))
+      };
+      this.redoStack.push(currentState);
+      const prevState = this.undoStack.pop()!;
+      this.placedSymbols.set(prevState.symbols);
+      this.objectGroups.set(prevState.groups);
+      this.selectedPlacedSymbol.set(null);
+      this.selectedPlacedSymbols.set([]);
+      this.updateTacticalSymbolsSource();
+      this.updateLinearVerticesSource();
+      this.syncTextBoxMarkers();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  redo(): boolean {
+    if (this.redoStack.length === 0) return false;
+    try {
+      const currentState = {
+        symbols: JSON.parse(JSON.stringify(this.placedSymbols())),
+        groups: JSON.parse(JSON.stringify(this.objectGroups()))
+      };
+      this.undoStack.push(currentState);
+      const nextState = this.redoStack.pop()!;
+      this.placedSymbols.set(nextState.symbols);
+      this.objectGroups.set(nextState.groups);
+      this.selectedPlacedSymbol.set(null);
+      this.selectedPlacedSymbols.set([]);
+      this.updateTacticalSymbolsSource();
+      this.updateLinearVerticesSource();
+      this.syncTextBoxMarkers();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   selectPlacedSymbol(symbol: any | null) {
     this.selectedPlacedSymbol.set(symbol);
     if (symbol) {
-      const current = this.selectedPlacedSymbols();
-      if (!current.some(s => s.properties?.id === symbol.properties?.id)) {
-        this.selectedPlacedSymbols.set([symbol]);
-      }
+      this.selectedPlacedSymbols.set([symbol]);
     } else {
       this.selectedPlacedSymbols.set([]);
     }
     this.updateLinearVerticesSource();
   }
 
+  toggleSelectPlacedSymbol(symbol: any) {
+    if (!symbol) return;
+    const current = this.selectedPlacedSymbols();
+    const idStr = String(symbol.properties?.id);
+    const exists = current.some(s => String(s.properties?.id) === idStr);
+    if (exists) {
+      const updated = current.filter(s => String(s.properties?.id) !== idStr);
+      this.selectedPlacedSymbols.set(updated);
+      this.selectedPlacedSymbol.set(updated.length > 0 ? updated[updated.length - 1] : null);
+    } else {
+      const updated = [...current, symbol];
+      this.selectedPlacedSymbols.set(updated);
+      this.selectedPlacedSymbol.set(symbol);
+    }
+    this.updateLinearVerticesSource();
+  }
+
   createGroup(name: string) {
+    this.pushHistoryState();
     const newGroup: ObjectGroup = {
       id: `group_${Date.now()}`,
       name: name,
@@ -144,6 +221,7 @@ export class TacticalMapService {
   }
 
   deleteGroup(groupId: string) {
+    this.pushHistoryState();
     this.objectGroups.update(prev => prev.filter(g => g.id !== groupId));
     if (this.activeCalculationGroupId() === groupId) {
       this.activeCalculationGroupId.set('all');
@@ -151,10 +229,12 @@ export class TacticalMapService {
   }
 
   renameGroup(groupId: string, newName: string) {
+    this.pushHistoryState();
     this.objectGroups.update(prev => prev.map(g => g.id === groupId ? { ...g, name: newName } : g));
   }
 
   addElementsToGroup(groupId: string, elementIds: number[]) {
+    this.pushHistoryState();
     this.objectGroups.update(groups => {
       return groups.map(g => {
         if (g.id !== groupId) {
@@ -171,6 +251,7 @@ export class TacticalMapService {
   }
 
   removeElementsFromGroup(groupId: string, elementIds: number[]) {
+    this.pushHistoryState();
     this.objectGroups.update(groups => {
       return groups.map(g => {
         if (g.id === groupId) {
@@ -185,39 +266,64 @@ export class TacticalMapService {
   }
 
   toggleSymbolVisibility(id: number | string) {
+    const idStr = String(id);
+    this.pushHistoryState();
     this.placedSymbols.update(prev =>
       prev.map(s => {
-        if (s.properties?.id === id) {
+        if (String(s.properties?.id) === idStr) {
           const isHidden = !s.properties.hidden;
           return { ...s, properties: { ...s.properties, hidden: isHidden } };
         }
         return s;
       })
     );
+    const sel = this.selectedPlacedSymbol();
+    if (sel && String(sel.properties?.id) === idStr) {
+      const updated = this.placedSymbols().find(s => String(s.properties?.id) === idStr);
+      if (updated?.properties?.hidden) {
+        this.selectedPlacedSymbol.set(null);
+        this.selectedPlacedSymbols.update(prev => prev.filter(s => String(s.properties?.id) !== idStr));
+      }
+    }
+    this.updateTacticalSymbolsSource();
+    this.syncTextBoxMarkers();
+    this.updateLinearVerticesSource();
   }
 
   toggleGroupVisibility(groupId: string) {
     const group = this.objectGroups().find(g => g.id === groupId);
     if (!group) return;
+    this.pushHistoryState();
     const allHidden = this.isGroupHidden(groupId);
     const newHidden = !allHidden;
+    const groupIds = new Set(group.elementIds.map(String));
     this.placedSymbols.update(prev =>
       prev.map(s => {
-        if (group.elementIds.includes(s.properties?.id)) {
+        if (groupIds.has(String(s.properties?.id))) {
           return { ...s, properties: { ...s.properties, hidden: newHidden } };
         }
         return s;
       })
     );
+    if (newHidden) {
+      this.selectedPlacedSymbols.update(prev => prev.filter(s => !groupIds.has(String(s.properties?.id))));
+      const currentSelected = this.selectedPlacedSymbol();
+      if (currentSelected && groupIds.has(String(currentSelected.properties?.id))) {
+        this.selectedPlacedSymbol.set(null);
+      }
+    }
+    this.updateTacticalSymbolsSource();
+    this.syncTextBoxMarkers();
+    this.updateLinearVerticesSource();
   }
 
   isGroupHidden(groupId: string): boolean {
     const group = this.objectGroups().find(g => g.id === groupId);
     if (!group || group.elementIds.length === 0) return false;
-    return group.elementIds.every(id => {
-      const s = this.placedSymbols().find(item => item.properties?.id === id);
-      return s ? !!s.properties?.hidden : false;
-    });
+    const groupIds = new Set(group.elementIds.map(String));
+    const groupSymbols = this.placedSymbols().filter(item => groupIds.has(String(item.properties?.id)));
+    if (groupSymbols.length === 0) return false;
+    return groupSymbols.every(s => !!s.properties?.hidden);
   }
 
   private loadGroupsFromStorage(): ObjectGroup[] {
@@ -754,9 +860,10 @@ export class TacticalMapService {
         };
 
         const onReady = () => {
+          this.pushHistoryState();
           this.placedSymbols.update(prev => [...prev, newSymbol]);
           this.updateTacticalSymbolsSource();
-          this.selectedPlacedSymbol.set(newSymbol);
+          this.selectPlacedSymbol(newSymbol);
 
           if (this.isTerrainOrientationEnabled() && template.symbol.startsWith('fort_')) {
             this.terrainService.getSlopeBearing(coords[0], coords[1]).then(bearing => {
@@ -807,11 +914,17 @@ export class TacticalMapService {
           if (found.properties?.['lineType'] === 'march_route') {
             return;
           }
-          this.selectPlacedSymbol(found);
+          if (e.originalEvent && (e.originalEvent.shiftKey || e.originalEvent.ctrlKey)) {
+            this.toggleSelectPlacedSymbol(found);
+          } else {
+            this.selectPlacedSymbol(found);
+          }
           return;
         }
       } else {
-        this.selectPlacedSymbol(null);
+        if (!e.originalEvent || (!e.originalEvent.shiftKey && !e.originalEvent.ctrlKey)) {
+          this.selectPlacedSymbol(null);
+        }
       }
     });
   }
@@ -1190,17 +1303,28 @@ export class TacticalMapService {
   }
 
   deleteSelectedPlacedSymbol() {
+    const multi = this.selectedPlacedSymbols();
+    if (multi && multi.length > 1) {
+      this.deleteSelectedPlacedSymbols();
+      return;
+    }
     const selected = this.selectedPlacedSymbol();
     if (selected) {
-      const id = selected.properties['id'];
-      const marker = this.textBoxMarkers.get(id);
-      if (marker) {
-        marker.remove();
-        this.textBoxMarkers.delete(id);
+      this.pushHistoryState();
+      const idStr = String(selected.properties['id']);
+      for (const [mid, marker] of this.textBoxMarkers.entries()) {
+        if (String(mid) === idStr) {
+          marker.remove();
+          this.textBoxMarkers.delete(mid);
+        }
       }
-      this.placedSymbols.update(prev => prev.filter(s => s.properties['id'] !== id));
+      this.placedSymbols.update(prev => prev.filter(s => String(s.properties['id']) !== idStr));
+      this.objectGroups.update(groups => groups.map(g => ({
+        ...g,
+        elementIds: g.elementIds.filter(gid => String(gid) !== idStr)
+      })));
       this.selectedPlacedSymbol.set(null);
-      this.selectedPlacedSymbols.update(prev => prev.filter(s => s.properties['id'] !== id));
+      this.selectedPlacedSymbols.update(prev => prev.filter(s => String(s.properties['id']) !== idStr));
       this.updateTacticalSymbolsSource();
       this.updateLinearVerticesSource();
       this.syncTextBoxMarkers();
@@ -1208,29 +1332,38 @@ export class TacticalMapService {
   }
 
   deleteSelectedPlacedSymbols() {
-    const selected = this.selectedPlacedSymbols();
+    let selected = this.selectedPlacedSymbols();
+    if (!selected || selected.length === 0) {
+      const single = this.selectedPlacedSymbol();
+      if (single) {
+        selected = [single];
+      }
+    }
     if (selected && selected.length > 0) {
-      const ids = new Set(selected.map(s => s.properties['id']));
-      for (const id of ids) {
-        const marker = this.textBoxMarkers.get(id);
-        if (marker) {
+      this.pushHistoryState();
+      const idStrings = new Set(selected.map(s => String(s.properties['id'])));
+      for (const [id, marker] of this.textBoxMarkers.entries()) {
+        if (idStrings.has(String(id))) {
           marker.remove();
           this.textBoxMarkers.delete(id);
         }
       }
-      this.placedSymbols.update(prev => prev.filter(s => !ids.has(s.properties['id'])));
+      this.placedSymbols.update(prev => prev.filter(s => !idStrings.has(String(s.properties['id']))));
+      this.objectGroups.update(groups => groups.map(g => ({
+        ...g,
+        elementIds: g.elementIds.filter(id => !idStrings.has(String(id)))
+      })));
       this.selectedPlacedSymbols.set([]);
       this.selectedPlacedSymbol.set(null);
       this.updateTacticalSymbolsSource();
       this.updateLinearVerticesSource();
       this.syncTextBoxMarkers();
-    } else {
-      this.deleteSelectedPlacedSymbol();
     }
   }
 
   clearSymbolSelection() {
     this.selectedPlacedSymbol.set(null);
+    this.selectedPlacedSymbols.set([]);
     this.selectedSymbol.set(null);
     if (this.mapInstance) {
       this.mapInstance.getCanvas().style.cursor = '';
@@ -1264,6 +1397,7 @@ export class TacticalMapService {
     };
 
     const onReady = () => {
+      this.pushHistoryState();
       this.placedSymbols.update(prev => [...prev, newSymbol]);
       this.updateTacticalSymbolsSource();
       this.selectPlacedSymbol(newSymbol);
@@ -1325,6 +1459,7 @@ export class TacticalMapService {
       geometry: geom
     };
 
+    this.pushHistoryState();
     this.placedSymbols.update(prev => [...prev, newFeature]);
     this.updateTacticalSymbolsSource();
     this.selectPlacedSymbol(newFeature);
@@ -1349,6 +1484,7 @@ export class TacticalMapService {
         coordinates: coords
       }
     };
+    this.pushHistoryState();
     this.placedSymbols.update(prev => [...prev, newFeature]);
     this.updateTacticalSymbolsSource();
     this.syncTextBoxMarkers();
@@ -1446,6 +1582,7 @@ export class TacticalMapService {
     const vertexIndex = feature.properties['vertexIndex'];
     const symbol = this.placedSymbols().find(s => s.properties['id'] === symbolId);
     if (symbol && symbol.properties['isLinear']) {
+      this.pushHistoryState();
       const origCoords = [...(symbol.properties['origCoords'] as [number, number][])];
       if (origCoords.length > 2) {
         origCoords.splice(vertexIndex, 1);
@@ -1469,6 +1606,7 @@ export class TacticalMapService {
         }
         e.preventDefault();
         if (e.originalEvent) e.originalEvent.stopPropagation();
+        this.pushHistoryState();
         this.isDraggingVertex = true;
         this.dragVertexFeature = e.features[0];
         map.getCanvas().style.cursor = 'grabbing';
@@ -1512,6 +1650,7 @@ export class TacticalMapService {
       if (e.originalEvent && e.originalEvent.shiftKey) return;
       if (e.features && e.features.length > 0 && !this.selectedSymbol() && !this.isDraggingVertex) {
         e.preventDefault();
+        this.pushHistoryState();
         this.isDragging = true;
         this.dragFeature = e.features[0];
         map.getCanvas().style.cursor = 'grabbing';
@@ -1888,7 +2027,7 @@ export class TacticalMapService {
       workHoursPerDay: Number(localStorage.getItem('topos_planner_workHoursPerDay') || 10)
     };
 
-    return {
+    const scenarioResult: any = {
       version: "1.0",
       type: "topos_scenario",
       timestamp: new Date().toISOString(),
@@ -1902,6 +2041,17 @@ export class TacticalMapService {
       imageOverlays,
       mapPosition
     };
+
+    if (this.dispatchDataProvider) {
+      try {
+        const dData = this.dispatchDataProvider();
+        if (dData) {
+          scenarioResult.dispatchData = dData;
+        }
+      } catch {}
+    }
+
+    return scenarioResult;
   }
 
   public importScenarioData(scenario: any) {
@@ -1914,6 +2064,12 @@ export class TacticalMapService {
     
     this.placedSymbols.set(symbols);
     this.objectGroups.set(groups);
+
+    if (scenario.dispatchData && this.dispatchDataConsumer) {
+      try {
+        this.dispatchDataConsumer(scenario.dispatchData);
+      } catch {}
+    }
 
     if (scenario.imageOverlays) {
       localStorage.setItem('topos_image_overlays', JSON.stringify(scenario.imageOverlays));
@@ -2052,9 +2208,13 @@ export class TacticalMapService {
 
         el.addEventListener('click', (e) => {
           e.stopPropagation();
-          const found = this.placedSymbols().find(item => item.properties['id'] === id);
+          const found = this.placedSymbols().find(item => String(item.properties['id']) === String(id));
           if (found) {
-            this.selectPlacedSymbol(found);
+            if (e.shiftKey || e.ctrlKey) {
+              this.toggleSelectPlacedSymbol(found);
+            } else {
+              this.selectPlacedSymbol(found);
+            }
           }
         });
 
@@ -2064,6 +2224,10 @@ export class TacticalMapService {
         })
         .setLngLat(coords)
         .addTo(this.mapInstance);
+
+        marker.on('dragstart', () => {
+          this.pushHistoryState();
+        });
 
         marker.on('drag', () => {
           const lngLat = marker!.getLngLat();

@@ -538,12 +538,13 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Delete' || event.key === 'Del') {
+    if (event.key === 'Delete' || event.key === 'Del' || event.key === 'Backspace') {
       const target = event.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
         return;
       }
       if (this.vm.selectedPlacedSymbol() || this.vm.selectedPlacedSymbols().length > 0) {
+        event.preventDefault();
         this.vm.deletePlacedSymbol();
       }
     }
